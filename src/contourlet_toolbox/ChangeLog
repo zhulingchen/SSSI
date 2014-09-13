@@ -1,0 +1,81 @@
+NOTE: Not all of these changes are included in the current release 
+version of the contourlet toolbox.
+
+
+% April 2002
+Developed version 1.0 
+
+by M. N. Do
+
+
+% 09 Sep, 2003
+1. Modified pdfbdec.m and pdfbrec.m so that when nlev(end) == 0, 
+a 2D wavelet decomposition is called instead of Laplacian Pyramid + DFB.
+This elimiates the need for mpdfbdec/rec.
+
+2. Created wfb2dec.m and wfb2rec.m for 2D wavelet decomposition and 
+reconstruction.
+
+by Yue Lu
+
+
+% 09 Sep, 2003   
+1. Added linear phase filter bank with call name 'dvmlp', 
+
+2. Created/Modified functions dfbdec2_l, dfbrec2_l, fbdec2_l, fbrec2_l  
+to perform two-band decomposition with fan filters using ladder 
+structure.  This version modulates the rows to get the fan, 
+which means vertical fan filter is shorter than horizontal one.  
+
+3. Similarly, created/modified functions dfbdec3_l, dfbrec3_l, fbdec3_l, 
+fbrec3_l to perform similar tasks.  This version modulates the columns, 
+which means vertical fan filter is longer than horizontal one.  
+
+4. Created 'showdfb' to show dfb frequency components obtained with any 
+version of dfbdec. 09/16/2003.
+
+5. Created 'halfband' to generate prototype halfband filter to the ladder 
+structure using maximally flat Lagrange filters.  
+
+by A. Cunha
+
+
+% 17 Sep, 2003  
+1. Create the new showpdfb function in showpdfb.m.
+
+2. Add the option for the lowpass wavelet decomposition.
+
+3. Add a function computescale in computescales.m, which
+will be called by showpdfb.m 
+
+4. Add two scal modes, denoted by 'scaleMode'. It can also
+display the most significant coefficients.
+
+5.  Add 'axis image' to control resizing.
+
+6.  Use the two-fold searching method to find the background
+color index.
+
+7. Create demo files (contourletdemo, decdemo, nlademo)
+
+by J. Zhou
+
+
+% 7 Nov, 2003
+1. Simplified pdfbdec.m and pdfbrec.m by adding lpdec.m and lprec.m functions
+for Laplacian pyramid decompostion and reconstruction.
+
+2. Simplified fbdec_l, and fbrec_l by computing the path types of the
+decomposition/recontruction trees directly rather than recursively updating
+them.
+
+3. Update documentation and demo files.
+
+by M. N. Do
+
+
+% 12 Nov, 2003
+1. Fixed a bug that is related to the transform for rectangular matrices 
+in functions pdfb2vec and vec2pdfb
+
+by Felix Herrmann and his students (University of British Columbia)

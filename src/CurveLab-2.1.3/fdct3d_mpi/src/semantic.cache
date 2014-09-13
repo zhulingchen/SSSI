@@ -1,0 +1,16 @@
+;; Object src/
+;; SEMANTICDB Tags save file
+(semanticdb-project-database-file "src/"
+  :tables (list 
+   (semanticdb-table "makefile"
+    :major-mode 'makefile-mode
+    :tags '(("makefile.opt" include nil nil [1 22]) ("LIB_SRC" variable (:default-value ("cpxnumtnsblkd.cpp" "cpxcrvletprtd.cpp" "fdct3d.cpp" "fdct3d_param.cpp" "fdct3d_forward.cpp" "fdct3d_inverse.cpp")) nil [23 138]) ("LIB_OBJ" variable (:default-value ("$(LIB_SRC:.cpp=.o)")) nil [139 169]) ("TST_SRC" variable (:default-value ("test.cpp")) nil [170 190]) ("DEP" variable (:default-value ("$(LIB_SRC:.cpp=.d)" "$(TST_SRC:.cpp=.d)")) nil [191 240]) ("libfdct3d.a" function (:arguments ("$(LIB_OBJ)")) nil [241 313]) ("test" function (:arguments ("libfdct3d.a" "test.o")) nil [313 385]) ("tilde" function nil nil [458 476]) ("clean" function nil nil [476 526]) ("tags" function nil nil [526 551]))
+    :file "makefile"
+    :pointmax 551
+    :unmatched-syntax 'nil
+    )
+   )
+  :file "semantic.cache"
+  :semantic-tag-version "2.0pre3"
+  :semanticdb-version "2.0pre3"
+  )

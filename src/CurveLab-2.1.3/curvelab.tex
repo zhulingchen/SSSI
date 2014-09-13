@@ -1,0 +1,226 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath,amssymb,amsthm,bm,graphicx,color,epsfig}
+
+\addtolength{\textwidth}{1in}
+\addtolength{\oddsidemargin}{-0.5in}
+\addtolength{\textheight}{1.6in}
+\addtolength{\topmargin}{-0.8in}
+
+% formatting
+\parindent = 0 pt
+\parskip = 4 pt
+
+\title{CurveLab Toolbox, Version 2.1.3}
+\author{Emmanuel Cand\`{e}s, Laurent Demanet,  Lexing Ying
+}
+
+\date{}
+\begin{document}
+
+\maketitle
+%------------------------------------------
+\section{Introduction}
+CurveLab is a collection of Matlab and C++ programs for the {\em Fast
+Discrete Curvelet Transform} in two and three dimensions.
+
+For the 2d curvelet transform, the software package includes two
+distinct implementations: the wrapping-based transform and the
+transform using unequally-spaced fast Fourier transform (USFFT). Both
+variants are based on the Curvelet transform as described in `New
+Tight Frames of Curvelets and Optimal Representations of Objects with
+Piecewise $C^2$ Singularities', {\it Comm. Pure Appl. Math.}  {\bf 57}
+(2004) 219-266. The implementation is also discussed in detail in
+`Fast Discrete Curvelet Transforms', {\it Multiscale Model. Simul.}
+{\bf 5} (2006), no. 3, 861-899. We
+advise users to become familiar with these references.
+
+The two implementations differ by the choice of spatial grid used to
+translate curvelets at each scale and angle.
+\begin{itemize}
+\item The USFFT version uses a decimated rectangular grid tilted along
+  the main direction of each curvelet. There is one such grid per
+  scale and angle, and this implementation is therefore very close to
+  the definition given in the above reference. For the digital
+  transform, tilting the grids induces a resampling of the Fourier
+  transform on semi-regular grids, hence the use of a (perhaps novel)
+  USFFT routine. For the inversion, a conjugate-gradient solver
+  rapidly converges to the solution.
+\item The wrapping version uses, instead, a decimated rectangular grid
+  aligned with the image axes. For a given scale, there are
+  essentially two such grids (decimated mostly horizontally or mostly
+  vertically). The resulting sampling is not as faithful to the
+  original transform, but the basis functions are curvelets as much as
+  in the USFFT-based implementation. Since no interpolation is
+  necessary in the frequency plane, the transform is a numerical
+  isometry and can be inverted by its adjoint.
+\end{itemize}
+
+For the 3d curvelet transform, the software in this package is an
+extension of the wrapping version in 2d. Due to the large size of the
+3d data and the increasing redundancy of the curvelet transform, three
+different implementation are included:
+\begin{itemize}
+\item The in-core implementation which stores both the input data and
+  the curvelet coefficients in the memory (suitable for small size data
+  set).
+\item The out-core implementation which stores the input data in the
+  memory and most of the curvelet coefficients on the disc (suitable
+  for medium size data set).
+\item The MPI-based parallel implementation which distributes both
+  input data and the curvelet coefficients on multiple nodes. The
+  parallel implementation can successfully handle input data of size $1k
+  \times 1k \times 1k$.
+\end{itemize}
+
+The C++ part of the package includes all the 2d and 3d implementations
+listed above. The Matlab part of this package includes only the 2d
+implementations of the USFFT and wrapping transforms.
+
+%------------------------------------------
+\section{Installation}
+Copy the CurveLab package into the directory of your choice, and 
+expand it with
+\begin{verbatim}
+  gunzip CurveLab-2.0.tar.gz
+  tar xvf CurveLab-2.0.tar
+\end{verbatim}
+
+\paragraph{Matlab part.} The Matlab implementation for the wrapping-based transform can be
+found in the directory \verb=fdct_wrapping_matlab=, while the Matlab
+implementation for the USFFT-based transform is in the directory
+\verb=fdct_usfft_matlab=. In both directories, you can find several
+demos which explain how to use the software. Before running the demos
+in the directory \verb=fdct_usfft_matlab=, run
+\verb=fdct_usfft_path.m= to set the correct searching path.
+
+\paragraph{C++ part.} The C++ implementation is tested on Unix-type 
+platforms, including Linux, SunOS and MacOS. The installation requires
+g++ (version 3.2 or 3.3), and Matlab's mex compiler (version 13 or 14)
+if you want to compile the mex files for the C++ implementation (make
+sure the mex compiler use the same version of g++).
+
+To install the C++ implementations (except the MPI-based parallel 3d
+transform)
+\begin{itemize}
+\item
+  Download and install FFTW version 2.1.5 (\verb=http://www.fftw.org=).
+  Make sure to type \verb=./configure --with-pic= when configure FFTW.
+\item
+  In makefile.opt, \newline
+  set \verb=FFTW_DIR= to be the path in which FFTW 2.1.5 is installed, and \newline
+  set \verb=MEX= to be the correct mex compiler (optional).
+\item
+  While in the main toolbox directory, type \newline
+  \verb=make lib= to build the libraries for both the wrapping-based and the USFFT-based implementations \newline
+  \verb=make test= to test the C++ installation (optional) \newline
+  \verb=make matlab= to generate the mex files of the C++ implementation, which can be called in Matlab (optional)
+\end{itemize}
+
+For the 2d implementations, the source files of the ``C++ wrapping
+version'' are in the directory \verb=fdct_wrapping_cpp/src=, while the
+mex files generated by \verb=make matlab= and the demo files are in
+the directory \verb=fdct_wrapping_cpp/mex=. The source files of the
+``C++ USFFT version'' are in the directory \verb=fdct_usfft_cpp/src=,
+while the mex files and the demo files are in the directory
+\verb=fdct_usfft_cpp/mex=.
+
+For the 3d implementations, the source files for the in-core version
+are in the directory \verb=fdct3d/src=, while the mex files (generated
+by \verb=make matlab= and the Matlab demo files are in the
+directory \verb=fdct3d/mex=. The source files of the out-core version
+are in the directory \verb=fdct3d_outcore=.
+
+To install the MPI-based parallel 3d implementation, please read
+\verb=fdct3d_mpi/src/README= for details.
+
+%------------------------------------------
+\section{List of Matlab Files}
+
+The 2d Matlab implementations of the wrapping-based and USFFT-based
+transforms are in the directories \verb=fdct_wrapping_matlab= and
+\verb=fdct_usfft_matlab= respectively. The Matlab interface of the C++
+implementations is located in the directories
+\verb=fdct_wrapping_cpp/mex= and \verb=fdct_usfft_cpp/mex=. Below is a
+(non-exhaustive) list of the \verb=.m= files which can be found in
+those directories. \verb=xxx= stands for either \verb=wrapping= or
+\verb=usfft=.
+
+\paragraph{Basic transform functions.}
+\begin{itemize}
+\item  \verb=fdct_xxx.m= -- forward curvelet transform.
+\item  \verb=ifdct_xxx.m= -- inverse curvelet transform.
+\item  \verb=afdct_xxx.m= -- adjoint curvelet transform (only for
+  USFFT-based transform since for the wrapping transform, the adjoint 
+  is the same as the inverse transform).
+\item \verb=fdct_xxx_param.m= -- this function returns the location of
+  each curvelet in phase-space.
+\end{itemize}
+
+\paragraph{Useful Tools.}
+\begin{itemize}
+\item  \verb=fdct_xxx_dispcoef.m= -- a function which returns a matrix
+  containing all the curvelet coefficients.
+\item  \verb=fdct_xxx_pos2idx.m= -- for a fixed scale and a fixed
+  direction, this function returns the index of the curvelet closest
+  to a certain point in the image.
+\end{itemize}
+
+\paragraph{Demo Files.}
+\begin{itemize}
+\item  \verb=fdct_xxx_demo_basic.m= -- displays a curvelet in the spatial and frequency domain.
+\item  \verb=fdct_xxx_demo_recon.m= -- partial reconstruction using the curvelet transform.
+\item  \verb=fdct_xxx_demo_disp.m= -- displays all the curvelet coefficients of an image.
+\item  \verb=fdct_xxx_demo_denoise.m= -- image denoising via curvelet shrinkage.
+\end{itemize}
+
+There are two extra Matlab demos in \verb=fdct_wrapping_matlab= directory:
+\begin{itemize}
+\item \verb=fdct_wrapping_demo_denoise_enhanced.m= -- further techniques for image denoising.
+\item \verb=fdct_wrapping_demo_wave.m= -- wave propagation using curvelets.
+\end{itemize}
+
+An extra file \verb=fdct_usfft_path.m= is included in
+\verb=fdct_usfft_matlab= directory. This script needs to be called to
+append several subdirectories into the searching path.
+
+The Matlab code for the in-core 3d transform are located in
+\verb=fdct3d/mex=. Below is a list of the \verb=.m= files.
+
+\paragraph{Basic transform functions.}
+\begin{itemize}
+\item  \verb=fdct3d_forward.m= -- forward 3d curvelet transform.
+\item  \verb=fdct3d_inverse.m= -- inverse 3d curvelet transform.
+\item  \verb=fdct3d_param.m= -- a function which returns the location
+  of each curvelet in phase-space.
+\end{itemize}
+
+\paragraph{Demo Files}
+\begin{itemize}
+\item  \verb=fdct3d_demo_basic.m= -- displays a curvelet in the spatial and frequency domain.
+\end{itemize}
+
+Extra information for each of these functions can be obtained by
+typing (at the Matlab prompt) \verb=help= followed by the name of the
+function.
+
+%------------------------------------------
+\section{Changes}
+\begin{itemize}
+\item Fixed bug in the 2d C++ implementation for input data with odd
+  size.
+\item In 2d C++ implementation, changed the input data structure from
+  class \verb=CpxOffMat= to class \verb=CpxNumMat=. The test files are
+  changed accordingly.
+\item The mirror-extended curvelet frame has been proposed in
+  technical report `Curvelets and Wave Atoms for Mirror-Extended
+  Images' by L. Demanet and L. Ying. The implementation is
+  in the subdirectory \verb=mecv=.
+\end{itemize}
+
+%------------------------------------------
+\section{Copyright and Contact}
+CurveLab is copyright \copyright $\,$ California Institute of
+Technology, 2005-2007. For further information, please contact
+\verb=curvelab@curvelet.org=.
+
+\end{document}

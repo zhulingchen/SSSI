@@ -1,0 +1,15 @@
+;; Object CurveLab-cur/
+;; SEMANTICDB Tags save file
+(semanticdb-project-database-file "CurveLab-cur/"
+  :tables (list 
+   (semanticdb-table "makefile"
+    :major-mode 'makefile-mode
+    :tags '(("lib" function nil nil [1 181]) ("test" function nil nil [181 323]) ("matlab" function nil nil [323 438]) ("clean" function nil nil [438 620]))
+    :file "makefile"
+    :pointmax 621
+    )
+   )
+  :file "semantic.cache"
+  :semantic-tag-version "2.0pre3"
+  :semanticdb-version "2.0pre3"
+  )

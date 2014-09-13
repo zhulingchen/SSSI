@@ -1,0 +1,205 @@
+
+fdct3d_forward.cpp,274
+int fdct3d_forward_angles(4,51
+  typedef pair<int,int> intpair;intpair25,980
+  typedef pair<int,int> intpair;  typedef pair<int, intpair> inttriple;inttriple25,980
+int fdct3d_forward_wavelet(543,26888
+int fdct3d_forward_center(574,28026
+int fdct3d_forward(605,29118
+
+fdct3d_forward_mex.cpp,25
+void mexFunction(29,877
+
+fdct3d_inverse.cpp,274
+int fdct3d_inverse_angles(5,52
+  typedef pair<int,int> intpair;intpair24,936
+  typedef pair<int,int> intpair;  typedef pair<int, intpair> inttriple;inttriple24,936
+int fdct3d_inverse_wavelet(572,26713
+int fdct3d_inverse_center(602,27819
+int fdct3d_inverse(631,28840
+
+fdct3d_inverse_mex.cpp,25
+void mexFunction(30,914
+
+fdct3d_param.cpp,123
+int fdct3d_param_center(5,94
+int fdct3d_param_wavelet(22,851
+int fdct3d_param_angles(39,1549
+int fdct3d_param(146,5852
+
+fdct3d_param_mex.cpp,25
+void mexFunction(10,106
+
+tt.cpp,44
+int optionsCreate(23,822
+int main(37,1129
+
+commoninc.hpp,97
+#define _FDCT3DINC_HPP_21,795
+typedef complex<double> cpx;cpx47,1186
+inline int pow2(50,1232
+
+fdct3d.hpp,26
+#define _FDCT3D_HPP_2,21
+
+fdct3dinline.hpp,707
+#define _FDCT3DINLINE_HPP_21,798
+inline int fdct3d_fftshift(25,849
+inline int fdct3d_ifftshift(38,1342
+inline int fdct3d_window(51,1836
+inline int fdct3d_rangecompute(67,2115
+inline int fdct3d_lowpass(86,2597
+inline int fdct3d_lowpasscompute(104,2957
+inline int fdct3d_rotate_forward(149,4217
+inline int fdct3d_rotate_backward(168,4677
+inline int fdct3d_rotate_forward(186,5120
+inline int fdct3d_rotate_backward(256,7316
+inline int fdct3d_globalpou_shape(326,9733
+inline int fdct3d_globalpou(337,10076
+inline double energy(358,10781
+inline double energy(367,10990
+inline double energy(376,11205
+inline double energy(386,11427
+inline double energy(395,11636
+inline double energy(404,11851
+
+mexaux.hpp,361
+#define _MEXAUX_HPP_22,787
+inline void mex2cpp(39,1488
+inline void cpp2mex(44,1580
+inline void mex2cpp(51,1708
+inline void cpp2mex(56,1798
+inline void mex2cpp(63,1932
+inline void cpp2mex(102,2782
+inline void mex2cpp(128,3374
+inline void cpp2mex(164,4160
+template <class T> inline void mex2cpp(187,4700
+template <class T> inline void cpp2mex(198,4965
+
+nummat.hpp,781
+#define _NUMMAT_HPP_21,792
+class NumMat NumMat27,911
+  NumMat(NumMat::NumMat32,968
+  NumMat(NumMat::NumMat35,1141
+  ~NumMat(NumMat::~NumMat39,1388
+  NumMat& operator=(NumMat::operator=42,1460
+  void resize(NumMat::resize49,1789
+  const F& operator()(NumMat::operator()56,2052
+  F& operator()(NumMat::operator()59,2171
+  int m(NumMat::m62,2278
+  int n(NumMat::n63,2309
+  F* data(NumMat::data64,2340
+template <class F> inline istream& operator>>(68,2388
+template <class F> inline ostream& operator<<(79,2608
+template <class F> inline void setvalue(91,2909
+template <class F> inline void clear(98,3056
+typedef NumMat<int>  IntNumMat;IntNumMat103,3158
+typedef NumMat<double> DblNumMat;DblNumMat104,3190
+typedef NumMat<cpx>  CpxNumMat;CpxNumMat105,3224
+
+numtns.hpp,735
+#define _NUMTNS_HPP_21,792
+class NumTns NumTns26,859
+  NumTns(NumTns::NumTns30,912
+  NumTns(NumTns::NumTns33,1115
+  ~NumTns(NumTns::~NumTns37,1397
+  NumTns& operator=(NumTns::operator=40,1477
+  void resize(NumTns::resize47,1848
+  const F& operator()(NumTns::operator()54,2154
+  F& operator()(NumTns::operator()57,2304
+  int m(NumTns::m60,2442
+  int n(NumTns::n61,2473
+  int p(NumTns::p62,2504
+  F* data(NumTns::data63,2535
+template <class F> inline void setvalue(66,2575
+template <class F> inline void clear(73,2747
+typedef NumTns<int>    IntNumTns;IntNumTns78,2855
+typedef NumTns<double> DblNumTns;DblNumTns79,2889
+typedef NumTns<cpx>    CpxNumTns;CpxNumTns80,2923
+inline ostream& operator<<(83,3036
+
+numvec.hpp,755
+#define _NUMVEC_HPP_21,792
+class NumVec NumVec27,911
+  NumVec(NumVec::NumVec32,964
+  NumVec(NumVec::NumVec35,1105
+  ~NumVec(NumVec::~NumVec39,1315
+  NumVec& operator=(NumVec::operator=42,1380
+  void resize(NumVec::resize49,1668
+  const F& operator()(NumVec::operator()56,1890
+  F& operator()(NumVec::operator()59,1978
+  int m(NumVec::m62,2054
+  F* data(NumVec::data63,2085
+template <class F> inline istream& operator>>(67,2133
+template <class F> inline ostream& operator<<(77,2313
+template <class F> inline void setvalue(86,2501
+template <class F> inline void clear(92,2621
+typedef NumVec<int>    IntNumVec;IntNumVec97,2723
+typedef NumVec<double> DblNumVec;DblNumVec98,2757
+typedef NumVec<cpx>    CpxNumVec;CpxNumVec99,2791
+
+offmat.hpp,781
+#define _OFFMAT_HPP_21,792
+class OffMat OffMat27,911
+  OffMat(OffMat::OffMat33,982
+  OffMat(OffMat::OffMat36,1175
+  ~OffMat(OffMat::~OffMat40,1442
+  OffMat& operator=(OffMat::operator=43,1514
+  void resize(OffMat::resize50,1868
+  const F& operator()(OffMat::operator()57,2153
+  F& operator()(OffMat::operator()60,2290
+  int m(OffMat::m63,2414
+  int n(OffMat::n64,2445
+  int s(OffMat::s65,2476
+  int t(OffMat::t66,2507
+  F* data(OffMat::data67,2538
+template <class F> inline ostream& operator<<(71,2587
+template <class F> inline void setvalue(82,2890
+template <class F> inline void clear(89,3073
+typedef OffMat<int>    IntOffMat;IntOffMat94,3175
+typedef OffMat<double> DblOffMat;DblOffMat95,3209
+typedef OffMat<cpx>    CpxOffMat;CpxOffMat96,3243
+
+offtns.hpp,816
+#define _OFFTNS_HPP_21,792
+class OffTns OffTns26,859
+  OffTns(OffTns::OffTns32,938
+  OffTns(OffTns::OffTns35,1171
+  ~OffTns(OffTns::~OffTns39,1483
+  OffTns& operator=(OffTns::operator=42,1563
+  void resize(OffTns::resize49,1959
+  const F& operator()(OffTns::operator()56,2288
+  F& operator()(OffTns::operator()59,2464
+  int m(OffTns::m62,2628
+  int n(OffTns::n63,2659
+  int p(OffTns::p64,2690
+  int s(OffTns::s65,2721
+  int t(OffTns::t66,2752
+  int u(OffTns::u67,2783
+  F* data(OffTns::data68,2814
+template <class F> inline void setvalue(71,2854
+template <class F> inline void clear(78,3056
+typedef OffTns<int>    IntOffTns;IntOffTns83,3164
+typedef OffTns<double> DblOffTns;DblOffTns84,3198
+typedef OffTns<cpx>    CpxOffTns;CpxOffTns85,3232
+inline ostream& operator<<(88,3345
+
+offvec.hpp,731
+#define _OFFVEC_HPP_22,793
+class OffVec OffVec28,912
+  OffVec(OffVec::OffVec34,1011
+  OffVec(OffVec::OffVec37,1162
+  ~OffVec(OffVec::~OffVec41,1382
+  OffVec& operator=(OffVec::operator=44,1447
+  void resize(OffVec::resize51,1747
+  const F& operator()(OffVec::operator()58,1980
+  F& operator()(OffVec::operator()61,2075
+  int m(OffVec::m64,2158
+  int s(OffVec::s65,2189
+  F* data(OffVec::data66,2220
+template <class F> inline ostream& operator<<(82,2454
+template <class F> inline void setvalue(92,2725
+template <class F> inline void clear(98,2861
+typedef OffVec<int>    IntOffVec;IntOffVec103,2963
+typedef OffVec<double> DblOffVec;DblOffVec104,2997
+typedef OffVec<cpx>    CpxOffVec;CpxOffVec105,3031

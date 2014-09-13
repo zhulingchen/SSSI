@@ -1,0 +1,5 @@
+-m 512
+-n 512
+-nbscales 6
+-nbangles_coarse 8
+-ac 0

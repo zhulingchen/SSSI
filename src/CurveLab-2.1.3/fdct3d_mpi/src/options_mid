@@ -1,0 +1,6 @@
+-m 512
+-n 512
+-p 512
+-b 8
+-nbscales 7
+-nbdstz_coarse 4

@@ -1,0 +1,13 @@
+The parallel implementation in this directory use two extra packages:
+MPI and PETSc. A free MPI implementation can be found at
+http://www-unix.mcs.anl.gov/mpi/, while PetSc can be downloaded at
+http://www-unix.mcs.anl.gov/petsc/petsc-2/.
+
+To compile the parallel 3d implementation,
+1. set PETSC_DIR to be the installation directory of PETSc
+2. In file makefile.opt, set variables FFTW_DIR and MEX 
+3. type 'make libfdct3d.a' to compile the library
+4. type 'make test' to compile the test file
+5. to run the code on a single processor, type './test -options_file options_sml'
+6. to run the code in parallel, see the manual page of mpirun
+

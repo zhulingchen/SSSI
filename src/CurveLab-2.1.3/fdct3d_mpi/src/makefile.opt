@@ -1,0 +1,47 @@
+# ----------------------------machine dependent file
+MODE = optim
+
+# extern library and program variables
+FFTW_DIR = 	/home/lexing/pkge/fftw-2.1.5
+MEX 		=	mex
+
+#include ${PETSC_DIR}/bmake/variables
+include ${PETSC_DIR}/bmake/common/variables
+
+# compiler and linker variable 
+INCLUDES =	-I${FFTW_DIR}/fftw	 ${PETSC_INCLUDE}
+#	-I/usr/include/lam
+
+LIBS = 		-L${FFTW_DIR}/fftw/.libs -lfftw \
+	-Wl,-rpath,${PETSC_DIR}/lib/lib${BOPT}/${PETSC_ARCH} ${PETSC_LIB}
+
+AR = ar
+ARFLAGS = -r
+
+CC  = gcc
+CXX = g++
+
+# Petsc related
+ifeq ($(MODE),debug)	
+	BOPT = g_c++
+else
+	BOPT = O_c++
+endif
+
+PETSC_CXXFLAGS	=  -DPETSC_USE_DEBUG  -DPETSC_USE_LOG -DPETSC_USE_STACK
+#-DPETSC_USE_COMPLEX
+
+CXXFLAGS = -g -Wall -W -Wno-sign-compare -Wno-unused-label -MMD $(PETSC_CXXFLAGS) ${INCLUDES}
+
+ifeq ($(MODE),debug)
+else
+	CXXFLAGS += -O3 -DNDEBUG
+endif
+
+LDFLAGS = ${LIBS}
+
+RANLIB = ranlib
+
+# rules
+%.o: %.cpp
+	$(CXX) $(CXXFLAGS) -c $*.cpp

@@ -1,0 +1,192 @@
+This is pdfTeX, Version 3.1415926-2.5-1.40.14 (TeX Live 2013) (format=mex 2013.5.30)  31 JUL 2014 18:22
+entering extended mode
+ restricted \write18 enabled.
+ %&-line parsing enabled.
+**fdct_wrapping_mex.cpp -I~/Downloads/fftw-2.1.5/fftw libfdct_wrapping.a libfft
+w.a
+(./fdct_wrapping_mex.cpp
+This is MeX  Version 1.05  18 XII 1993  (B. Jackowski & M. Ry\'cko)
+! You can't use `macro parameter character #' in vertical mode.
+l.6 #
+     include "mex.h"
+? q
+OK, entering \batchmode...
+
+! Interruption.
+<to be read again> 
+                   i
+l.6 #i
+      nclude "mex.h"
+? q
+OK, entering \batchmode...
+! You can't use `macro parameter character #' in horizontal mode.
+l.7 #
+     include "matrix.h"
+Sorry, but I'm not programmed to handle this case;
+I'll just pretend that you didn't ask for it.
+If you're in the wrong mode, you might be able to
+return to the right one by typing `I}' or `I$' or `I\par'.
+
+! You can't use `macro parameter character #' in vertical mode.
+l.9 #
+     include "fdct_wrapping.hpp"
+Sorry, but I'm not programmed to handle this case;
+I'll just pretend that you didn't ask for it.
+If you're in the wrong mode, you might be able to
+return to the right one by typing `I}' or `I$' or `I\par'.
+
+! Missing $ inserted.
+<inserted text> 
+                $
+<to be read again> 
+                   _
+l.9 #include "fdct_
+                   wrapping.hpp"
+I've inserted a begin-math/end-math symbol since I think
+you left one out. Proceed, with fingers crossed.
+
+! Missing $ inserted.
+<inserted text> 
+                $
+<to be read again> 
+                   \par 
+l.10 
+     
+I've inserted a begin-math/end-math symbol since I think
+you left one out. Proceed, with fingers crossed.
+
+! You can't use `macro parameter character #' in vertical mode.
+l.11 #
+      include "mexaux.hpp"
+Sorry, but I'm not programmed to handle this case;
+I'll just pretend that you didn't ask for it.
+If you're in the wrong mode, you might be able to
+return to the right one by typing `I}' or `I$' or `I\par'.
+
+! Missing $ inserted.
+<inserted text> 
+                $
+<to be read again> 
+                   _
+l.14 using namespace fdct_
+                          wrapping_ns;
+I've inserted a begin-math/end-math symbol since I think
+you left one out. Proceed, with fingers crossed.
+
+! Missing $ inserted.
+<inserted text> 
+                $
+<to be read again> 
+                   \par 
+l.15 
+     
+I've inserted a begin-math/end-math symbol since I think
+you left one out. Proceed, with fingers crossed.
+
+! Missing $ inserted.
+<inserted text> 
+                $
+<to be read again> 
+                   _
+l.17 extern void _
+                  main();
+I've inserted a begin-math/end-math symbol since I think
+you left one out. Proceed, with fingers crossed.
+
+! Missing $ inserted.
+<inserted text> 
+                $
+<to be read again> 
+                   \par 
+l.18 
+     
+I've inserted a begin-math/end-math symbol since I think
+you left one out. Proceed, with fingers crossed.
+
+! Missing $ inserted.
+<inserted text> 
+                $
+<to be read again> 
+                   _
+l.29   int nbangles_
+                    coarse; mex2cpp(prhs[3], nbangles_coarse);
+I've inserted a begin-math/end-math symbol since I think
+you left one out. Proceed, with fingers crossed.
+
+! Missing $ inserted.
+<inserted text> 
+                $
+<to be read again> 
+                   \par 
+l.32 
+     
+I've inserted a begin-math/end-math symbol since I think
+you left one out. Proceed, with fingers crossed.
+
+
+Overfull \hbox (124.8723pt too wide) in paragraph at lines 26--32
+\tenrm nbangles$[]\teni oarse\tenrm ; \teni mex\tenrm 2\teni cpp\tenrm (\teni p
+rhs\tenrm [3]\teni ; nbangles[]oarse\tenrm ); \teni intallcurvelets\tenrm ; \te
+ni mex\tenrm 2\teni cpp\tenrm (\teni prhs\tenrm [4]\teni ; allcurvelets\tenrm )
+; \teni CpxNumMatx\tenrm ; \teni mex\tenrm 2\teni cpp\tenrm (\teni prhs\tenrm [
+5]\teni ; x\tenrm );$ |
+
+\hbox(7.5+2.5)x469.75499
+.\tenrm n
+.\kern-0.27779
+.\tenrm b
+.\tenrm a
+.\tenrm n
+.etc.
+
+! Missing $ inserted.
+<inserted text> 
+                $
+<to be read again> 
+                   _
+l.34   fdct_
+            wrapping(m, n, nbscales, nbangles_coarse, allcurvelets, x, c);
+I've inserted a begin-math/end-math symbol since I think
+you left one out. Proceed, with fingers crossed.
+
+! Missing $ inserted.
+<inserted text> 
+                $
+<to be read again> 
+                   \par 
+l.35 
+     
+I've inserted a begin-math/end-math symbol since I think
+you left one out. Proceed, with fingers crossed.
+
+
+Overfull \hbox (55.2161pt too wide) in paragraph at lines 33--35
+[]\tenrm vector< vec-tor<CpxNumMat> > c; //vec-tor<int> extra; fdct$[]\teni rap
+ping\tenrm (\teni m; n; nbscales; nbangles[]oarse; allcurvelets; x; c\tenrm );$
+ |
+
+\hbox(7.5+2.5)x469.75499, glue set - 1.0
+.\hbox(0.0+0.0)x20.0
+.\tenrm v
+.\kern-0.27779
+.\tenrm e
+.\tenrm c
+.etc.
+
+)
+! Missing $ inserted.
+<inserted text> 
+                $
+<to be read again> 
+                   _
+<*> ....cpp -I~/Downloads/fftw-2.1.5/fftw libfdct_
+                                                  wrapping.a libfftw.a
+I've inserted a begin-math/end-math symbol since I think
+you left one out. Proceed, with fingers crossed.
+
+! Emergency stop.
+<*> ...ftw-2.1.5/fftw libfdct_wrapping.a libfftw.a
+                                                  
+*** (job aborted, no legal \end found)
+
+No pages of output.

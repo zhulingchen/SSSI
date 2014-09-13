@@ -1,0 +1,882 @@
+	.version 1.4
+	.target sm_10, map_f64_to_f32
+	// compiled with C:\CUDA\v3.2\bin\/../open64/lib//be.exe
+	// nvopencc 3.2 built on 2010-11-04
+
+	//-----------------------------------------------------------
+	// Compiling C:/Users/skozola/AppData/Local/Temp/tmpxft_0000069c_00000000-11_rtm2d_kernel.cpp3.i (C:/Users/skozola/AppData/Local/Temp/ccBI#.a03568)
+	//-----------------------------------------------------------
+
+	//-----------------------------------------------------------
+	// Options:
+	//-----------------------------------------------------------
+	//  Target:ptx, ISA:sm_10, Endian:little, Pointer Size:64
+	//  -O3	(Optimization level)
+	//  -g0	(Debug level)
+	//  -m2	(Report advisories)
+	//-----------------------------------------------------------
+
+	.file	1	"C:/Users/skozola/AppData/Local/Temp/tmpxft_0000069c_00000000-10_rtm2d_kernel.cudafe2.gpu"
+	.file	2	"C:/Program Files (x86)/Microsoft Visual Studio 9.0/VC/include\crtdefs.h"
+	.file	3	"C:\CUDA\v3.2\bin\/../include\crt/device_runtime.h"
+	.file	4	"C:\CUDA\v3.2\bin\/../include\host_defines.h"
+	.file	5	"C:\CUDA\v3.2\bin\/../include\builtin_types.h"
+	.file	6	"c:\cuda\v3.2\include\device_types.h"
+	.file	7	"c:\cuda\v3.2\include\driver_types.h"
+	.file	8	"c:\cuda\v3.2\include\surface_types.h"
+	.file	9	"c:\cuda\v3.2\include\texture_types.h"
+	.file	10	"c:\cuda\v3.2\include\vector_types.h"
+	.file	11	"c:\cuda\v3.2\include\builtin_types.h"
+	.file	12	"c:\cuda\v3.2\include\host_defines.h"
+	.file	13	"C:\CUDA\v3.2\bin\/../include\device_launch_parameters.h"
+	.file	14	"c:\cuda\v3.2\include\crt\storage_class.h"
+	.file	15	"C:/Program Files (x86)/Microsoft Visual Studio 9.0/VC/include\time.h"
+	.file	16	"c:\cuda\v3.2\include\texture_fetch_functions.h"
+	.file	17	"C:\CUDA\v3.2\bin\/../include\common_functions.h"
+	.file	18	"c:\cuda\v3.2\include\math_functions.h"
+	.file	19	"c:\cuda\v3.2\include\math_constants.h"
+	.file	20	"c:\cuda\v3.2\include\device_functions.h"
+	.file	21	"c:\cuda\v3.2\include\sm_11_atomic_functions.h"
+	.file	22	"c:\cuda\v3.2\include\sm_12_atomic_functions.h"
+	.file	23	"c:\cuda\v3.2\include\sm_13_double_functions.h"
+	.file	24	"c:\cuda\v3.2\include\sm_20_atomic_functions.h"
+	.file	25	"c:\cuda\v3.2\include\sm_20_intrinsics.h"
+	.file	26	"c:\cuda\v3.2\include\surface_functions.h"
+	.file	27	"c:\cuda\v3.2\include\math_functions_dbl_ptx1.h"
+	.file	28	"rtm2d_kernel.cu"
+
+
+	.entry _Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i (
+		.param .u64 __cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_fdm1,
+		.param .u64 __cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_fdm2,
+		.param .u64 __cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_fdm3,
+		.param .u64 __cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_boundary,
+		.param .u64 __cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_a,
+		.param .u64 __cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_b,
+		.param .s32 __cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_nz,
+		.param .s32 __cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_nx,
+		.param .s32 __cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_bz,
+		.param .s32 __cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_it,
+		.param .u64 __cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_data,
+		.param .s32 __cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_nt)
+	{
+	.reg .u16 %rh<14>;
+	.reg .u32 %r<197>;
+	.reg .u64 %rd<151>;
+	.reg .f64 %fd<125>;
+	.reg .pred %p<51>;
+	.loc	28	6	0
+$LDWbegin__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i:
+	ld.param.s32 	%r1, [__cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_nz];
+	shr.s32 	%r2, %r1, 31;
+	mov.s32 	%r3, 15;
+	and.b32 	%r4, %r2, %r3;
+	add.s32 	%r5, %r4, %r1;
+	shr.s32 	%r6, %r5, 4;
+	mul.lo.s32 	%r7, %r6, 16;
+	sub.s32 	%r8, %r1, %r7;
+	shr.s32 	%r9, %r1, 31;
+	mov.s32 	%r10, 15;
+	and.b32 	%r11, %r9, %r10;
+	add.s32 	%r12, %r11, %r1;
+	shr.s32 	%r13, %r12, 4;
+	mov.s32 	%r14, 0;
+	setp.gt.s32 	%p1, %r8, %r14;
+	add.s32 	%r15, %r13, 1;
+	selp.s32 	%r16, %r15, %r13, %p1;
+	mov.s32 	%r17, 0;
+	setp.gt.s32 	%p2, %r16, %r17;
+	@!%p2 bra 	$Lt_0_28162;
+	mov.u16 	%rh1, %ctaid.y;
+	mov.u16 	%rh2, %ntid.y;
+	mul.wide.u16 	%r18, %rh1, %rh2;
+	cvt.u32.u16 	%r19, %tid.y;
+	add.u32 	%r20, %r19, %r18;
+	ld.param.s32 	%r21, [__cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_nx];
+	shr.s32 	%r22, %r21, 31;
+	mov.s32 	%r23, 15;
+	and.b32 	%r24, %r22, %r23;
+	add.s32 	%r25, %r24, %r21;
+	shr.s32 	%r26, %r25, 4;
+	mul.lo.s32 	%r27, %r26, 16;
+	sub.s32 	%r28, %r21, %r27;
+	shr.s32 	%r29, %r21, 31;
+	mov.s32 	%r30, 15;
+	and.b32 	%r31, %r29, %r30;
+	add.s32 	%r32, %r31, %r21;
+	shr.s32 	%r33, %r32, 4;
+	mov.s32 	%r34, 0;
+	setp.gt.s32 	%p3, %r28, %r34;
+	add.s32 	%r35, %r33, 1;
+	selp.s32 	%r36, %r35, %r33, %p3;
+	mov.s32 	%r37, %r16;
+	mov.s32 	%r38, 0;
+	setp.gt.s32 	%p4, %r36, %r38;
+	mov.s32 	%r39, 0;
+	mov.s32 	%r40, %r37;
+$Lt_0_28674:
+ //<loop> Loop body line 6, nesting depth: 1, estimated iterations: unknown
+	@!%p4 bra 	$Lt_0_28930;
+ //<loop> Part of loop body line 6, head labeled $Lt_0_28674
+	mov.u16 	%rh3, %ctaid.x;
+	mov.u16 	%rh4, %ntid.x;
+	mul.wide.u16 	%r41, %rh3, %rh4;
+	mul.lo.s32 	%r42, %r39, 16;
+	cvt.u32.u16 	%r43, %tid.x;
+	add.u32 	%r44, %r43, %r41;
+	add.s32 	%r45, %r42, %r44;
+	mov.s32 	%r46, %r36;
+	ld.param.s32 	%r21, [__cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_nx];
+	sub.s32 	%r47, %r21, 20;
+	ld.param.s32 	%r1, [__cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_nz];
+	sub.s32 	%r48, %r1, 20;
+	ld.param.s32 	%r49, [__cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_bz];
+	setp.ge.s32 	%p5, %r49, %r48;
+	mov.s32 	%r50, %r20;
+	selp.s32 	%r51, 1, 0, %p5;
+	mul.lo.s32 	%r52, %r36, 16;
+	setp.lt.s32 	%p6, %r45, %r1;
+	setp.le.s32 	%p7, %r48, %r45;
+	add.s32 	%r53, %r52, %r20;
+	selp.s32 	%r54, 1, 0, %p6;
+	selp.s32 	%r55, 1, 0, %p7;
+	and.b32 	%r56, %r51, %r55;
+	and.b32 	%r57, %r54, %r56;
+ //<loop> Part of loop body line 6, head labeled $Lt_0_28674
+	mov.s32 	%r58, %r46;
+$Lt_0_29442:
+ //<loop> Loop body line 6, nesting depth: 2, estimated iterations: unknown
+	mov.u32 	%r59, 19;
+	set.le.u32.u32 	%r60, %r50, %r59;
+	neg.s32 	%r61, %r60;
+	and.b32 	%r62, %r54, %r61;
+	mov.u32 	%r63, 0;
+	setp.eq.s32 	%p8, %r62, %r63;
+	@%p8 bra 	$Lt_0_29698;
+ //<loop> Part of loop body line 6, head labeled $Lt_0_29442
+	ld.param.s32 	%r1, [__cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_nz];
+	.loc	28	26	0
+	mul.lo.s32 	%r64, %r50, %r1;
+	add.s32 	%r65, %r45, %r64;
+	cvt.s64.s32 	%rd1, %r65;
+	ld.param.u64 	%rd2, [__cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_boundary];
+	cvt.s64.s32 	%rd3, %r50;
+	mul.wide.s32 	%rd4, %r50, 8;
+	add.u64 	%rd5, %rd2, %rd4;
+	mul.wide.s32 	%rd6, %r65, 8;
+	ld.param.u64 	%rd7, [__cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_fdm1];
+	add.u64 	%rd8, %rd7, %rd6;
+	ld.global.f64 	%fd1, [%rd5+0];
+	ld.global.f64 	%fd2, [%rd8+0];
+	mul.f64 	%fd3, %fd1, %fd2;
+	st.global.f64 	[%rd8+0], %fd3;
+	.loc	28	27	0
+	ld.param.u64 	%rd9, [__cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_fdm2];
+	add.u64 	%rd10, %rd9, %rd6;
+	ld.global.f64 	%fd4, [%rd5+0];
+	ld.global.f64 	%fd5, [%rd10+0];
+	mul.f64 	%fd6, %fd4, %fd5;
+	st.global.f64 	[%rd10+0], %fd6;
+$Lt_0_29698:
+ //<loop> Part of loop body line 6, head labeled $Lt_0_29442
+	set.le.u32.s32 	%r66, %r47, %r50;
+	neg.s32 	%r67, %r66;
+	.loc	28	6	0
+	ld.param.s32 	%r21, [__cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_nx];
+	.loc	28	27	0
+	set.lt.u32.s32 	%r68, %r50, %r21;
+	neg.s32 	%r69, %r68;
+	and.b32 	%r70, %r67, %r69;
+	and.b32 	%r71, %r54, %r70;
+	mov.u32 	%r72, 0;
+	setp.eq.s32 	%p9, %r71, %r72;
+	@%p9 bra 	$Lt_0_30210;
+ //<loop> Part of loop body line 6, head labeled $Lt_0_29442
+	.loc	28	6	0
+	ld.param.s32 	%r1, [__cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_nz];
+	.loc	28	32	0
+	mul.lo.s32 	%r64, %r50, %r1;
+	add.s32 	%r65, %r45, %r64;
+	cvt.s64.s32 	%rd11, %r65;
+	mul.wide.s32 	%rd6, %r65, 8;
+	ld.param.u64 	%rd12, [__cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_boundary];
+	.loc	28	6	0
+	ld.param.s32 	%r21, [__cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_nx];
+	.loc	28	32	0
+	sub.s32 	%r73, %r21, %r50;
+	cvt.s64.s32 	%rd13, %r73;
+	mul.wide.s32 	%rd14, %r73, 8;
+	add.u64 	%rd15, %rd12, %rd14;
+	ld.param.u64 	%rd16, [__cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_fdm1];
+	add.u64 	%rd8, %rd16, %rd6;
+	ld.global.f64 	%fd7, [%rd15+-8];
+	ld.global.f64 	%fd8, [%rd8+0];
+	mul.f64 	%fd9, %fd7, %fd8;
+	st.global.f64 	[%rd8+0], %fd9;
+	.loc	28	33	0
+	ld.param.u64 	%rd17, [__cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_fdm2];
+	add.u64 	%rd10, %rd17, %rd6;
+	ld.global.f64 	%fd10, [%rd15+-8];
+	ld.global.f64 	%fd11, [%rd10+0];
+	mul.f64 	%fd12, %fd10, %fd11;
+	st.global.f64 	[%rd10+0], %fd12;
+$Lt_0_30210:
+ //<loop> Part of loop body line 6, head labeled $Lt_0_29442
+	mov.u32 	%r74, 0;
+	setp.eq.s32 	%p10, %r57, %r74;
+	@%p10 bra 	$Lt_0_30722;
+ //<loop> Part of loop body line 6, head labeled $Lt_0_29442
+	.loc	28	6	0
+	ld.param.s32 	%r1, [__cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_nz];
+	.loc	28	38	0
+	mul.lo.s32 	%r64, %r50, %r1;
+	add.s32 	%r65, %r45, %r64;
+	cvt.s64.s32 	%rd18, %r65;
+	mul.wide.s32 	%rd6, %r65, 8;
+	ld.param.u64 	%rd19, [__cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_boundary];
+	sub.s32 	%r75, %r1, %r45;
+	cvt.s64.s32 	%rd20, %r75;
+	mul.wide.s32 	%rd21, %r75, 8;
+	add.u64 	%rd22, %rd19, %rd21;
+	ld.param.u64 	%rd23, [__cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_fdm1];
+	add.u64 	%rd8, %rd23, %rd6;
+	ld.global.f64 	%fd13, [%rd22+-8];
+	ld.global.f64 	%fd14, [%rd8+0];
+	mul.f64 	%fd15, %fd13, %fd14;
+	st.global.f64 	[%rd8+0], %fd15;
+	.loc	28	39	0
+	ld.param.u64 	%rd24, [__cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_fdm2];
+	add.u64 	%rd10, %rd24, %rd6;
+	ld.global.f64 	%fd16, [%rd22+-8];
+	ld.global.f64 	%fd17, [%rd10+0];
+	mul.f64 	%fd18, %fd16, %fd17;
+	st.global.f64 	[%rd10+0], %fd18;
+$Lt_0_30722:
+ //<loop> Part of loop body line 6, head labeled $Lt_0_29442
+	add.s32 	%r50, %r50, 16;
+	setp.ne.s32 	%p11, %r50, %r53;
+	@%p11 bra 	$Lt_0_29442;
+$Lt_0_28930:
+ //<loop> Part of loop body line 6, head labeled $Lt_0_28674
+	add.s32 	%r39, %r39, 1;
+	setp.ne.s32 	%p12, %r16, %r39;
+	@%p12 bra 	$Lt_0_28674;
+$Lt_0_28162:
+	@!%p2 bra 	$Lt_0_38402;
+	mov.u16 	%rh5, %ctaid.y;
+	mov.u16 	%rh6, %ntid.y;
+	mul.wide.u16 	%r18, %rh5, %rh6;
+	cvt.u32.u16 	%r76, %tid.y;
+	add.u32 	%r20, %r76, %r18;
+	ld.param.s32 	%r21, [__cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_nx];
+	shr.s32 	%r77, %r21, 31;
+	mov.s32 	%r78, 15;
+	and.b32 	%r79, %r77, %r78;
+	add.s32 	%r80, %r79, %r21;
+	shr.s32 	%r81, %r80, 4;
+	mul.lo.s32 	%r82, %r81, 16;
+	sub.s32 	%r28, %r21, %r82;
+	shr.s32 	%r83, %r21, 31;
+	mov.s32 	%r84, 15;
+	and.b32 	%r85, %r83, %r84;
+	add.s32 	%r86, %r85, %r21;
+	shr.s32 	%r33, %r86, 4;
+	mov.s32 	%r87, 0;
+	setp.gt.s32 	%p3, %r28, %r87;
+	add.s32 	%r35, %r33, 1;
+	selp.s32 	%r36, %r35, %r33, %p3;
+	mov.s32 	%r88, %r16;
+	mov.s32 	%r89, 0;
+	setp.gt.s32 	%p4, %r36, %r89;
+	mov.s32 	%r90, 0;
+	mov.s32 	%r91, %r88;
+$Lt_0_32258:
+ //<loop> Loop body line 39, nesting depth: 1, estimated iterations: unknown
+	@!%p4 bra 	$Lt_0_32514;
+ //<loop> Part of loop body line 39, head labeled $Lt_0_32258
+	mov.u16 	%rh7, %ctaid.x;
+	mov.u16 	%rh8, %ntid.x;
+	mul.wide.u16 	%r41, %rh7, %rh8;
+	mul.lo.s32 	%r92, %r90, 16;
+	cvt.u32.u16 	%r93, %tid.x;
+	add.u32 	%r44, %r93, %r41;
+	add.s32 	%r94, %r92, %r44;
+	mov.s32 	%r95, %r36;
+	ld.param.s32 	%r21, [__cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_nx];
+	sub.s32 	%r96, %r21, 1;
+	ld.param.s32 	%r97, [__cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_bz];
+	.loc	28	6	0
+	ld.param.s32 	%r1, [__cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_nz];
+	.loc	28	39	0
+	setp.eq.s32 	%p13, %r97, %r1;
+	sub.s32 	%r98, %r1, 2;
+	selp.s32 	%r99, %r98, %r97, %p13;
+	mov.s32 	%r100, %r20;
+	mul.lo.s32 	%r52, %r36, 16;
+	setp.lt.s32 	%p14, %r94, %r97;
+	mov.s32 	%r101, 0;
+	setp.eq.s32 	%p15, %r94, %r101;
+	setp.gt.s32 	%p16, %r99, %r94;
+	mov.s32 	%r102, 0;
+	setp.gt.s32 	%p17, %r94, %r102;
+	add.s32 	%r53, %r52, %r20;
+	selp.s32 	%r103, 1, 0, %p14;
+	selp.s32 	%r104, 1, 0, %p15;
+	selp.s32 	%r105, 1, 0, %p16;
+	selp.s32 	%r106, 1, 0, %p17;
+	and.b32 	%r107, %r105, %r106;
+ //<loop> Part of loop body line 39, head labeled $Lt_0_32258
+	mov.s32 	%r108, %r95;
+$Lt_0_33026:
+ //<loop> Loop body line 39, nesting depth: 2, estimated iterations: unknown
+	ld.param.s32 	%r21, [__cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_nx];
+	setp.lt.s32 	%p18, %r100, %r21;
+	selp.s32 	%r109, 1, 0, %p18;
+	and.b32 	%r110, %r109, %r103;
+	mov.u32 	%r111, 0;
+	setp.eq.s32 	%p19, %r110, %r111;
+	@%p19 bra 	$Lt_0_33282;
+ //<loop> Part of loop body line 39, head labeled $Lt_0_33026
+	.loc	28	6	0
+	ld.param.s32 	%r1, [__cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_nz];
+	.loc	28	59	0
+	mul.lo.s32 	%r112, %r100, %r1;
+	add.s32 	%r113, %r94, %r112;
+	cvt.s64.s32 	%rd25, %r113;
+	mul.wide.s32 	%rd26, %r113, 8;
+	ld.param.u64 	%rd27, [__cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_fdm3];
+	add.u64 	%rd28, %rd27, %rd26;
+	ld.global.f64 	%fd19, [%rd28+0];
+	ld.param.u64 	%rd29, [__cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_fdm1];
+	add.u64 	%rd30, %rd29, %rd26;
+	ld.global.f64 	%fd20, [%rd30+0];
+	sub.f64 	%fd21, %fd19, %fd20;
+	st.global.f64 	[%rd28+0], %fd21;
+$Lt_0_33282:
+ //<loop> Part of loop body line 39, head labeled $Lt_0_33026
+	.loc	28	62	0
+	@!%p17 bra 	$Lt_0_43522;
+ //<loop> Part of loop body line 39, head labeled $Lt_0_33026
+	mov.s32 	%r114, 0;
+	setp.gt.s32 	%p20, %r100, %r114;
+	mov.pred 	%p21, %p20;
+	mov.pred 	%p22, %p23;
+	@!%p16 bra 	$Lt_0_43778;
+ //<loop> Part of loop body line 39, head labeled $Lt_0_33026
+	setp.gt.s32 	%p24, %r96, %r100;
+	mov.pred 	%p25, %p24;
+	mov.pred 	%p26, %p27;
+	@!%p20 bra 	$Lt_0_44034;
+ //<loop> Part of loop body line 39, head labeled $Lt_0_33026
+	@!%p24 bra 	$Lt_0_44034;
+ //<loop> Part of loop body line 39, head labeled $Lt_0_33026
+	.loc	28	6	0
+	ld.param.s32 	%r1, [__cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_nz];
+	.loc	28	63	0
+	mul.lo.s32 	%r115, %r100, %r1;
+	add.s32 	%r116, %r100, 1;
+	sub.s32 	%r117, %r100, 1;
+	add.s32 	%r118, %r115, %r94;
+	mul.lo.s32 	%r119, %r116, %r1;
+	mul.lo.s32 	%r120, %r117, %r1;
+	cvt.s64.s32 	%rd31, %r118;
+	mul.wide.s32 	%rd32, %r118, 8;
+	ld.param.u64 	%rd33, [__cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_fdm2];
+	add.u64 	%rd34, %rd33, %rd32;
+	ld.param.u64 	%rd35, [__cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_fdm1];
+	add.u64 	%rd36, %rd32, %rd35;
+	ld.param.u64 	%rd37, [__cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_a];
+	add.u64 	%rd38, %rd32, %rd37;
+	add.s32 	%r121, %r119, %r94;
+	cvt.s64.s32 	%rd39, %r121;
+	mul.wide.s32 	%rd40, %r121, 8;
+	add.s32 	%r122, %r120, %r94;
+	cvt.s64.s32 	%rd41, %r122;
+	mul.wide.s32 	%rd42, %r122, 8;
+	ld.global.f64 	%fd22, [%rd34+0];
+	ld.global.f64 	%fd23, [%rd36+0];
+	ld.param.u64 	%rd43, [__cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_b];
+	add.u64 	%rd44, %rd43, %rd32;
+	ld.global.f64 	%fd24, [%rd44+0];
+	mad.rn.f64 	%fd25, %fd23, %fd24, %fd22;
+	add.u64 	%rd45, %rd40, %rd35;
+	ld.global.f64 	%fd26, [%rd45+0];
+	add.u64 	%rd46, %rd40, %rd37;
+	ld.global.f64 	%fd27, [%rd46+0];
+	mad.rn.f64 	%fd28, %fd26, %fd27, %fd25;
+	add.u64 	%rd47, %rd42, %rd35;
+	ld.global.f64 	%fd29, [%rd47+0];
+	add.u64 	%rd48, %rd42, %rd37;
+	ld.global.f64 	%fd30, [%rd48+0];
+	mad.rn.f64 	%fd31, %fd29, %fd30, %fd28;
+	ld.global.f64 	%fd32, [%rd36+8];
+	ld.global.f64 	%fd33, [%rd38+8];
+	mad.rn.f64 	%fd34, %fd32, %fd33, %fd31;
+	ld.global.f64 	%fd35, [%rd36+-8];
+	ld.global.f64 	%fd36, [%rd38+-8];
+	mad.rn.f64 	%fd37, %fd35, %fd36, %fd34;
+	st.global.f64 	[%rd34+0], %fd37;
+	bra.uni 	$Lt_0_44034;
+$Lt_0_43522:
+ //<loop> Part of loop body line 39, head labeled $Lt_0_33026
+	setp.gt.s32 	%p24, %r96, %r100;
+	mov.pred 	%p25, %p24;
+	mov.pred 	%p28, %p27;
+	mov.s32 	%r123, 0;
+	setp.gt.s32 	%p20, %r100, %r123;
+	mov.pred 	%p21, %p20;
+	mov.pred 	%p29, %p23;
+	bra.uni 	$Lt_0_44034;
+$Lt_0_43778:
+ //<loop> Part of loop body line 39, head labeled $Lt_0_33026
+	setp.gt.s32 	%p24, %r96, %r100;
+	mov.pred 	%p25, %p24;
+	mov.pred 	%p30, %p27;
+$Lt_0_44034:
+$L_0_27138:
+ //<loop> Part of loop body line 39, head labeled $Lt_0_33026
+	selp.s32 	%r124, 1, 0, %p21;
+	selp.s32 	%r125, 1, 0, %p25;
+	and.b32 	%r126, %r124, %r104;
+	and.b32 	%r127, %r125, %r126;
+	mov.u32 	%r128, 0;
+	setp.eq.s32 	%p31, %r127, %r128;
+	@%p31 bra 	$Lt_0_33794;
+ //<loop> Part of loop body line 39, head labeled $Lt_0_33026
+	.loc	28	6	0
+	ld.param.s32 	%r1, [__cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_nz];
+	.loc	28	71	0
+	mul.lo.s32 	%r115, %r100, %r1;
+	add.s32 	%r116, %r100, 1;
+	sub.s32 	%r117, %r100, 1;
+	mul.lo.s32 	%r119, %r116, %r1;
+	mul.lo.s32 	%r120, %r117, %r1;
+	cvt.s64.s32 	%rd49, %r115;
+	mul.wide.s32 	%rd50, %r115, 8;
+	ld.param.u64 	%rd51, [__cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_fdm2];
+	add.u64 	%rd52, %rd51, %rd50;
+	ld.param.u64 	%rd35, [__cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_fdm1];
+	add.u64 	%rd53, %rd50, %rd35;
+	cvt.s64.s32 	%rd54, %r119;
+	mul.wide.s32 	%rd55, %r119, 8;
+	cvt.s64.s32 	%rd56, %r120;
+	mul.wide.s32 	%rd57, %r120, 8;
+	ld.param.u64 	%rd37, [__cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_a];
+	ld.global.f64 	%fd38, [%rd52+0];
+	ld.global.f64 	%fd39, [%rd53+0];
+	ld.param.u64 	%rd58, [__cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_b];
+	add.u64 	%rd59, %rd58, %rd50;
+	ld.global.f64 	%fd40, [%rd59+0];
+	mad.rn.f64 	%fd41, %fd39, %fd40, %fd38;
+	add.u64 	%rd60, %rd55, %rd35;
+	ld.global.f64 	%fd42, [%rd60+0];
+	add.u64 	%rd61, %rd55, %rd37;
+	ld.global.f64 	%fd43, [%rd61+0];
+	mad.rn.f64 	%fd44, %fd42, %fd43, %fd41;
+	add.u64 	%rd62, %rd57, %rd35;
+	ld.global.f64 	%fd45, [%rd62+0];
+	add.u64 	%rd63, %rd57, %rd37;
+	ld.global.f64 	%fd46, [%rd63+0];
+	mad.rn.f64 	%fd47, %fd45, %fd46, %fd44;
+	ld.global.f64 	%fd48, [%rd53+8];
+	add.u64 	%rd64, %rd50, %rd37;
+	ld.global.f64 	%fd49, [%rd64+8];
+	mad.rn.f64 	%fd50, %fd48, %fd49, %fd47;
+	st.global.f64 	[%rd52+0], %fd50;
+$Lt_0_33794:
+ //<loop> Part of loop body line 39, head labeled $Lt_0_33026
+	mov.s32 	%r129, 0;
+	setp.eq.s32 	%p32, %r100, %r129;
+	selp.s32 	%r130, 1, 0, %p32;
+	and.b32 	%r131, %r130, %r107;
+	mov.u32 	%r132, 0;
+	setp.eq.s32 	%p33, %r131, %r132;
+	@%p33 bra 	$Lt_0_34306;
+ //<loop> Part of loop body line 39, head labeled $Lt_0_33026
+	.loc	28	78	0
+	cvt.s64.s32 	%rd65, %r94;
+	mul.wide.s32 	%rd66, %r94, 8;
+	ld.param.u64 	%rd67, [__cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_fdm2];
+	add.u64 	%rd68, %rd67, %rd66;
+	ld.param.u64 	%rd35, [__cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_fdm1];
+	add.u64 	%rd69, %rd66, %rd35;
+	ld.param.u64 	%rd37, [__cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_a];
+	add.u64 	%rd70, %rd66, %rd37;
+	.loc	28	6	0
+	ld.param.s32 	%r1, [__cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_nz];
+	.loc	28	78	0
+	add.s32 	%r133, %r94, %r1;
+	cvt.s64.s32 	%rd71, %r133;
+	mul.wide.s32 	%rd72, %r133, 8;
+	ld.global.f64 	%fd51, [%rd68+0];
+	ld.global.f64 	%fd52, [%rd69+0];
+	ld.param.u64 	%rd73, [__cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_b];
+	add.u64 	%rd74, %rd73, %rd66;
+	ld.global.f64 	%fd53, [%rd74+0];
+	mad.rn.f64 	%fd54, %fd52, %fd53, %fd51;
+	add.u64 	%rd75, %rd72, %rd35;
+	ld.global.f64 	%fd55, [%rd75+0];
+	add.u64 	%rd76, %rd72, %rd37;
+	ld.global.f64 	%fd56, [%rd76+0];
+	mad.rn.f64 	%fd57, %fd55, %fd56, %fd54;
+	ld.global.f64 	%fd58, [%rd69+8];
+	ld.global.f64 	%fd59, [%rd70+8];
+	mad.rn.f64 	%fd60, %fd58, %fd59, %fd57;
+	ld.global.f64 	%fd61, [%rd69+-8];
+	ld.global.f64 	%fd62, [%rd70+-8];
+	mad.rn.f64 	%fd63, %fd61, %fd62, %fd60;
+	st.global.f64 	[%rd68+0], %fd63;
+$Lt_0_34306:
+ //<loop> Part of loop body line 39, head labeled $Lt_0_33026
+	setp.eq.s32 	%p34, %r96, %r100;
+	selp.s32 	%r134, 1, 0, %p34;
+	and.b32 	%r135, %r134, %r107;
+	mov.u32 	%r136, 0;
+	setp.eq.s32 	%p35, %r135, %r136;
+	@%p35 bra 	$Lt_0_34818;
+ //<loop> Part of loop body line 39, head labeled $Lt_0_33026
+	.loc	28	39	0
+	ld.param.s32 	%r21, [__cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_nx];
+	.loc	28	85	0
+	sub.s32 	%r137, %r21, 2;
+	.loc	28	6	0
+	ld.param.s32 	%r1, [__cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_nz];
+	.loc	28	85	0
+	mul.lo.s32 	%r138, %r96, %r1;
+	mul.lo.s32 	%r139, %r137, %r1;
+	add.s32 	%r140, %r138, %r94;
+	cvt.s64.s32 	%rd77, %r140;
+	mul.wide.s32 	%rd78, %r140, 8;
+	add.s32 	%r141, %r139, %r94;
+	cvt.s64.s32 	%rd79, %r141;
+	mul.wide.s32 	%rd80, %r141, 8;
+	ld.param.u64 	%rd81, [__cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_fdm2];
+	add.u64 	%rd82, %rd81, %rd78;
+	ld.param.u64 	%rd35, [__cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_fdm1];
+	add.u64 	%rd83, %rd78, %rd35;
+	ld.param.u64 	%rd37, [__cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_a];
+	add.u64 	%rd84, %rd78, %rd37;
+	ld.global.f64 	%fd64, [%rd82+0];
+	ld.global.f64 	%fd65, [%rd83+0];
+	ld.param.u64 	%rd85, [__cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_b];
+	add.u64 	%rd86, %rd85, %rd78;
+	ld.global.f64 	%fd66, [%rd86+0];
+	mad.rn.f64 	%fd67, %fd65, %fd66, %fd64;
+	add.u64 	%rd87, %rd80, %rd35;
+	ld.global.f64 	%fd68, [%rd87+0];
+	add.u64 	%rd88, %rd80, %rd37;
+	ld.global.f64 	%fd69, [%rd88+0];
+	mad.rn.f64 	%fd70, %fd68, %fd69, %fd67;
+	ld.global.f64 	%fd71, [%rd83+8];
+	ld.global.f64 	%fd72, [%rd84+8];
+	mad.rn.f64 	%fd73, %fd71, %fd72, %fd70;
+	ld.global.f64 	%fd74, [%rd83+-8];
+	ld.global.f64 	%fd75, [%rd84+-8];
+	mad.rn.f64 	%fd76, %fd74, %fd75, %fd73;
+	st.global.f64 	[%rd82+0], %fd76;
+$Lt_0_34818:
+ //<loop> Part of loop body line 39, head labeled $Lt_0_33026
+	@!%p13 bra 	$Lt_0_36354;
+ //<loop> Part of loop body line 39, head labeled $Lt_0_33026
+	.loc	28	6	0
+	ld.param.s32 	%r1, [__cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_nz];
+	.loc	28	85	0
+	sub.s32 	%r142, %r1, 1;
+	setp.eq.s32 	%p36, %r142, %r94;
+	selp.s32 	%r143, 1, 0, %p36;
+	and.b32 	%r144, %r124, %r143;
+	and.b32 	%r145, %r109, %r144;
+	mov.u32 	%r146, 0;
+	setp.eq.s32 	%p37, %r145, %r146;
+	@%p37 bra 	$Lt_0_35842;
+ //<loop> Part of loop body line 39, head labeled $Lt_0_33026
+	.loc	28	6	0
+	ld.param.s32 	%r1, [__cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_nz];
+	.loc	28	93	0
+	mul.lo.s32 	%r115, %r100, %r1;
+	add.s32 	%r116, %r100, 1;
+	sub.s32 	%r117, %r100, 1;
+	mul.lo.s32 	%r119, %r116, %r1;
+	mul.lo.s32 	%r120, %r117, %r1;
+	add.s32 	%r147, %r115, %r1;
+	cvt.s64.s32 	%rd89, %r147;
+	mul.wide.s32 	%rd90, %r147, 8;
+	ld.param.u64 	%rd91, [__cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_fdm2];
+	add.u64 	%rd92, %rd91, %rd90;
+	ld.param.u64 	%rd35, [__cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_fdm1];
+	add.u64 	%rd93, %rd90, %rd35;
+	add.s32 	%r148, %r119, %r1;
+	cvt.s64.s32 	%rd94, %r148;
+	mul.wide.s32 	%rd95, %r148, 8;
+	add.s32 	%r149, %r120, %r1;
+	cvt.s64.s32 	%rd96, %r149;
+	mul.wide.s32 	%rd97, %r149, 8;
+	ld.param.u64 	%rd37, [__cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_a];
+	ld.global.f64 	%fd77, [%rd92+-8];
+	ld.global.f64 	%fd78, [%rd93+-8];
+	ld.param.u64 	%rd98, [__cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_b];
+	add.u64 	%rd99, %rd98, %rd90;
+	ld.global.f64 	%fd79, [%rd99+-8];
+	mad.rn.f64 	%fd80, %fd78, %fd79, %fd77;
+	add.u64 	%rd100, %rd95, %rd35;
+	ld.global.f64 	%fd81, [%rd100+-8];
+	add.u64 	%rd101, %rd95, %rd37;
+	ld.global.f64 	%fd82, [%rd101+-8];
+	mad.rn.f64 	%fd83, %fd81, %fd82, %fd80;
+	add.u64 	%rd102, %rd97, %rd35;
+	ld.global.f64 	%fd84, [%rd102+-8];
+	add.u64 	%rd103, %rd97, %rd37;
+	ld.global.f64 	%fd85, [%rd103+-8];
+	mad.rn.f64 	%fd86, %fd84, %fd85, %fd83;
+	ld.global.f64 	%fd87, [%rd93+-16];
+	add.u64 	%rd104, %rd90, %rd37;
+	ld.global.f64 	%fd88, [%rd104+-16];
+	mad.rn.f64 	%fd89, %fd87, %fd88, %fd86;
+	st.global.f64 	[%rd92+-8], %fd89;
+$Lt_0_35842:
+ //<loop> Part of loop body line 39, head labeled $Lt_0_33026
+	and.b32 	%r150, %r130, %r143;
+	mov.u32 	%r151, 0;
+	setp.eq.s32 	%p38, %r150, %r151;
+	@%p38 bra 	$Lt_0_36354;
+ //<loop> Part of loop body line 39, head labeled $Lt_0_33026
+	.loc	28	6	0
+	ld.param.s32 	%r1, [__cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_nz];
+	.loc	28	100	0
+	cvt.s64.s32 	%rd105, %r1;
+	mul.wide.s32 	%rd106, %r1, 8;
+	ld.param.u64 	%rd35, [__cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_fdm1];
+	add.u64 	%rd107, %rd106, %rd35;
+	ld.param.u64 	%rd108, [__cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_fdm2];
+	add.u64 	%rd109, %rd108, %rd106;
+	add.s32 	%r152, %r1, %r1;
+	cvt.s64.s32 	%rd110, %r152;
+	mul.wide.s32 	%rd111, %r152, 8;
+	ld.param.u64 	%rd37, [__cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_a];
+	ld.global.f64 	%fd90, [%rd109+-8];
+	ld.global.f64 	%fd91, [%rd107+-8];
+	ld.param.u64 	%rd112, [__cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_b];
+	add.u64 	%rd113, %rd112, %rd106;
+	ld.global.f64 	%fd92, [%rd113+-8];
+	mad.rn.f64 	%fd93, %fd91, %fd92, %fd90;
+	add.u64 	%rd114, %rd111, %rd35;
+	ld.global.f64 	%fd94, [%rd114+-8];
+	add.u64 	%rd115, %rd111, %rd37;
+	ld.global.f64 	%fd95, [%rd115+-8];
+	mad.rn.f64 	%fd96, %fd94, %fd95, %fd93;
+	ld.global.f64 	%fd97, [%rd107+-16];
+	add.u64 	%rd116, %rd106, %rd37;
+	ld.global.f64 	%fd98, [%rd116+-16];
+	mad.rn.f64 	%fd99, %fd97, %fd98, %fd96;
+	st.global.f64 	[%rd109+-8], %fd99;
+$Lt_0_36354:
+$Lt_0_35330:
+ //<loop> Part of loop body line 39, head labeled $Lt_0_33026
+	and.b32 	%r153, %r130, %r104;
+	mov.u32 	%r154, 0;
+	setp.eq.s32 	%p39, %r153, %r154;
+	@%p39 bra 	$Lt_0_36866;
+ //<loop> Part of loop body line 39, head labeled $Lt_0_33026
+	.loc	28	6	0
+	ld.param.s32 	%r1, [__cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_nz];
+	.loc	28	106	0
+	cvt.s64.s32 	%rd117, %r1;
+	mul.wide.s32 	%rd118, %r1, 8;
+	ld.param.u64 	%rd37, [__cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_a];
+	ld.param.u64 	%rd35, [__cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_fdm1];
+	ld.param.u64 	%rd119, [__cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_fdm2];
+	ld.global.f64 	%fd100, [%rd119+0];
+	ld.global.f64 	%fd101, [%rd35+0];
+	ld.param.u64 	%rd120, [__cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_b];
+	ld.global.f64 	%fd102, [%rd120+0];
+	mad.rn.f64 	%fd103, %fd101, %fd102, %fd100;
+	add.u64 	%rd121, %rd118, %rd35;
+	ld.global.f64 	%fd104, [%rd121+0];
+	add.u64 	%rd122, %rd118, %rd37;
+	ld.global.f64 	%fd105, [%rd122+0];
+	mad.rn.f64 	%fd106, %fd104, %fd105, %fd103;
+	ld.global.f64 	%fd107, [%rd35+8];
+	ld.global.f64 	%fd108, [%rd37+8];
+	mad.rn.f64 	%fd109, %fd107, %fd108, %fd106;
+	st.global.f64 	[%rd119+0], %fd109;
+$Lt_0_36866:
+ //<loop> Part of loop body line 39, head labeled $Lt_0_33026
+	and.b32 	%r155, %r134, %r104;
+	mov.u32 	%r156, 0;
+	setp.eq.s32 	%p40, %r155, %r156;
+	@%p40 bra 	$Lt_0_37378;
+ //<loop> Part of loop body line 39, head labeled $Lt_0_33026
+	.loc	28	39	0
+	ld.param.s32 	%r21, [__cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_nx];
+	.loc	28	111	0
+	sub.s32 	%r157, %r21, 2;
+	.loc	28	6	0
+	ld.param.s32 	%r1, [__cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_nz];
+	.loc	28	111	0
+	mul.lo.s32 	%r158, %r96, %r1;
+	mul.lo.s32 	%r159, %r157, %r1;
+	cvt.s64.s32 	%rd123, %r158;
+	mul.wide.s32 	%rd124, %r158, 8;
+	cvt.s64.s32 	%rd125, %r159;
+	mul.wide.s32 	%rd126, %r159, 8;
+	ld.param.u64 	%rd127, [__cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_fdm2];
+	add.u64 	%rd128, %rd127, %rd124;
+	ld.param.u64 	%rd35, [__cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_fdm1];
+	add.u64 	%rd129, %rd124, %rd35;
+	ld.param.u64 	%rd37, [__cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_a];
+	ld.global.f64 	%fd110, [%rd128+0];
+	ld.global.f64 	%fd111, [%rd129+0];
+	ld.param.u64 	%rd130, [__cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_b];
+	add.u64 	%rd131, %rd130, %rd124;
+	ld.global.f64 	%fd112, [%rd131+0];
+	mad.rn.f64 	%fd113, %fd111, %fd112, %fd110;
+	add.u64 	%rd132, %rd126, %rd35;
+	ld.global.f64 	%fd114, [%rd132+0];
+	add.u64 	%rd133, %rd126, %rd37;
+	ld.global.f64 	%fd115, [%rd133+0];
+	mad.rn.f64 	%fd116, %fd114, %fd115, %fd113;
+	ld.global.f64 	%fd117, [%rd129+8];
+	add.u64 	%rd134, %rd124, %rd37;
+	ld.global.f64 	%fd118, [%rd134+8];
+	mad.rn.f64 	%fd119, %fd117, %fd118, %fd116;
+	st.global.f64 	[%rd128+0], %fd119;
+$Lt_0_37378:
+ //<loop> Part of loop body line 39, head labeled $Lt_0_33026
+	add.s32 	%r100, %r100, 16;
+	setp.ne.s32 	%p41, %r100, %r53;
+	@%p41 bra 	$Lt_0_33026;
+$Lt_0_32514:
+ //<loop> Part of loop body line 39, head labeled $Lt_0_32258
+	add.s32 	%r90, %r90, 1;
+	setp.ne.s32 	%p42, %r16, %r90;
+	@%p42 bra 	$Lt_0_32258;
+$Lt_0_31746:
+	@!%p2 bra 	$Lt_0_38402;
+	mov.u16 	%rh9, %ctaid.y;
+	mov.u16 	%rh10, %ntid.y;
+	mul.wide.u16 	%r18, %rh9, %rh10;
+	cvt.u32.u16 	%r160, %tid.y;
+	add.u32 	%r20, %r160, %r18;
+	ld.param.s32 	%r21, [__cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_nx];
+	shr.s32 	%r161, %r21, 31;
+	mov.s32 	%r162, 15;
+	and.b32 	%r163, %r161, %r162;
+	add.s32 	%r164, %r163, %r21;
+	shr.s32 	%r165, %r164, 4;
+	mul.lo.s32 	%r166, %r165, 16;
+	sub.s32 	%r28, %r21, %r166;
+	shr.s32 	%r167, %r21, 31;
+	mov.s32 	%r168, 15;
+	and.b32 	%r169, %r167, %r168;
+	add.s32 	%r170, %r169, %r21;
+	shr.s32 	%r33, %r170, 4;
+	mov.s32 	%r171, 0;
+	setp.gt.s32 	%p3, %r28, %r171;
+	add.s32 	%r35, %r33, 1;
+	selp.s32 	%r36, %r35, %r33, %p3;
+	mov.s32 	%r172, %r16;
+	mov.s32 	%r173, 0;
+	setp.gt.s32 	%p4, %r36, %r173;
+	mov.s32 	%r174, 0;
+	mov.s32 	%r175, %r172;
+$Lt_0_38914:
+ //<loop> Loop body line 111, nesting depth: 1, estimated iterations: unknown
+	@!%p4 bra 	$Lt_0_39170;
+ //<loop> Part of loop body line 111, head labeled $Lt_0_38914
+	mul.lo.s32 	%r176, %r174, 16;
+	mov.u16 	%rh11, %ctaid.x;
+	mov.u16 	%rh12, %ntid.x;
+	mul.wide.u16 	%r41, %rh11, %rh12;
+	cvt.u32.u16 	%r177, %tid.x;
+	add.u32 	%r44, %r177, %r41;
+	add.s32 	%r178, %r176, %r44;
+	mov.s32 	%r179, %r36;
+	mov.s32 	%r180, %r20;
+	mul.lo.s32 	%r52, %r36, 16;
+	setp.lt.s32 	%p43, %r178, %r1;
+	add.s32 	%r53, %r52, %r20;
+	selp.s32 	%r181, 1, 0, %p43;
+ //<loop> Part of loop body line 111, head labeled $Lt_0_38914
+	mov.s32 	%r182, %r179;
+$Lt_0_39682:
+ //<loop> Loop body line 111, nesting depth: 2, estimated iterations: unknown
+	set.lt.u32.s32 	%r183, %r180, %r21;
+	neg.s32 	%r184, %r183;
+	and.b32 	%r185, %r181, %r184;
+	mov.u32 	%r186, 0;
+	setp.eq.s32 	%p44, %r185, %r186;
+	@%p44 bra 	$Lt_0_41474;
+ //<loop> Part of loop body line 111, head labeled $Lt_0_39682
+	.loc	28	126	0
+	mul.lo.s32 	%r187, %r180, %r1;
+	add.s32 	%r188, %r178, %r187;
+	cvt.s64.s32 	%rd135, %r188;
+	mul.wide.s32 	%rd136, %r188, 8;
+	ld.param.u64 	%rd137, [__cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_fdm2];
+	add.u64 	%rd138, %rd137, %rd136;
+	ld.global.f64 	%fd120, [%rd138+0];
+	ld.param.u64 	%rd139, [__cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_fdm1];
+	add.u64 	%rd140, %rd139, %rd136;
+	st.global.f64 	[%rd140+0], %fd120;
+	.loc	28	127	0
+	ld.param.u64 	%rd141, [__cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_fdm3];
+	add.u64 	%rd142, %rd136, %rd141;
+	ld.global.f64 	%fd121, [%rd142+0];
+	st.global.f64 	[%rd138+0], %fd121;
+	ld.param.s32 	%r189, [__cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_it];
+	mov.u32 	%r190, 2;
+	setp.le.s32 	%p45, %r189, %r190;
+	@%p45 bra 	$Lt_0_41474;
+ //<loop> Part of loop body line 111, head labeled $Lt_0_39682
+	mov.u32 	%r191, 0;
+	setp.le.s32 	%p46, %r178, %r191;
+	@%p46 bra 	$Lt_0_40962;
+ //<loop> Part of loop body line 111, head labeled $Lt_0_39682
+	.loc	28	132	0
+	mov.f64 	%fd122, 0d0000000000000000;	// 0
+	st.global.f64 	[%rd142+0], %fd122;
+$Lt_0_40962:
+ //<loop> Part of loop body line 111, head labeled $Lt_0_39682
+	mov.u32 	%r192, 0;
+	setp.ne.s32 	%p47, %r178, %r192;
+	@%p47 bra 	$Lt_0_41474;
+ //<loop> Part of loop body line 111, head labeled $Lt_0_39682
+	.loc	28	133	0
+	ld.param.u64 	%rd143, [__cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_data];
+	.loc	28	127	0
+	ld.param.s32 	%r189, [__cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_it];
+	.loc	28	133	0
+	sub.s32 	%r193, %r189, 3;
+	mul.lo.s32 	%r194, %r21, %r193;
+	add.s32 	%r195, %r180, %r194;
+	cvt.s64.s32 	%rd144, %r195;
+	mul.wide.s32 	%rd145, %r195, 8;
+	add.u64 	%rd146, %rd143, %rd145;
+	ld.global.f64 	%fd123, [%rd146+0];
+	cvt.s64.s32 	%rd147, %r187;
+	mul.wide.s32 	%rd148, %r187, 8;
+	.loc	28	127	0
+	ld.param.u64 	%rd141, [__cudaparm__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i_fdm3];
+	.loc	28	133	0
+	add.u64 	%rd149, %rd141, %rd148;
+	st.global.f64 	[%rd149+0], %fd123;
+$Lt_0_41474:
+$Lt_0_40450:
+$Lt_0_39938:
+ //<loop> Part of loop body line 111, head labeled $Lt_0_39682
+	.loc	28	136	0
+	bar.sync 	0;
+	add.s32 	%r180, %r180, 16;
+	setp.ne.s32 	%p48, %r180, %r53;
+	@%p48 bra 	$Lt_0_39682;
+$Lt_0_39170:
+ //<loop> Part of loop body line 111, head labeled $Lt_0_38914
+	add.s32 	%r174, %r174, 1;
+	setp.ne.s32 	%p49, %r16, %r174;
+	@%p49 bra 	$Lt_0_38914;
+$Lt_0_38402:
+	.loc	28	139	0
+	exit;
+$LDWend__Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i:
+	} // _Z12rtm2d_kernelPdS_S_S_S_S_iiiiS_i
+
