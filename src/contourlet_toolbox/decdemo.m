@@ -42,8 +42,8 @@ disp(' ');
 if ~exist('im', 'var')
     % Zoneplate image: good for illustrating multiscale and directional
     % decomposition
-    im = imread ('zoneplate.png') ;
-    % load('im.mat');
+    % im = imread ('zoneplate.png') ;
+    load('im.mat');
 end
 
 % Show the input image
@@ -78,7 +78,7 @@ title('Contourlet coefficients');
 disp(' ');
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% get the dictionary of contourlet transform
+% get the inverse transform dictionary of contourlet transform
 % Lingchen Zhu
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -97,6 +97,25 @@ im2 = reshape(im2, nx, ny);
 delta = double(im) - im2;
 display(max(abs(delta(:))));
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% get the transform dictionary of contourlet transform
+% Lingchen Zhu
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+[v, s] = pdfb2vec(coeffs);
+nVec = length(v);
+PhiAdj = zeros(nVec, nx * ny);
+for iv = 1:nx * ny
+    display(iv);
+    vtmp = zeros(nx * ny, 1);
+    vtmp(iv) = 1;
+    coeffstmp = pdfbdec( reshape(vtmp, nx, ny), pfilter, dfilter, nlevels );
+    [v_coeffstmp, s_coeffstmp] = pdfb2vec(coeffstmp);
+    PhiAdj(:, iv) = v_coeffstmp;
+end
+v2 = PhiAdj * double(im(:));
+delta = v - v2;
+display(max(abs(delta(:))));
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Pyramidal directional filter bank (PDFB) reconstruction.

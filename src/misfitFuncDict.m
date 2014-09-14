@@ -1,10 +1,10 @@
-function [value, grad] = misfitFuncSparse(dcoeff, transform, w, fs, nShots, dataDeltaFreq, greenFreqForShotSet, greenFreqForRecSet)
-% MISFITFUNCSPARSE Calculate the least-squares misfit function with respect
-% to the coefficients of perturbation model dm under sparse transform with
-% transform function
+function [value, grad] = misfitFuncDict(dcoeff, invDictMat, dictMat, w, fs, nShots, dataDeltaFreq, greenFreqForShotSet, greenFreqForRecSet)
+% MISFITFUNCDICT Calculate the least-squares misfit function with respect
+% to the coefficients of perturbation model dm under some transform with
+% explicit dictionary
 %
-% value = 1/2 * (L(invTransform(dcoeff)) - delta_d)' * (L(invTransform(dcoeff)) - delta_d)
-% grad = transform(L'(L(transform(dcoeff)) = delta_d))
+% value = 1/2 * (L(invDictMat * dcoeff) - delta_d)' * (L(invDictMat * dcoeff) - delta_d)
+% grad = dictMat * (L'(L(invDictMat * dcoeff) = delta_d))
 %
 %
 % This matlab source file is free for use in academic research.
@@ -17,7 +17,7 @@ function [value, grad] = misfitFuncSparse(dcoeff, transform, w, fs, nShots, data
 nw = length(w);
 
 % model after inverse transform
-dm = transform(dcoeff, 1);
+dm = invDictMat * dcoeff;
 nLength = length(dm);
 
 % value of the cost function
@@ -45,7 +45,7 @@ parfor iw = 1:nw
     
 end
 
-grad = real(transform(grad, 2));
+grad = real(dictMat * grad);
 
 % fprintf('error function value = %f\n', value);
 
