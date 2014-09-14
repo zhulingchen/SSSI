@@ -217,8 +217,8 @@ parfor ixs = 1:nShots %21:nx+20 % shot loop
 end % end shot loop
 
 % save received surface data
-filenameDataTrueFreq = './modelData/marmousi100ModelData/marmousi100_contourlet_dataTrueFreq.mat';
-filenameDataDeltaFreq = './modelData/marmousi100ModelData/marmousi100_contourlet_dataDeltaFreq0.mat';
+filenameDataTrueFreq = './modelData/marmousi100ModelData/marmousi100_wavelet_dataTrueFreq.mat';
+filenameDataDeltaFreq = './modelData/marmousi100ModelData/marmousi100_wavelet_dataDeltaFreq0.mat';
 
 if ~exist(filenameDataTrueFreq, 'file')
     save(filenameDataTrueFreq, 'dataTrueFreq', '-v7.3');
@@ -307,10 +307,10 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
         
     end
     
-    % filenameGreenFreqForShotSet = sprintf('./modelData/marmousi100ModelData/marmousi100_contourlet_greenFreqForShotSet%d.mat', iter);
+    % filenameGreenFreqForShotSet = sprintf('./modelData/marmousi100ModelData/marmousi100_wavelet_greenFreqForShotSet%d.mat', iter);
     % save(filenameGreenFreqForShotSet, 'greenFreqForShotSet', '-v7.3');
     
-    % filenameGreenFreqForRecSet = sprintf('./modelData/marmousi100ModelData/marmousi100_contourlet_greenFreqForRecSet%d.mat', iter);
+    % filenameGreenFreqForRecSet = sprintf('./modelData/marmousi100ModelData/marmousi100_wavelet_greenFreqForRecSet%d.mat', iter);
     % save(filenameGreenFreqForRecSet, 'greenFreqForRecSet', '-v7.3');
     
     %% plot updated model optimized in different domains
@@ -335,7 +335,7 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     % lowerBound = -inf(length(vecWaveletCoeff), 1); %1/vmax^2*ones(nLength,1) - reshape(modelOld, nLength, 1);
     % upperBound = inf(length(vecWaveletCoeff), 1); %1/vmin^2*ones(nLength,1) - reshape(modelOld, nLength, 1);
     % funProj = @(x) boundProject(x, lowerBound, upperBound);
-    tau = norm(vecWaveletCoeff, 1);
+    tau = norm(vecWaveletCoeff, 1) * 5;
     funProj = @(x) sign(x).*projectRandom2C(abs(x), tau);
     options.verbose = 2;
     options.optTol = 1e-8;
@@ -385,7 +385,7 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     title('Updated Velocity Model');
     colormap(seismic); colorbar; caxis manual; caxis([vmin, vmax]);
     % save current updated velocity model
-    filenameVmNew = sprintf('./modelData/marmousi100ModelData/marmousi100_contourlet_vmNew%d.mat', iter);
+    filenameVmNew = sprintf('./modelData/marmousi100ModelData/marmousi100_wavelet_vmNew%d.mat', iter);
     save(filenameVmNew, 'vmNew', 'modelNew', '-v7.3');
     
     % clear variables and functions from memory
@@ -417,7 +417,7 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
         dataDeltaFreq(:, ixs, :) = squeeze(dataTrueFreq(:, ixs, :)) - fftshift(fft(dataSmooth, nfft, 2), 2);
         
     end % end shot loop
-    filenameDataDeltaFreq = sprintf('./modelData/marmousi100ModelData/marmousi100_contourlet_dataDeltaFreq%d.mat', iter);
+    filenameDataDeltaFreq = sprintf('./modelData/marmousi100ModelData/marmousi100_wavelet_dataDeltaFreq%d.mat', iter);
     save(filenameDataDeltaFreq, 'dataDeltaFreq', '-v7.3');
     
     % clear variables and functions from memory
