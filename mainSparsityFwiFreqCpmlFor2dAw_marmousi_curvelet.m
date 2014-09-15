@@ -333,7 +333,7 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     % lowerBound = -inf(length(vecCurveletCoeff), 1); %1/vmax^2*ones(nLength,1) - reshape(modelOld, nLength, 1);
     % upperBound = inf(length(vecCurveletCoeff), 1); %1/vmin^2*ones(nLength,1) - reshape(modelOld, nLength, 1);
     % funProj = @(x) boundProject(x, lowerBound, upperBound);
-    tau = norm(vecCurveletCoeff, 1);
+    tau = norm(vecCurveletCoeff, 1) * 14;
     funProj = @(x) sign(x).*projectRandom2C(abs(x), tau);
     options.verbose = 3;
     options.optTol = 1e-8;
