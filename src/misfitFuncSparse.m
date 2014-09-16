@@ -1,4 +1,4 @@
-function [value, grad] = misfitFuncSparse(dcoeff, transform, w, fs, nShots, dataDeltaFreq, greenFreqForShotSet, greenFreqForRecSet)
+function [value, grad] = misfitFuncSparse(dcoeff, synthesisOp, analysisOp, w, fs, nShots, dataDeltaFreq, greenFreqForShotSet, greenFreqForRecSet)
 % MISFITFUNCSPARSE Calculate the least-squares misfit function with respect
 % to the coefficients of perturbation model dm under sparse transform with
 % transform function
@@ -16,8 +16,12 @@ function [value, grad] = misfitFuncSparse(dcoeff, transform, w, fs, nShots, data
 
 nw = length(w);
 
-% model after inverse transform
-dm = transform(dcoeff, 1);
+% model after inverse transform (synthesis)
+if ~(isa(synthesisOp, 'function_handle'))
+    dm = synthesisOp * dcoeff;
+else
+    dm = synthesisOp(dcoeff);
+end
 nLength = length(dm);
 
 % value of the cost function
@@ -45,7 +49,12 @@ parfor iw = 1:nw
     
 end
 
-grad = real(transform(grad, 2));
+% analysis on grad
+if ~(isa(analysisOp, 'function_handle'))
+    grad = real(analysisOp * grad);
+else
+    grad = real(analysisOp(grad));
+end
 
 % fprintf('error function value = %f\n', value);
 
