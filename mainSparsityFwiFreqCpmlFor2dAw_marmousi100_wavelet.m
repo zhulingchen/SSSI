@@ -368,7 +368,7 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     
     
     %% updated model
-    dm = dm_pqn_pdfb;
+    dm = dm_pqn_wavelet;
     
     modelOld = reshape(modelOld, nLength, 1);
     modelNew = modelOld + dm;
