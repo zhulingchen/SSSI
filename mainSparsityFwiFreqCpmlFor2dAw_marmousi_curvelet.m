@@ -74,10 +74,10 @@ end
 
 
 %% Start a pool of Matlab workers
-% numCores = 1; %feature('numcores');
-% if isempty(gcp('nocreate')) % checking to see if my pool is already open
-%     myPool = parpool(numCores);
-% end
+numCores = 6; %feature('numcores');
+if isempty(gcp('nocreate')) % checking to see if my pool is already open
+    myPool = parpool(numCores);
+end
 
 
 %% Read in velocity model data
@@ -431,5 +431,5 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
 end
 
 %% Terminate the pool of Matlab workers
-% delete(gcp('nocreate'));
+delete(gcp('nocreate'));
 
