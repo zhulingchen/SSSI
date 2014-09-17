@@ -295,7 +295,7 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     
     %     %% debug begin
     %     % Wavelet l1-optimization
-    %     % lasso: min ||pdfbFunc(x) - b||_2^2 s.t. ||x||_1 < \tau
+    %     % lasso: min ||waveletFunc(x, 1) - b||_2^2 s.t. ||x||_1 < \tau
     %     b = waveletFunc(vecWaveletCoeff, 1);
     %     tau = norm(vecWaveletCoeff, 1);
     %     opts = spgSetParms('verbosity', 1, 'optTol', 1e-12);
@@ -307,7 +307,7 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     %     display(max(abs(delta(:))));
     %
     %     % Curvelet l1-optimization
-    %     % lasso: min ||fdctFunc(x) - b||_2^2 s.t. ||x||_1 < \tau
+    %     % lasso: min ||fdctFunc(x, 1) - b||_2^2 s.t. ||x||_1 < \tau
     %     b = fdctFunc(vecCurveletCoeff, 1);
     %     tau = norm(vecCurveletCoeff, 1);
     %     opts = spgSetParms('verbosity', 1, 'optTol', 1e-12);
@@ -319,7 +319,7 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     %     display(max(abs(delta(:))));
     %
     %     % Contourlet l1-optimization
-    %     % lasso: min ||pdfbFunc(x) - b||_2^2 s.t. ||x||_1 < \tau
+    %     % lasso: min ||pdfbFunc(x, 1) - b||_2^2 s.t. ||x||_1 < \tau
     %     b = pdfbFunc(vecPdfbCoeff, 1);
     %     tau = norm(vecPdfbCoeff, 1);
     %     opts = spgSetParms('verbosity', 1, 'optTol', 1e-12);

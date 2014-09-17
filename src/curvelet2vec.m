@@ -39,7 +39,7 @@ for l = 1:n
     ind = ind + nd;
 end
 
-% The total number of PDFB coefficients
+% The total number of directional coefficients
 nc = sum(prod(s(:, 3:4), 2));
 if (mod(nc, 2))
     nc = nc + 1; % to avoid odd vector length and cause problem in optimization

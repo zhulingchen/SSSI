@@ -86,7 +86,7 @@ disp(' ');
 nVec = length(v);
 Phi = zeros(nx * ny, nVec);
 for iv = 1:nVec
-    display(iv);
+    fprintf('iv = %d\n', iv);
     vtmp = zeros(nVec, 1);
     vtmp(iv) = 1;
     imtmp = pdfbrec( vec2pdfb(vtmp, s), pfilter, dfilter ) ;
@@ -106,7 +106,7 @@ display(max(abs(delta(:))));
 nVec = length(v);
 PhiAdj = zeros(nVec, nx * ny);
 for iv = 1:nx * ny
-    display(iv);
+    fprintf('iv = %d\n', iv);
     vtmp = zeros(nx * ny, 1);
     vtmp(iv) = 1;
     coeffstmp = pdfbdec( reshape(vtmp, nx, ny), pfilter, dfilter, nlevels );
@@ -116,6 +116,11 @@ end
 v2 = PhiAdj * double(im(:));
 delta = v - v2;
 display(max(abs(delta(:))));
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Phi * PhiAdj = I
+% PhiAdj * Phi ~= I
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Pyramidal directional filter bank (PDFB) reconstruction.

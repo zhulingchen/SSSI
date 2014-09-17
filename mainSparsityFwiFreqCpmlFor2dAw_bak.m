@@ -187,6 +187,14 @@ pfilter = 'pkva' ;      % Pyramidal filter
 dfilter = 'pkva' ;      % Directional filter
 
 
+%% Parameters for learned dictionary using sparse K-SVD
+trainBlockSize = 10;
+trainBlockNum = 4096;
+initDict = speye(trainBlockSize, trainBlockSize);
+atomSpThres = 1;
+sigSpThres = 1;
+
+
 %% Shot data recording at the surface
 % generate shot signal
 rw1dTime = zeros(1, nt);
@@ -293,9 +301,13 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     [vecPdfbCoeff, sPdfb] = pdfb2vec(pdfbCoeff);
     pdfbFunc = @(x, mode) pdfb(x, sPdfb, pfilter, dfilter, nlevels, nz, nx, mode);
     
+    % Decomposition by learned dictionary using sparse K-SVD
+    [learnedDict, Coeffs, err] = sparseKsvd(modelOld, @(x)pdfbFunc(x, 1), @(x)pdfbFunc(x, 2), initDict, trainBlockSize, trainBlockNum, atomSpThres, sigSpThres);
+    
+    
     %     %% debug begin
     %     % Wavelet l1-optimization
-    %     % lasso: min ||pdfbFunc(x) - b||_2^2 s.t. ||x||_1 < \tau
+    %     % lasso: min ||waveletFunc(x, 1) - b||_2^2 s.t. ||x||_1 < \tau
     %     b = waveletFunc(vecWaveletCoeff, 1);
     %     tau = norm(vecWaveletCoeff, 1);
     %     opts = spgSetParms('verbosity', 1, 'optTol', 1e-12);
@@ -307,7 +319,7 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     %     display(max(abs(delta(:))));
     %
     %     % Curvelet l1-optimization
-    %     % lasso: min ||fdctFunc(x) - b||_2^2 s.t. ||x||_1 < \tau
+    %     % lasso: min ||fdctFunc(x, 1) - b||_2^2 s.t. ||x||_1 < \tau
     %     b = fdctFunc(vecCurveletCoeff, 1);
     %     tau = norm(vecCurveletCoeff, 1);
     %     opts = spgSetParms('verbosity', 1, 'optTol', 1e-12);
@@ -319,7 +331,7 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     %     display(max(abs(delta(:))));
     %
     %     % Contourlet l1-optimization
-    %     % lasso: min ||pdfbFunc(x) - b||_2^2 s.t. ||x||_1 < \tau
+    %     % lasso: min ||pdfbFunc(x, 1) - b||_2^2 s.t. ||x||_1 < \tau
     %     b = pdfbFunc(vecPdfbCoeff, 1);
     %     tau = norm(vecPdfbCoeff, 1);
     %     opts = spgSetParms('verbosity', 1, 'optTol', 1e-12);
