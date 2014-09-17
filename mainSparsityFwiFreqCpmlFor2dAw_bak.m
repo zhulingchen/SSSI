@@ -173,8 +173,8 @@ f = 20;
 
 %% Wavelet transform parameters
 nlevels_wavelet = 0;            % Decomposition level, all 0 means wavelet
-pfilter_wavelet = 'pkva' ;      % Pyramidal filter
-dfilter_wavelet = 'pkva' ;      % Directional filter
+pfilter_wavelet = 'haar' ;      % Pyramidal filter
+dfilter_wavelet = 'haar' ;      % Directional filter
 
 
 %% Curvelet transform parameters
@@ -188,11 +188,11 @@ dfilter = 'pkva' ;      % Directional filter
 
 
 %% Parameters for learned dictionary using sparse K-SVD
-trainBlockSize = 10;
+trainBlockSize = 8;     % for each dimension
 trainBlockNum = 4096;
-initDict = speye(trainBlockSize, trainBlockSize);
+trainIter = 10;
 atomSpThres = 1;
-sigSpThres = 1;
+sigSpThres = 1e-3;
 
 
 %% Shot data recording at the surface
@@ -302,7 +302,12 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     pdfbFunc = @(x, mode) pdfb(x, sPdfb, pfilter, dfilter, nlevels, nz, nx, mode);
     
     % Decomposition by learned dictionary using sparse K-SVD
-    [learnedDict, Coeffs, err] = sparseKsvd(modelOld, @(x)pdfbFunc(x, 1), @(x)pdfbFunc(x, 2), initDict, trainBlockSize, trainBlockNum, atomSpThres, sigSpThres);
+    [vecTrainBlockCoeff, stb_wavelet] = pdfb2vec(pdfbdec(zeros(trainBlockSize, trainBlockSize), pfilter_wavelet, dfilter_wavelet, nlevels_wavelet));
+    initDict = speye(length(vecTrainBlockCoeff), length(vecTrainBlockCoeff));
+    [learnedDict, Coeffs, err] = sparseKsvd(modelOld, ...
+        @(x) pdfb(x, stb_wavelet, pfilter_wavelet, dfilter_wavelet, nlevels_wavelet, trainBlockSize, trainBlockSize, 1), ...
+        @(x) pdfb(x, stb_wavelet, pfilter_wavelet, dfilter_wavelet, nlevels_wavelet, trainBlockSize, trainBlockSize, 2), ...
+        initDict, trainIter, trainBlockSize, trainBlockNum, atomSpThres, sigSpThres);
     
     
     %     %% debug begin
