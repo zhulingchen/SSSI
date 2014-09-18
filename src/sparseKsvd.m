@@ -39,8 +39,11 @@ for iter = 1:trainIter
     end
     
     % dictionary learning and updating
-    for icoef = 1:coefLen
-        
+    for iatom = 1:coefLen
+        A(:, iatom) = zeros(coefLen, 1);
+        idx = find(X(iatom, :));	% indices of the signals in Y whose representations use A(:, iatom)
+        g = X(iatom, idx)';
+        g = g / norm(g, 2);
     end
 end
 
