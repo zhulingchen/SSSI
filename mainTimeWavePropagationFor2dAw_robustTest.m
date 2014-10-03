@@ -1,4 +1,4 @@
-% MAINRTMTIMECPMLFOR2DAW simulates Kirchoff migration and reverse time
+% MAINTIMEWAVEPROPAGATION simulates Kirchoff migration and reverse time
 % migration (RTM) with 2-d acoustic wave in time domain with absorbing
 % boundary condition (ABC) called Nonsplit Convolutional-PML (CPML)
 %
@@ -36,7 +36,7 @@ addpath(genpath('./src'));
 
 
 %% Read in velocity model data and plot it
-velocityModel = 2500 * ones(200, 200);
+load('./modelData/velocityModel.mat'); % velocityModel
 [nz, nx] = size(velocityModel);
 
 dx = 10;
@@ -46,18 +46,11 @@ z = (1:nz) * dz;
 
 nBoundary = 20;
 
-% grids and positions of shot array
-shotz = [500];
-shotx = [1000];
-if (length(shotz) ~= length(shotx))
-   error('The length of z-axis coordinate list and x-axis coordinate list should be the same!'); 
-end
-
 % grids and positions of receiver array
 recArrType = 'uniform';
 idxRecArrLeft = 1;
 idxRecArrRight = nx;
-nRecs = nx;
+nRecs = 25;
 if (strcmpi(recArrType, 'uniform'))
     xRecGrid = (idxRecArrLeft:ceil((idxRecArrRight - idxRecArrLeft + 1)/nRecs):idxRecArrRight);
 elseif (strcmpi(recArrType, 'random'))
@@ -67,22 +60,6 @@ else
     error('Receiver array deployment type error!');
 end
 xRec = xRecGrid * dx;
-
-
-% plot the velocity model
-hFig = figure;
-set(hFig, 'PaperPositionMode', 'auto');
-figPos = get(hFig, 'Position');
-set(hFig, 'Position', figPos + [0, 0, 0, ~mod(figPos(end), 2)]);
-
-subplot(2,2,1);
-imagesc(x, z, velocityModel)
-xlabel('Distance (m)'); ylabel('Depth (m)');
-title('Velocity Model');
-hold on;
-hShotPos = plot(shotx, shotz, 'w*');
-hold off;
-colormap(seismic);
 
 
 %% Create shot gathers
@@ -97,11 +74,20 @@ dt = 0.75*(dz/vmax/sqrt(2));
 
 % determine time samples nt from wave travelime to depth and back to
 % surface
-nt = round(0.5*(sqrt((dx*nx)^2 + (dz*nz)^2)*2/vmin/dt + 1));
+nt = round((sqrt((dx*nx)^2 + (dz*nz)^2)*2/vmin/dt + 1));
 t  = (0:nt-1).*dt;
 
 % add region around model for applying absorbing boundary conditions
 V = extBoundary(velocityModel, nBoundary, 2);
+
+% add some randomness on the fault model
+VS = [repmat(V(1, :), nBoundary, 1); V];
+nAvgSize = [3, 3];
+hImageSmooth = fspecial('average', nAvgSize);
+VS = imfilter(VS, hImageSmooth);
+velocityModel2 = VS(nBoundary+1:end-nBoundary, nBoundary+1:end-nBoundary);
+
+V2 = extBoundary(velocityModel2, nBoundary, 2);
 
 
 % number of approximation order for differentiator operator
@@ -111,38 +97,58 @@ nDiffOrder = 2;
 f = 25;
 
 
+%% Generate shot signals
+% grids and positions of shot array
+nShots = 1;
+zShotGrid = 90;
+zShot = zShotGrid * dz;
+xShotGrid = 40;
+xShot = xShotGrid * dx;
+delayTimeGrid = 0;
+
+% generate shot source field
+sourceTime = zeros([size(V), nt]);
+for is = 1:nShots
+    % Ricker wavelet
+    wave1dTime = ricker(f, nt, dt);
+    % % Sinusoid (high frequency components, causing grid dispersion)
+    % wave1dTime = sin(2*pi*f*t + 2*pi/nShots * (is-1));
+    % wave1dTime(ceil(1/f/dt)+1:end) = 0;
+    wave1dTime = [zeros(1, delayTimeGrid(is)), wave1dTime(1:end-delayTimeGrid(is))];
+    sourceTime(zShotGrid(is), xShotGrid(is)+nBoundary, :) = reshape(wave1dTime, 1, 1, nt);
+end
+
+% plot the velocity model
+hFig = figure;
+set(hFig, 'PaperPositionMode', 'auto');
+figPos = get(hFig, 'Position');
+
+subplot(2,2,1);
+imagesc(x, z, velocityModel)
+xlabel('Distance (m)'); ylabel('Depth (m)');
+title('Velocity Model');
+hold on;
+hShotPos = plot(xShot, zShot, 'w*');
+hold off;
+colormap(seismic);
+
 %% Generate shots and save to file and video
 
-figure(hFig);
-colormap(seismic); %bone
-
-filenameVideo = './videos/MSforward_homo.mp4';
+filenameVideo = './videos/MSforward_robustTest.mp4';
 if ~exist(filenameVideo, 'file')
     objVideoModelShots = VideoWriter(filenameVideo, 'MPEG-4');
     open(objVideoModelShots);
 end
 
-% generate shot signal
-rw1dTime = zeros(1, nt);
-for ifreq = 1:length(f)
-    rw1dTime = rw1dTime + 0.1*ricker(f(ifreq), nt, dt);
-end
-
-% generate shot signal
-source = zeros([size(V), nt]);
-% source(1, xs, 1) = 1; % impulse input
-for is = 1:length(shotz)
-    source(shotz(is)/dz, shotx(is)/dx+nBoundary, :) = reshape(rw1dTime, 1, 1, nt);
-end
-
 % generate shot record
 tic;
-[dataTrue, snapshotTrue] = fwdTimeCpmlFor2dAw(V, source, nDiffOrder, nBoundary, dz, dx, dt);
+[dataTrue, snapshotTrue] = fwdTimeCpmlFor2dAw(V, sourceTime, nDiffOrder, nBoundary, dz, dx, dt);
+dataTrue(setdiff(1:nx, xRecGrid)+nBoundary, :) = 0;
 timeForward = toc;
 fprintf('Generate Forward Timing Record. elapsed time = %fs\n', timeForward);
 
-filenameDataTrue = sprintf('./modelData/homogeneousModelData/dataTrue.mat');
-filenameSnapshotTrue = sprintf('./modelData/homogeneousModelData/snapshotTrue.mat');
+filenameDataTrue = sprintf('./modelData/dataTrue.mat');
+filenameSnapshotTrue = sprintf('./modelData/snapshotTrue.mat');
 
 if ~exist(filenameDataTrue, 'file')
     save(filenameDataTrue, 'dataTrue', '-v7.3');
@@ -156,10 +162,19 @@ dataTrue = dataTrue(nBoundary+1:end-nBoundary,:)';
 
 for it = 1:nt
     % plot shot function
-    subplot(2,2,2);
-    plot([1:nt], rw1dTime); hold on;
-    plot(it, rw1dTime(it), 'r*'); hold off;
+    hSub = subplot(2,2,2);
+    for is = 1:nShots
+        wave1dTime = reshape(sourceTime(zShotGrid(is), xShotGrid(is)+nBoundary, :), 1, nt);
+        wave1dTime = mat2gray(wave1dTime);
+        wave1dTime = wave1dTime + (is-1);
+        plot([1:nt], wave1dTime, it, wave1dTime(it), 'r*'); hold on;
+        if (is < nShots)
+           plot([1, nt], [is, is], 'k-'); 
+        end
+    end
+    hold off;
     xlim([1, nt]);
+    set(hSub, 'YTick', []);
     xlabel('Time'); ylabel('Amplitude');
     title(sprintf('Input source waveform'));
     
@@ -178,7 +193,7 @@ for it = 1:nt
     xlabel('Distance (m)'), ylabel('Depth (m)')
     title(sprintf('Wave Propagation (True) t = %.3f', t(it)));
     hold on;
-    hShotPos = plot(shotx, shotz, 'w*');
+    hShotPos = plot(xShot, zShot, 'w*');
     hold off;
     caxis([-0.14 1])
     
@@ -194,34 +209,45 @@ end
 
 %% Time Reversal
 
-filenameVideo = './videos/MSreverse_homo.mp4';
+% plot the velocity model
+subplot(2,2,1);
+imagesc(x, z, velocityModel2)
+xlabel('Distance (m)'); ylabel('Depth (m)');
+title('Velocity Model');
+hold on;
+hShotPos = plot(xShot, zShot, 'w*');
+hold off;
+colormap(seismic);
+
+filenameVideo = './videos/MSreverse_robustTest.mp4';
 if ~exist(filenameVideo, 'file')
     objVideoModelReverse = VideoWriter(filenameVideo, 'MPEG-4');
     open(objVideoModelReverse);
 end
 
-load('./modelData/homogeneousModelData/dataTrue.mat'); % dataTrue
+load('./modelData/dataTrue.mat'); % dataTrue
 
 noisyDataTrue = dataTrue;
 
-for i=1:nRecs
-    noisyDataTrue(i+nBoundary,:) = awgn(dataTrue(i+nBoundary,:), -10, 'measured');
+for ixr = 1:nRecs
+    noisyDataTrue(xRecGrid(ixr)+nBoundary,:) = awgn(dataTrue(xRecGrid(ixr)+nBoundary,:), -10, 'measured');
 end
 
 tic;
-[~, rtmsnapshot] = rvsTimeCpmlFor2dAw(V, noisyDataTrue, nDiffOrder, nBoundary, dz, dx, dt);
+[~, rtmsnapshot] = rvsTimeCpmlFor2dAw(V2, noisyDataTrue, nDiffOrder, nBoundary, dz, dx, dt);
 timeRT = toc;
 fprintf('Generate Reverse Time Record, elapsed time = %fs\n', timeRT);
 
-filenameRTMSnapshot = sprintf('./modelData/homogeneousModelData/rtmsnapshot.mat');
+filenameRTMSnapshot = sprintf('./modelData/rtmsnapshot.mat');
 
 if ~exist(filenameRTMSnapshot, 'file')
     save(filenameRTMSnapshot, 'rtmsnapshot', '-v7.3');
 end
 
 noisyDataTrue = noisyDataTrue(nBoundary+1:end-nBoundary,:)';
+delete(subplot(2, 2, 2));
 
-for it = nt:-1:20
+for it = nt:-1:30
     
     subplot(2,2,3)
     imagesc(x, t, noisyDataTrue); hold on;
@@ -234,10 +260,6 @@ for it = nt:-1:20
     imagesc(x, z, rtmsnapshot(1:end-nBoundary, nBoundary+1:end-nBoundary, it))
     xlabel('Distance (m)'), ylabel('Depth (m)')
     title(sprintf('Wave Propagation (True) t = %.3f', t(it)));
-    hold on;
-    hShotPos = plot(shotx, shotz, 'w*');
-    hold off;
-    % caxis([-0.14 1])
     
     if exist('objVideoModelReverse', 'var')
         writeVideo(objVideoModelReverse, im2frame(hardcopy(hFig, '-dzbuffer', '-r0')));

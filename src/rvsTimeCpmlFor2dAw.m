@@ -9,7 +9,7 @@ function [model, snapshot] = rvsTimeCpmlFor2dAw(v, data, nDiffOrder, nBoundary, 
 %
 % input arguments
 % v(nz,nx)          velocity model
-% data(nz,nx)       received data on the surface
+% data(nx,nt)       received data on the surface
 % nDiffOrder        number of approximation order for differentiator operator
 % nBoundary         thickness of the absorbing boundary
 % dx                horizontal distance per sample

@@ -36,7 +36,7 @@ addpath(genpath('./src'));
 
 
 %% Read in velocity model data and plot it
-load('./modelData/layerCakeModelData/layerCakeModel.mat'); % velocityModel
+load('./modelData/velocityModel.mat'); % velocityModel
 [nz, nx] = size(velocityModel);
 
 dx = 10;
@@ -50,7 +50,7 @@ nBoundary = 20;
 recArrType = 'uniform';
 idxRecArrLeft = 1;
 idxRecArrRight = nx;
-nRecs = nx;
+nRecs = 25;
 if (strcmpi(recArrType, 'uniform'))
     xRecGrid = (idxRecArrLeft:ceil((idxRecArrRight - idxRecArrLeft + 1)/nRecs):idxRecArrRight);
 elseif (strcmpi(recArrType, 'random'))
@@ -90,12 +90,12 @@ f = 25;
 
 %% Generate shot signals
 % grids and positions of shot array
-nShots = 3;
-zShotGrid = 100 * ones(1, nShots);
+nShots = 1;
+zShotGrid = 90;
 zShot = zShotGrid * dz;
-xShotGrid = 100:ceil(101/nShots):200;
+xShotGrid = 40;
 xShot = xShotGrid * dx;
-delayTimeGrid = [0:ceil(201/nShots):200];
+delayTimeGrid = 0;
 
 % generate shot source field
 sourceTime = zeros([size(V), nt]);
@@ -134,11 +134,12 @@ end
 % generate shot record
 tic;
 [dataTrue, snapshotTrue] = fwdTimeCpmlFor2dAw(V, sourceTime, nDiffOrder, nBoundary, dz, dx, dt);
+dataTrue(setdiff(1:nx, xRecGrid)+nBoundary, :) = 0;
 timeForward = toc;
 fprintf('Generate Forward Timing Record. elapsed time = %fs\n', timeForward);
 
-filenameDataTrue = sprintf('./modelData/layerCakeModelData/dataTrue.mat');
-filenameSnapshotTrue = sprintf('./modelData/layerCakeModelData/snapshotTrue.mat');
+filenameDataTrue = sprintf('./modelData/dataTrue.mat');
+filenameSnapshotTrue = sprintf('./modelData/snapshotTrue.mat');
 
 if ~exist(filenameDataTrue, 'file')
     save(filenameDataTrue, 'dataTrue', '-v7.3');
@@ -205,12 +206,12 @@ if ~exist(filenameVideo, 'file')
     open(objVideoModelReverse);
 end
 
-load('./modelData/layerCakeModelData/dataTrue.mat'); % dataTrue
+load('./modelData/dataTrue.mat'); % dataTrue
 
 noisyDataTrue = dataTrue;
 
-for i=1:nRecs
-    noisyDataTrue(i+nBoundary,:) = awgn(dataTrue(i+nBoundary,:), -10, 'measured');
+for ixr = 1:nRecs
+    noisyDataTrue(xRecGrid(ixr)+nBoundary,:) = awgn(dataTrue(xRecGrid(ixr)+nBoundary,:), -10, 'measured');
 end
 
 tic;
@@ -218,7 +219,7 @@ tic;
 timeRT = toc;
 fprintf('Generate Reverse Time Record, elapsed time = %fs\n', timeRT);
 
-filenameRTMSnapshot = sprintf('./modelData/layerCakeModelData/rtmsnapshot.mat');
+filenameRTMSnapshot = sprintf('./modelData/rtmsnapshot.mat');
 
 if ~exist(filenameRTMSnapshot, 'file')
     save(filenameRTMSnapshot, 'rtmsnapshot', '-v7.3');
