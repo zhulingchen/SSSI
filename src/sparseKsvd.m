@@ -37,7 +37,7 @@ for iter = 1:trainIter
     % X_i = argmin_x ||Y_i - B*A*x||_2^2 s.t. ||x||_1 <= sigSpThres
     for iblk = 1:blkNum
         opts = spgSetParms('verbosity', 1, 'optTol', 1e-20);
-        X(:, iblk) = spg_lasso(@(x, mode) combOp(x, baseSynOp, baseAnaOp, A, mode), Y(:, iblk), sigSpThres, opts);
+        X(:, iblk) = spg_lasso(@(x, mode) learnedOp(x, baseSynOp, baseAnaOp, A, mode), Y(:, iblk), sigSpThres, opts);
     end
     
     % dictionary learning and updating
@@ -56,7 +56,7 @@ for iter = 1:trainIter
         end
         z = E * g;
         
-        % z = Y(:, I) * g - baseSynOp(A * X(:, I) * g);
+        z2 = Y(:, I) * g - learnedOp(X(:, I) * g, baseSynOp, baseAnaOp, A, 1);
         % a = argmin_a || z - B*a ||_2^2 s.t. ||a||_1 <= atomSpThres
         opts = spgSetParms('verbosity', 1, 'optTol', 1e-20);
         a = spg_lasso(@(x, mode) baseOp(x, baseSynOp, baseAnaOp, mode), z, atomSpThres, opts);
@@ -69,33 +69,10 @@ for iter = 1:trainIter
     end
 end
 
-
-end
-
-
-%% synthesis / analysis operator with B that can be used as a function handle for spgl1 toolbox
-function y = baseOp(x, baseSynOp, baseAnaOp, mode)
-
-if (mode == 1) % inverse transform or synthesis
-    y = baseSynOp(x);
-elseif (mode == 2) % transform or analysis
-    y = baseAnaOp(x);
-else
-    error('Wrong mode!');
-end
-
-end
-
-
-%% combined synthesis / analysis operator with B and A that can be used as a function handle for spgl1 toolbox
-function y = combOp(x, baseSynOp, baseAnaOp, A, mode)
-
-if (mode == 1) % inverse transform or synthesis
-    y = baseSynOp(A*x);
-elseif (mode == 2) % transform or analysis
-    y = A'*baseAnaOp(x);
-else
-    error('Wrong mode!');
+% calculate residue error
+err = 0;
+for iblk = 1:blkNum
+    err = err + norm(Y(:, iblk) - learnedOp(X(:, iblk), baseSynOp, baseAnaOp, A, 1));
 end
 
 end
