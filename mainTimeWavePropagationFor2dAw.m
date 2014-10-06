@@ -50,7 +50,7 @@ nBoundary = 20;
 recArrType = 'uniform';
 idxRecArrLeft = 1;
 idxRecArrRight = nx;
-nRecs = 25;
+nRecs = nx;
 if (strcmpi(recArrType, 'uniform'))
     xRecGrid = (idxRecArrLeft:ceil((idxRecArrRight - idxRecArrLeft + 1)/nRecs):idxRecArrRight);
 elseif (strcmpi(recArrType, 'random'))
@@ -85,7 +85,7 @@ V = extBoundary(velocityModel, nBoundary, 2);
 nDiffOrder = 2;
 
 % Define frequency parameter for ricker wavelet
-f = 25;
+f = 15;
 
 
 %% Generate shot signals
@@ -211,7 +211,7 @@ load('./modelData/dataTrue.mat'); % dataTrue
 noisyDataTrue = dataTrue;
 
 for ixr = 1:nRecs
-    noisyDataTrue(xRecGrid(ixr)+nBoundary,:) = awgn(dataTrue(xRecGrid(ixr)+nBoundary,:), -10, 'measured');
+    noisyDataTrue(xRecGrid(ixr)+nBoundary,:) = awgn(dataTrue(xRecGrid(ixr)+nBoundary,:), 100, 'measured');
 end
 
 tic;

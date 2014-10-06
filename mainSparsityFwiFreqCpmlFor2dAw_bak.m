@@ -263,6 +263,8 @@ clear('sourceTime');
 
 modelOld = zeros(nz, nx);
 modelNew = 1./VS(1:end-nBoundary, nBoundary+1:end-nBoundary).^2;
+% only for dictionary training purpose
+modelTrain = 1./V(1:end-nBoundary, nBoundary+1:end-nBoundary).^2;
 
 % shot positions on extended velocity model
 xs = xShotGrid + nBoundary;
@@ -304,7 +306,7 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     % Decomposition by learned dictionary using sparse K-SVD
     [vecTrainBlockCoeff, stb_wavelet] = pdfb2vec(pdfbdec(zeros(trainBlockSize, trainBlockSize), pfilter_wavelet, dfilter_wavelet, nlevels_wavelet));
     initDict = speye(length(vecTrainBlockCoeff), length(vecTrainBlockCoeff));
-    [learnedDict, Coeffs, err] = sparseKsvd(modelOld, ...
+    [learnedDict, Coeffs, err] = sparseKsvd(modelTrain, ...
         @(x) pdfb(x, stb_wavelet, pfilter_wavelet, dfilter_wavelet, nlevels_wavelet, trainBlockSize, trainBlockSize, 1), ...
         @(x) pdfb(x, stb_wavelet, pfilter_wavelet, dfilter_wavelet, nlevels_wavelet, trainBlockSize, trainBlockSize, 2), ...
         initDict, trainIter, trainBlockSize, trainBlockNum, atomSpThres, sigSpThres);
