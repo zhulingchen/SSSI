@@ -29,6 +29,8 @@ Y = sampgrid(Y, blkSize, idx{:});
 A = A0;
 X = zeros(coefLen, blkNum);
 
+spgOptTol = 1e-20;
+
 %% main loop for dictionary learning
 for iter = 1:trainIter
     fprintf('Training Iteration %d\n', iter);
@@ -36,7 +38,7 @@ for iter = 1:trainIter
     % lasso for each block
     % X_i = argmin_x ||Y_i - B*A*x||_2^2 s.t. ||x||_1 <= sigSpThres
     for iblk = 1:blkNum
-        opts = spgSetParms('verbosity', 1, 'optTol', 1e-20);
+        opts = spgSetParms('verbosity', 1, 'optTol', spgOptTol);
         X(:, iblk) = spg_lasso(@(x, mode) learnedOp(x, baseSynOp, baseAnaOp, A, mode), Y(:, iblk), sigSpThres, opts);
     end
     
@@ -52,20 +54,20 @@ for iter = 1:trainIter
         XI = X(:, I);
         E = zeros(atomLen, nnz(I));
         for ii = 1:nnz(I)
-            E(:, ii) = YI(:, ii) - baseSynOp(A * XI(:, ii));
+            E(:, ii) = YI(:, ii) - learnedOp(XI(:, ii), baseSynOp, baseAnaOp, A, 1);
         end
         z = E * g;
+        % z = Y(:, I) * g - learnedOp(X(:, I) * g, baseSynOp, baseAnaOp, A, 1);
         
-        z2 = Y(:, I) * g - learnedOp(X(:, I) * g, baseSynOp, baseAnaOp, A, 1);
         % a = argmin_a || z - B*a ||_2^2 s.t. ||a||_1 <= atomSpThres
-        opts = spgSetParms('verbosity', 1, 'optTol', 1e-20);
+        opts = spgSetParms('verbosity', 1, 'optTol', spgOptTol);
         a = spg_lasso(@(x, mode) baseOp(x, baseSynOp, baseAnaOp, mode), z, atomSpThres, opts);
         % normalize vector a
         a = a / norm(baseSynOp(a), 2);
         A(:, iatom) = a;
         X(iatom, I) = (E' * baseSynOp(a)).';
         
-        % X(iatom, I) = (Y(:, I)' * baseSynOp(a) - (baseSynOp(A * X(:, I)))' * baseSynOp(a)).';
+        % X(iatom, I) = (Y(:, I)' * baseSynOp(a) - X(:, I)' * learnedOp(baseSynOp(a), baseSynOp, baseAnaOp, A, 2)).';
     end
 end
 

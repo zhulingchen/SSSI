@@ -172,7 +172,7 @@ f = 20;
 
 
 %% Wavelet transform parameters
-nlevels_wavelet = 0;            % Decomposition level, all 0 means wavelet
+nlevels_wavelet = [0, 0];            % Decomposition level, all 0 means wavelet
 pfilter_wavelet = 'haar' ;      % Pyramidal filter
 dfilter_wavelet = 'haar' ;      % Directional filter
 
@@ -188,10 +188,10 @@ dfilter = 'pkva' ;      % Directional filter
 
 
 %% Parameters for learned dictionary using sparse K-SVD
-trainBlockSize = 8;     % for each dimension
-trainBlockNum = 4096;
+trainBlockSize = 16;     % for each dimension
+trainBlockNum = 1024;
 trainIter = 10;
-atomSpThres = 1;
+atomSpThres = 1e-3;
 sigSpThres = 1e-3;
 
 

@@ -50,7 +50,7 @@ nBoundary = 20;
 recArrType = 'uniform';
 idxRecArrLeft = 1;
 idxRecArrRight = nx;
-nRecs = 25;
+nRecs = nx;
 if (strcmpi(recArrType, 'uniform'))
     xRecGrid = (idxRecArrLeft:ceil((idxRecArrRight - idxRecArrLeft + 1)/nRecs):idxRecArrRight);
 elseif (strcmpi(recArrType, 'random'))
@@ -94,7 +94,7 @@ V2 = extBoundary(velocityModel2, nBoundary, 2);
 nDiffOrder = 2;
 
 % Define frequency parameter for ricker wavelet
-f = 25;
+f = 15;
 
 
 %% Generate shot signals

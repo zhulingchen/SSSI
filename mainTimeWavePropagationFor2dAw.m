@@ -211,7 +211,7 @@ load('./modelData/dataTrue.mat'); % dataTrue
 noisyDataTrue = dataTrue;
 
 for ixr = 1:nRecs
-    noisyDataTrue(xRecGrid(ixr)+nBoundary,:) = awgn(dataTrue(xRecGrid(ixr)+nBoundary,:), 100, 'measured');
+    noisyDataTrue(xRecGrid(ixr)+nBoundary,:) = awgn(dataTrue(xRecGrid(ixr)+nBoundary,:), -10, 'measured');
 end
 
 tic;
