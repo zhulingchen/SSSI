@@ -70,7 +70,7 @@ vmax = max(velocityModel(:));
 
 % calculate time step dt from stability crierion for finite difference
 % solution of the wave equation.
-dt = 0.75*(dz/vmax/sqrt(2));
+dt = 0.5*(dz/vmax/sqrt(2));
 
 % determine time samples nt from wave travelime to depth and back to
 % surface
@@ -85,15 +85,15 @@ V = extBoundary(velocityModel, nBoundary, 2);
 nDiffOrder = 2;
 
 % Define frequency parameter for ricker wavelet
-f = 15;
+f = 20;
 
 
 %% Generate shot signals
 % grids and positions of shot array
 nShots = 1;
-zShotGrid = 90;
+zShotGrid = 60;
 zShot = zShotGrid * dz;
-xShotGrid = 40;
+xShotGrid = 50;
 xShot = xShotGrid * dx;
 delayTimeGrid = 0;
 
@@ -211,7 +211,7 @@ load('./modelData/dataTrue.mat'); % dataTrue
 noisyDataTrue = dataTrue;
 
 for ixr = 1:nRecs
-    noisyDataTrue(xRecGrid(ixr)+nBoundary,:) = awgn(dataTrue(xRecGrid(ixr)+nBoundary,:), -10, 'measured');
+    noisyDataTrue(xRecGrid(ixr)+nBoundary,:) = awgn(dataTrue(xRecGrid(ixr)+nBoundary,:), 10, 'measured');
 end
 
 tic;

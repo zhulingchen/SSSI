@@ -173,8 +173,8 @@ f = 20;
 
 %% Wavelet transform parameters
 nlevels_wavelet = [0, 0];            % Decomposition level, all 0 means wavelet
-pfilter_wavelet = 'haar' ;      % Pyramidal filter
-dfilter_wavelet = 'haar' ;      % Directional filter
+pfilter_wavelet = '9/7' ;      % Pyramidal filter
+dfilter_wavelet = '9/7' ;      % Directional filter
 
 
 %% Curvelet transform parameters
@@ -190,9 +190,11 @@ dfilter = 'pkva' ;      % Directional filter
 %% Parameters for learned dictionary using sparse K-SVD
 trainBlockSize = 16;     % for each dimension
 trainBlockNum = 1024;
-trainIter = 10;
+trainIter = 30;
 atomSpThres = 1e-3;
-sigSpThres = 1e-3;
+sigSpThres = 1e-5;
+% atomSpThres = 1e6;
+% sigSpThres = 1e4;%1e5;
 
 
 %% Shot data recording at the surface
@@ -265,6 +267,10 @@ modelOld = zeros(nz, nx);
 modelNew = 1./VS(1:end-nBoundary, nBoundary+1:end-nBoundary).^2;
 % only for dictionary training purpose
 modelTrain = 1./V(1:end-nBoundary, nBoundary+1:end-nBoundary).^2;
+% modelTrain = V(1:end-nBoundary, nBoundary+1:end-nBoundary);
+% load('./modelData/barbara.mat');
+% modelTrain = 1./barbara.^4;
+% modelTrain = barbara;
 
 % shot positions on extended velocity model
 xs = xShotGrid + nBoundary;
