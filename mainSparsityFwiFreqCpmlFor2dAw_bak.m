@@ -187,7 +187,7 @@ pfilter = 'pkva' ;      % Pyramidal filter
 dfilter = 'pkva' ;      % Directional filter
 
 
-%% Parameters for learned dictionary using sparse K-SVD
+%% Parameters for dictionary learning using sparse K-SVD
 trainBlockSize = 16;     % for each dimension
 trainBlockNum = 1024;
 trainIter = 30;
@@ -312,7 +312,7 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     % Decomposition by learned dictionary using sparse K-SVD
     [vecTrainBlockCoeff, stb_wavelet] = pdfb2vec(pdfbdec(zeros(trainBlockSize, trainBlockSize), pfilter_wavelet, dfilter_wavelet, nlevels_wavelet));
     initDict = speye(length(vecTrainBlockCoeff), length(vecTrainBlockCoeff));
-    [learnedDict, Coeffs, err] = sparseKsvd(modelTrain, ...
+    [learnedDict, Coeffs, err] = sparseKsvd_lasso(modelTrain, ...
         @(x) pdfb(x, stb_wavelet, pfilter_wavelet, dfilter_wavelet, nlevels_wavelet, trainBlockSize, trainBlockSize, 1), ...
         @(x) pdfb(x, stb_wavelet, pfilter_wavelet, dfilter_wavelet, nlevels_wavelet, trainBlockSize, trainBlockSize, 2), ...
         initDict, trainIter, trainBlockSize, trainBlockNum, atomSpThres, sigSpThres);

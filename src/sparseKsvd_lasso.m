@@ -1,4 +1,4 @@
-function [A, X, err] = sparseKsvd(Y, baseSynOp, baseAnaOp, A0, trainIter, blkSize, blkNum, atomSpThres, sigSpThres)
+function [A, X, err] = sparseKsvd_lasso(Y, baseSynOp, baseAnaOp, A0, trainIter, blkSize, blkNum, atomSpThres, sigSpThres)
 % SPARSEKSVD Sparse K-SVD dictionary training
 %  SPARSEKSVD runs the sparse K-SVD dictionary training algorithm on the
 %  specified set of training signals Y based on a known structured
@@ -17,6 +17,7 @@ end
 
 atomLen = blkSize * blkSize;
 coefLen = length(baseAnaOp(zeros(atomLen, 1)));
+[PhiSyn, ~] = operator2matrix(baseSynOp, baseAnaOp, atomLen);
 
 %% create block training data
 % size: blkSize * blkSize
@@ -25,6 +26,7 @@ Y_bak = Y;
 idx = cell(dim, 1);
 [idx{:}] = reggrid(size(Y)-blkSize+1, blkNum, 'eqdist');
 Y = sampgrid(Y, blkSize, idx{:});
+blkNum = size(Y, 2);
 
 A = A0;
 X = zeros(coefLen, blkNum);
@@ -33,25 +35,26 @@ spgOptTol_sig = 1e-12;
 spgOptTol_atom = 1e-12;
 % spgOptTol = 1e-3;
 
+hFigTrainedDict = figure;
 errLasso = zeros(trainIter, 1);
 errBefore = zeros(coefLen, trainIter);
 errAfter = zeros(coefLen, trainIter);
 
 %% main loop for dictionary learning
 for iter = 1:trainIter
-    fprintf('Training Iteration %d\n', iter);
+    fprintf('Learning Iteration %d\n', iter);
     
     % lasso for each block
     % X_i = argmin_x ||Y_i - B*A*x||_2^2 s.t. ||x||_1 <= sigSpThres
     for iblk = 1:blkNum
-        opts = spgSetParms('verbosity', 3, 'optTol', spgOptTol_sig);
+        opts = spgSetParms('verbosity', 1, 'optTol', spgOptTol_sig);
         X(:, iblk) = spg_lasso(@(x, mode) learnedOp(x, baseSynOp, baseAnaOp, A, mode), Y(:, iblk), sigSpThres, opts);
     end
     
     % calculate residue error
     errLasso(iter) = 0;
     for iblk = 1:blkNum
-        errLasso(iter) = errLasso(iter) + norm(Y(:, iblk) - learnedOp(X(:, iblk), baseSynOp, baseAnaOp, A, 1), 2)^2;
+        errLasso(iter) = errLasso(iter) + norm(Y(:, iblk) - learnedOp(X(:, iblk), baseSynOp, baseAnaOp, A, 1), 2);
     end
     
     % dictionary learning and updating
@@ -72,7 +75,7 @@ for iter = 1:trainIter
         % z = Y(:, I) * g - learnedOp(X(:, I) * g, baseSynOp, baseAnaOp, A, 1);
         
         % a = argmin_a || z - B*a ||_2^2 s.t. ||a||_1 <= atomSpThres
-        opts = spgSetParms('verbosity', 1, 'optTol', spgOptTol_atom);
+        opts = spgSetParms('verbosity', 0, 'optTol', spgOptTol_atom);
         a = spg_lasso(@(x, mode) baseOp(x, baseSynOp, baseAnaOp, mode), z, atomSpThres, opts);
         % normalize vector a
         a = a / norm(baseSynOp(a), 2);
@@ -80,7 +83,7 @@ for iter = 1:trainIter
         % calculate residue error
         errBefore(iatom, iter) = 0;
         for iblk = 1:blkNum
-            errBefore(iatom, iter) = errBefore(iatom, iter) + norm(Y(:, iblk) - learnedOp(X(:, iblk), baseSynOp, baseAnaOp, A, 1), 2)^2;
+            errBefore(iatom, iter) = errBefore(iatom, iter) + norm(Y(:, iblk) - learnedOp(X(:, iblk), baseSynOp, baseAnaOp, A, 1), 2);
         end
         fprintf('err before update = %.6e\n', errBefore(iatom, iter));
         
@@ -90,7 +93,7 @@ for iter = 1:trainIter
         % calculate residue error
         errAfter(iatom, iter) = 0;
         for iblk = 1:blkNum
-            errAfter(iatom, iter) = errAfter(iatom, iter) + norm(Y(:, iblk) - learnedOp(X(:, iblk), baseSynOp, baseAnaOp, A, 1), 2)^2;
+            errAfter(iatom, iter) = errAfter(iatom, iter) + norm(Y(:, iblk) - learnedOp(X(:, iblk), baseSynOp, baseAnaOp, A, 1), 2);
         end
         fprintf('err after update = %.6e\n', errAfter(iatom, iter));
         
@@ -98,8 +101,6 @@ for iter = 1:trainIter
     end
     
     % show trained dictionary
-    hFigTrainedDict = figure;
-    [PhiSyn, ~] = operator2matrix(baseSynOp, baseAnaOp, atomLen);
     dictimg = showdict(PhiSyn * A, [1 1]*sqrt(size(PhiSyn * A, 1)), round(sqrt(size(PhiSyn * A, 2))), round(sqrt(size(PhiSyn * A, 2))), 'whitelines', 'highcontrast');
     figure(hFigTrainedDict); imshow(imresize(dictimg,2,'nearest')); title('Trained Dictionary');
     
@@ -108,7 +109,7 @@ end
 % calculate residue error
 err = 0;
 for iblk = 1:blkNum
-    err = err + norm(Y(:, iblk) - learnedOp(X(:, iblk), baseSynOp, baseAnaOp, A, 1), 2)^2;
+    err = err + norm(Y(:, iblk) - learnedOp(X(:, iblk), baseSynOp, baseAnaOp, A, 1), 2);
 end
 
 end
