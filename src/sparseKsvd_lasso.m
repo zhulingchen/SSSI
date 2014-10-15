@@ -10,6 +10,10 @@ function [A, X, err] = sparseKsvd_lasso(Y, baseSynOp, baseAnaOp, A0, trainIter, 
 %      min  |Y-B*A*X|_F^2      s.t.  |X_i|_1 <= T
 %      A,X
 
+SPGOPTTOL_SIG = 1e-6;
+SPGOPTTOL_ATOM = 1e-6;
+MUTCOH_THRES = 0.99;
+
 dim = ndims(Y);
 if ( dim < 2 || dim > 3 )
     error('Only 2-D and 3-D signals are supported!');
@@ -31,10 +35,6 @@ blkNum = size(Y, 2);
 A = A0;
 X = zeros(coefLen, blkNum);
 
-spgOptTol_sig = 1e-12;
-spgOptTol_atom = 1e-12;
-% spgOptTol = 1e-3;
-
 hFigTrainedDict = figure;
 errLasso = zeros(trainIter, 1);
 errBefore = zeros(coefLen, trainIter);
@@ -47,7 +47,7 @@ for iter = 1:trainIter
     % lasso for each block
     % X_i = argmin_x ||Y_i - B*A*x||_2^2 s.t. ||x||_1 <= sigSpThres
     for iblk = 1:blkNum
-        opts = spgSetParms('verbosity', 1, 'optTol', spgOptTol_sig);
+        opts = spgSetParms('verbosity', 1, 'optTol', SPGOPTTOL_SIG);
         X(:, iblk) = spg_lasso(@(x, mode) learnedOp(x, baseSynOp, baseAnaOp, A, mode), Y(:, iblk), sigSpThres, opts);
     end
     
@@ -75,7 +75,7 @@ for iter = 1:trainIter
         % z = Y(:, I) * g - learnedOp(X(:, I) * g, baseSynOp, baseAnaOp, A, 1);
         
         % a = argmin_a || z - B*a ||_2^2 s.t. ||a||_1 <= atomSpThres
-        opts = spgSetParms('verbosity', 0, 'optTol', spgOptTol_atom);
+        opts = spgSetParms('verbosity', 0, 'optTol', SPGOPTTOL_ATOM);
         a = spg_lasso(@(x, mode) baseOp(x, baseSynOp, baseAnaOp, mode), z, atomSpThres, opts);
         % normalize vector a
         a = a / norm(baseSynOp(a), 2);

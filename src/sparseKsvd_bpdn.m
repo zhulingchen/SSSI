@@ -10,6 +10,12 @@ function [A, X, err] = sparseKsvd_bpdn(Y, baseSynOp, baseAnaOp, A0, trainIter, b
 %      min  |X_i|_1 <= T      s.t.  |Y_i-B*A*X_i|_2 <= tau    for all i
 %       X
 
+SPGOPTTOL_SIG = 1e-6;
+SPGOPTTOL_ATOM = 1e-6;
+MUTCOH_THRES = 0.99;
+USE_THRES = 4; % the atom must be used by this number of blocks so as to be kept
+VAL_THRES = 1e-8;
+
 dim = ndims(Y);
 if ( dim < 2 || dim > 3 )
     error('Only 2-D and 3-D signals are supported!');
@@ -30,10 +36,7 @@ blkNum = size(Y, 2);
 
 A = A0;
 X = zeros(coefLen, blkNum);
-
-spgOptTol_sig = 1e-6;
-spgOptTol_atom = 1e-6;
-% spgOptTol = 1e-3;
+% X2 = zeros(coefLen, blkNum);
 
 hFigTrainedDict = figure;
 errBpdn = zeros(trainIter, 1);
@@ -45,11 +48,12 @@ errAfter = zeros(coefLen, trainIter);
 for iter = 1:trainIter
     fprintf('Learning Iteration %d\n', iter);
     
-    % lasso for each block
+    %% solve BPDN problem for each block
     % X_i = argmin_x ||Y_i - B*A*x||_2^2 s.t. ||x||_1 <= sigSpThres
     for iblk = 1:blkNum
-        opts = spgSetParms('verbosity', 1, 'optTol', spgOptTol_sig);
+        opts = spgSetParms('verbosity', 1, 'optTol', SPGOPTTOL_SIG);
         X(:, iblk) = spg_bpdn(@(x, mode) learnedOp(x, baseSynOp, baseAnaOp, A, mode), Y(:, iblk), sigSpThres, opts);
+        % X(:, iblk) = OMP({@(x) baseSynOp(A*x), @(x) A'*baseAnaOp(x)}, Y(:, iblk), sigSpThres);
     end
     
     % calculate residue error
@@ -60,12 +64,30 @@ for iter = 1:trainIter
         errLasso(iter) = errLasso(iter) + norm(Y(:, iblk) - learnedOp(X(:, iblk), baseSynOp, baseAnaOp, A, 1), 2);
     end
     
-    % dictionary learning and updating
+    %% dictionary learning and updating
+	unusedSig = 1:blkNum;  % track the signals that were used to replace "dead" atoms.
+    replacedAtom = zeros(1, coefLen);  % mark each atom replaced by optimize_atom
     for iatom = 1:coefLen
         fprintf('Learning Atom %d\n', iatom);
         
         A(:, iatom) = zeros(coefLen, 1);
-        I = (X(iatom, :) ~= 0); % I indicates the indices of the signals in Y whose representations use A(:, iatom)
+        
+        I = (X(iatom, :) ~= 0); % I indicates the indices of the signals in Y whose representations use B*A(:, iatom)
+        % the case when no signal in Y is using B*A(:, iatom) in its representation
+        if (nnz(I) == 0)
+            err = zeros(length(unusedSig), 1);
+            for iblk = 1:length(unusedSig)
+                err(unusedSig(iblk)) = norm(Y(:, unusedSig(iblk)) - learnedOp(X(:, unusedSig(iblk)), baseSynOp, baseAnaOp, A, 1), 2);
+            end
+            [~, idxErr] = max(err);
+            opts = spgSetParms('verbosity', 1, 'optTol', SPGOPTTOL_ATOM);
+            a = spg_lasso(@(x, mode) baseOp(x, baseSynOp, baseAnaOp, mode), Y(:, unusedSig(idxErr)), atomSpThres, opts);
+            a = a / norm(baseSynOp(a), 2);
+            A(:, iatom) = a;
+            unusedSig = unusedSig([1:idxErr-1, idxErr+1:end]);
+            replacedAtom(iatom) = 1;
+            continue;
+        end
         g = X(iatom, I).';
         g = g / norm(g, 2);
         YI = Y(:, I);
@@ -78,12 +100,15 @@ for iter = 1:trainIter
         % z = Y(:, I) * g - learnedOp(X(:, I) * g, baseSynOp, baseAnaOp, A, 1);
         
         % a = argmin_a || z - B*a ||_2^2 s.t. ||a||_1 <= atomSpThres
-        opts = spgSetParms('verbosity', 0, 'optTol', spgOptTol_atom);
+        opts = spgSetParms('verbosity', 1, 'optTol', SPGOPTTOL_ATOM);
         a = spg_lasso(@(x, mode) baseOp(x, baseSynOp, baseAnaOp, mode), z, atomSpThres, opts);
-        % baseCell = {baseSynOp, baseAnaOp};
-        % a2 = OMP(baseCell, z, atomSpThres);
+        % a = OMP({baseSynOp, baseAnaOp}, z, atomSpThres);
         % normalize vector a
         a = a / norm(baseSynOp(a), 2);
+        
+        if (isnan(a))
+            continue;
+        end
         
         % calculate residue error
         errBefore(iatom, iter) = 0;
@@ -105,7 +130,33 @@ for iter = 1:trainIter
         % X(iatom, I) = (Y(:, I)' * baseSynOp(a) - X(:, I)' * learnedOp(baseSynOp(a), baseSynOp, baseAnaOp, A, 2)).';
     end
     
-    % show trained dictionary
+    %% dictionary clearing
+    err = zeros(1, blkNum);
+    for iblk = 1:blkNum
+        err(iblk) = norm(Y(:, iblk) - learnedOp(X(:, iblk), baseSynOp, baseAnaOp, A, 1), 2);
+    end
+    
+    numClearedAtom = 0;
+    useCount = sum(abs(X)>VAL_THRES, 2);
+    
+    for iatom = 1:coefLen
+        % compute mutual coherence
+        mutCoh = learnedOp(baseSynOp(A(:, iatom)), baseSynOp, baseAnaOp, A, 2);
+        mutCoh(iatom) = 0; % excluding self coherence (=1)
+        
+        % replace atoms if they do not meet requirements
+        if ( (max(abs(mutCoh))>MUTCOH_THRES || useCount(iatom) < USE_THRES) && ~replacedAtom(iatom) )
+            [~, idxErr] = max(err(unusedSig));
+            opts = spgSetParms('verbosity', 1, 'optTol', SPGOPTTOL_ATOM);
+            a = spg_lasso(@(x, mode) baseOp(x, baseSynOp, baseAnaOp, mode), Y(:, unusedSig(idxErr)), atomSpThres, opts);
+            a = a / norm(baseSynOp(a), 2);
+            A(:, iatom) = a;
+            unusedSig = unusedSig([1:idxErr-1, idxErr+1:end]);
+            numClearedAtom = numClearedAtom + 1;
+        end
+    end
+    
+    %% show trained dictionary
     dictimg = showdict(PhiSyn * A, [1 1]*sqrt(size(PhiSyn * A, 1)), round(sqrt(size(PhiSyn * A, 2))), round(sqrt(size(PhiSyn * A, 2))), 'whitelines', 'highcontrast');
     figure(hFigTrainedDict); imshow(imresize(dictimg,2,'nearest')); title('Trained Dictionary');
     

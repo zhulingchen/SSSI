@@ -54,7 +54,7 @@ dataTrue = bsxfun(@times, bsxfun(@minus, dataTrue, meanData), 1./abs(maxData - m
 
 %% Prepare noisy data
 sigma = 0.1;
-noise = randn(size(dataTrue)) * sigma;
+noise = sigma * randn(size(dataTrue));
 noisyData = dataTrue + noise;
 trainData = noisyData;
 
@@ -63,7 +63,7 @@ gain = 1.15;
 trainBlockSize = 16;        % for each dimension
 trainBlockNum = 4096;
 trainIter = 10;
-atomSpThres = 10;
+atomSpThres = 20;
 sigSpThres = sigma * trainBlockSize * gain;
 
 %% Base dictionary setting
@@ -102,6 +102,7 @@ for ibatch = 1:nRecs-trainBlockSize+1
     for iblk = 1:nSamples - trainBlockSize + 1
         opts = spgSetParms('verbosity', 0, 'optTol', 1e-6);
         blockCoeff(:, iblk) = spg_bpdn(@(x, mode) learnedOp(x, baseSynOp, baseAnaOp, learnedDict, mode), blocks(:, iblk), sigSpThres, opts);
+        % blockCoeff(:, iblk) = OMP({@(x) baseSynOp(learnedDict*x), @(x) learnedDict'*baseAnaOp(x)}, blocks(:, iblk), sigSpThres);
         cleanBlocks(:, iblk) =  learnedOp(blockCoeff(:, iblk), baseSynOp, baseAnaOp, learnedDict, 1);
     end
     
