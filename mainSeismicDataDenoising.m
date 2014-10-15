@@ -35,7 +35,7 @@ if ~isunix
     rmpath(genpath('./src/CurveLab-2.1.3/fdct3d'));
 end
 
-load('./modelData/dataTrue.mat'); % dataTrue
+load('./modelData/denoising/dataTrue.mat'); % dataTrue
 nBoundary = 20;
 dataTrue = dataTrue(nBoundary+1:end-nBoundary,:)';
 [nSamples, nRecs] = size(dataTrue);
@@ -60,15 +60,15 @@ trainData = noisyData;
 
 %% Parameters for dictionary learning using sparse K-SVD
 gain = 1.15;
-trainBlockSize = 16;        % for each dimension
-trainBlockNum = 4096;
+trainBlockSize = 16;                        % for each dimension
+trainBlockNum = 4096;                       % number of training blocks in the training set
 trainIter = 10;
-atomSpThres = 20;
-sigSpThres = sigma * trainBlockSize * gain;
+sigSpThres = sigma * trainBlockSize * gain; % pre-defined l2-norm error for BPDN
+atomSpThres = 10;                           % a self-determind value to control the sparsity of matrix A
 
 %% Base dictionary setting
 % wavelet
-nlevels_wavelet = [0];	% Decomposition level, all 0 means wavelet
+nlevels_wavelet = [0, 0];	% Decomposition level, all 0 means wavelet
 pfilter_wavelet = '9/7' ;	% Pyramidal filter
 dfilter_wavelet = '9/7' ;	% Directional filter
 
@@ -80,8 +80,8 @@ fprintf('Dictionary Learning\n');
 initDict = speye(length(vecTrainBlockCoeff), length(vecTrainBlockCoeff));
 baseSynOp = @(x) pdfb(x, stb_wavelet, pfilter_wavelet, dfilter_wavelet, nlevels_wavelet, trainBlockSize, trainBlockSize, 1);
 baseAnaOp = @(x) pdfb(x, stb_wavelet, pfilter_wavelet, dfilter_wavelet, nlevels_wavelet, trainBlockSize, trainBlockSize, 2);
-[learnedDict, Coeffs, err] = sparseKsvd_bpdn(trainData, baseSynOp, baseAnaOp, ...
-    initDict, trainIter, trainBlockSize, trainBlockNum, atomSpThres, sigSpThres);
+[learnedDict, Coeffs, err] = sparseKsvd(trainData, baseSynOp, baseAnaOp, ...
+    initDict, trainIter, trainBlockSize, trainBlockNum, atomSpThres, sigSpThres, 'bpdn');
 
 %% Denoising
 fprintf('------------------------------------------------------------\n');
