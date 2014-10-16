@@ -62,9 +62,9 @@ trainData = noisyData;
 gain = 1.15;
 trainBlockSize = 16;                        % for each dimension
 trainBlockNum = 4096;                       % number of training blocks in the training set
-trainIter = 10;
+trainIter = 20;
 sigSpThres = sigma * trainBlockSize * gain; % pre-defined l2-norm error for BPDN
-atomSpThres = 10;                           % a self-determind value to control the sparsity of matrix A
+atomSpThres = 70;                           % a self-determind value to control the sparsity of matrix A
 
 %% Base dictionary setting
 % wavelet
@@ -96,15 +96,19 @@ for ibatch = 1:nRecs-trainBlockSize+1
     fprintf('Batch %d... ', ibatch);
     % the current batch of blocks
     blocks = im2colstep(noisyData(:, ibatch:ibatch+trainBlockSize-1), trainBlockSize * [1, 1], [1, 1]);
-    cleanBlocks = zeros(size(blocks));
+    % remove DC (mean values)
+    [blocks, dc] = remove_dc(blocks,'columns');
     
+    cleanBlocks = zeros(size(blocks));
     blockCoeff = zeros(length(vecTrainBlockCoeff), nSamples - trainBlockSize + 1);
     for iblk = 1:nSamples - trainBlockSize + 1
         opts = spgSetParms('verbosity', 0, 'optTol', 1e-6);
         blockCoeff(:, iblk) = spg_bpdn(@(x, mode) learnedOp(x, baseSynOp, baseAnaOp, learnedDict, mode), blocks(:, iblk), sigSpThres, opts);
         % blockCoeff(:, iblk) = OMP({@(x) baseSynOp(learnedDict*x), @(x) learnedDict'*baseAnaOp(x)}, blocks(:, iblk), sigSpThres);
-        cleanBlocks(:, iblk) =  learnedOp(blockCoeff(:, iblk), baseSynOp, baseAnaOp, learnedDict, 1);
+        cleanBlocks(:, iblk) = learnedOp(blockCoeff(:, iblk), baseSynOp, baseAnaOp, learnedDict, 1);
     end
+    % add DC (mean values)
+    cleanBlocks = add_dc(cleanBlocks, dc, 'columns');
     
     cleanBatch = col2imstep(cleanBlocks, [nSamples, trainBlockSize], trainBlockSize * [1, 1], [1, 1]);
     cleanData(:,ibatch:ibatch+trainBlockSize-1) = cleanData(:,ibatch:ibatch+trainBlockSize-1) + cleanBatch;
@@ -118,17 +122,17 @@ cnt = countcover(size(noisyData), trainBlockSize * [1, 1], [1, 1]);
 cleanData = cleanData./cnt;
 
 %% Plot figures and PSNR output
-figure; imshow(dataTrue/max(dataTrue(:)));
+figure; imshow(dataTrue);
 title('Original Seismic Data');
 
-figure; imshow(noisyData/max(noisyData(:)));
-psnrNoisyData = 20*log10(max(dataTrue(:)) * sqrt(numel(noisyData)) / norm(dataTrue(:) - noisyData(:), 2));
+figure; imshow(noisyData);
+psnrNoisyData = 20*log10(sqrt(numel(noisyData)) / norm(dataTrue(:) - noisyData(:), 2));
 title(sprintf('Noisy Seismic Data, PSNR = %.2fdB', psnrNoisyData));
 fprintf('------------------------------------------------------------\n');
 fprintf('Noisy Seismic Data, PSNR = %.2fdB\n', psnrNoisyData);
 
-figure; imshow(cleanData/max(cleanData(:)));
-psnrCleanData = 20*log10(max(dataTrue(:)) * sqrt(numel(cleanData)) / norm(dataTrue(:) - cleanData(:), 2));
+figure; imshow(cleanData);
+psnrCleanData = 20*log10(sqrt(numel(cleanData)) / norm(dataTrue(:) - cleanData(:), 2));
 title(sprintf('Denoised Seismic Data, PSNR = %.2fdB', psnrCleanData));
 fprintf('------------------------------------------------------------\n');
 fprintf('Denoised Seismic Data, PSNR = %.2fdB\n', psnrCleanData);

@@ -16,7 +16,7 @@ function [A, X, err] = sparseKsvd(Y, baseSynOp, baseAnaOp, A0, trainIter, blkSiz
 SPGOPTTOL_SIG = 1e-6;
 SPGOPTTOL_ATOM = 1e-6;
 MUTCOH_THRES = 0.99;
-USE_THRES = 4; % the atom must be used by this number of blocks so as to be kept
+USE_THRES = 3; % the atom must be used by this number of blocks so as to be kept
 VAL_THRES = 1e-8;
 
 dim = ndims(Y);
@@ -87,6 +87,9 @@ for iter = 1:trainIter
             opts = spgSetParms('verbosity', 1, 'optTol', SPGOPTTOL_ATOM);
             a = spg_lasso(@(x, mode) baseOp(x, baseSynOp, baseAnaOp, mode), Y(:, unusedSig(idxErr)), atomSpThres, opts);
             a = a / norm(baseSynOp(a), 2);
+            if (isnan(a))
+                error ('a is NaN!');
+            end
             A(:, iatom) = a;
             unusedSig = unusedSig([1:idxErr-1, idxErr+1:end]);
             replacedAtom(iatom) = 1;
@@ -94,6 +97,9 @@ for iter = 1:trainIter
         end
         g = X(iatom, I).';
         g = g / norm(g, 2);
+        if (isnan(g))
+            error ('g is NaN!');
+        end
         % YI = Y(:, I);
         % XI = X(:, I);
         % E = zeros(atomLen, nnz(I));
@@ -109,6 +115,9 @@ for iter = 1:trainIter
         % a = OMP({baseSynOp, baseAnaOp}, z, atomSpThres);
         % normalize vector a
         a = a / norm(baseSynOp(a), 2);
+        if (isnan(a))
+            error ('a is NaN!');
+        end
         
         A(:, iatom) = a;
         % X(iatom, I) = (E' * baseSynOp(a)).';
@@ -137,6 +146,9 @@ for iter = 1:trainIter
             opts = spgSetParms('verbosity', 1, 'optTol', SPGOPTTOL_ATOM);
             a = spg_lasso(@(x, mode) baseOp(x, baseSynOp, baseAnaOp, mode), Y(:, unusedSig(idxErr)), atomSpThres, opts);
             a = a / norm(baseSynOp(a), 2);
+            if (isnan(a))
+                error ('a is NaN!');
+            end
             A(:, iatom) = a;
             unusedSig = unusedSig([1:idxErr-1, idxErr+1:end]);
             numClearedAtom = numClearedAtom + 1;
