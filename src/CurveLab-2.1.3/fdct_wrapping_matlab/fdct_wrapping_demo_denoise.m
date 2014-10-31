@@ -13,9 +13,9 @@ disp(' ');
 
 % fdct_wrapping_demo_denoise.m -- Image denoising using Curvelets
 
-img = double(imread('Lena.jpg'));
+img = double(imread('barbara512.jpg'));
 n = size(img,1);
-sigma = 20;        
+sigma = 0.1*255;      
 is_real = 1;
 
 noisy_img = img + sigma*randn(n);
@@ -42,7 +42,7 @@ tic; C = fdct_wrapping(noisy_img,1,2); toc;
 
 % Apply thresholding
 Ct = C;
-for s = 2:length(C)
+for s = 1:length(C)
   thresh = 3*sigma + sigma*(s == length(C));
   for w = 1:length(C{s})
     Ct{s}{w} = C{s}{w}.* (abs(C{s}{w}) > thresh*E{s}{w});
@@ -54,9 +54,18 @@ disp(' ');
 disp('Take inverse transform of thresholded data: ifdct_wrapping');
 tic; restored_img = real(ifdct_wrapping(Ct,1)); toc;
 
+MSE_noisy = sum(sum((img-noisy_img).^2))/n^2;
+PSNR_noisy = 20*log10(255/sqrt(MSE_noisy));
+MSE_restored = sum(sum((img-restored_img).^2))/n^2;
+PSNR_restored = 20*log10(255/sqrt(MSE_restored));
+disp(['PSNR (noisy image) = ',num2str(PSNR_noisy)]);
+disp(['PSNR (restored image) = ',num2str(PSNR_restored)]);
+
 subplot(1,3,1); imagesc(img); colormap gray; axis('image');
 subplot(1,3,2); imagesc(noisy_img); colormap gray; axis('image');
+title(sprintf('Noisy Image, PSNR = %.2fdB', PSNR_noisy));
 subplot(1,3,3); imagesc(restored_img); colormap gray; axis('image');
+title(sprintf('Restored image, PSNR = %.2fdB', PSNR_restored));
 
 disp(' ');
 disp('This method is of course a little naive.');

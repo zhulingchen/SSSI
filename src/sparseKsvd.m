@@ -12,11 +12,19 @@ function [A, X, err] = sparseKsvd(Y, baseSynOp, baseAnaOp, A0, trainIter, blkSiz
 % or
 %      Lasso:   min  |Y_i-B*A*X_i|_2     s.t. |X_i|_1 <= tau             for all i
 %               A,X
+%
+%
+% This matlab source file is free for use in academic research.
+% All rights reserved.
+%
+% Written by Lingchen Zhu (zhulingchen@gmail.com)
+% Center for Signal and Information Processing, Center for Energy & Geo Processing
+% Georgia Institute of Technology
 
 SPGOPTTOL_SIG = 1e-6;
 SPGOPTTOL_ATOM = 1e-6;
 MUTCOH_THRES = 0.99;
-USE_THRES = 3; % the atom must be used by this number of blocks so as to be kept
+USE_THRES = 4; % the atom must be used by this number of blocks so as to be kept
 VAL_THRES = 1e-8;
 
 dim = ndims(Y);
@@ -77,7 +85,7 @@ for iter = 1:trainIter
         
         I = (X(iatom, :) ~= 0); % I indicates the indices of the signals in Y whose representations use B*A(:, iatom)
         % the case when no signal in Y is using B*A(:, iatom) in its representation
-        if (nnz(I) == 0)
+        if (nnz(I) <= 1)
             % err = zeros(length(unusedSig), 1);
             % for iblk = 1:length(unusedSig)
             %     err(iblk) = norm(Y(:, unusedSig(iblk)) - learnedOp(X(:, unusedSig(iblk)), baseSynOp, baseAnaOp, A, 1), 2)^2;
@@ -157,7 +165,7 @@ for iter = 1:trainIter
     
     %% show trained dictionary
     dictimg = showdict(PhiSyn * A, [1 1]*sqrt(size(PhiSyn * A, 1)), round(sqrt(size(PhiSyn * A, 2))), round(sqrt(size(PhiSyn * A, 2))), 'whitelines', 'highcontrast');
-    figure(hFigTrainedDict); imshow(imresize(dictimg,2,'nearest')); title('Trained Dictionary');
+    figure(hFigTrainedDict); imshow(imresize(dictimg,2,'nearest')); title(sprintf('Trained Dictionary (Iteration %d)', iter));
     
 end
 

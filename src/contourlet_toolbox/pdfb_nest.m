@@ -14,6 +14,7 @@ niter = 10;
 x = randn(nrows, ncols);
 y = pdfbdec(x, pfilt, dfilt, nlevs);
 [c, s] = pdfb2vec(y);
+c = c.';
 
 nstd = zeros(1, length(c));
 nlp = s(1, 3) * s(1, 4);	% number of lowpass coefficients
@@ -23,6 +24,7 @@ for k = 2:niter
     x = randn(nrows, ncols);
     y = pdfbdec(x, pfilt, dfilt, nlevs);
     [c, s] = pdfb2vec(y);
+    c = c.';
     
     nstd(nlp+1:end) = nstd(nlp+1:end) + c(nlp+1:end).^2;
 end

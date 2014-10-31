@@ -12,12 +12,12 @@ th = 3;                     % lead to 3*sigma threshold denoising
 rho = 3;                    % noise level
 
 % Test image: the usual suspect...
-im = imread('lena.png');
-im = double(im) / 256;
+im = imread('barbara.png');
+im = double(im);
 
 % Generate noisy image. 
 sig = std(im(:));
-sigma = sig / rho;
+sigma = 0.1 * 255;%sig / rho;
 nim = im + sigma * randn(size(im));
 
 
@@ -39,6 +39,7 @@ wim = pdfbrec(y, pfilt, dfilt);
 % Contourlet transform
 y = pdfbdec(nim, pfilt, dfilt, nlevs);
 [c, s] = pdfb2vec(y);
+c = c.';
 
 % Threshold
 % Require to estimate the noise standard deviation in the PDFB domain first 
@@ -61,23 +62,32 @@ cim = pdfbrec(y, pfilt, dfilt);
 
 
 %%%%% Plot: Only the hat!
-range = [0, 1];
+range = [0, 255];
 
-subplot(2,2,1), imagesc(im(41:168, 181:308), range); axis image off
+% (41:168, 181:308)
+
+MSE_noisy = sum(sum((im - nim).^2))/numel(im);
+PSNR_noisy = 20*log10(255/sqrt(MSE_noisy));
+MSE_waveletRestored = sum(sum((im - wim).^2))/numel(im);
+PSNR_waveletRestored = 20*log10(255/sqrt(MSE_waveletRestored));
+MSE_contourletRestored = sum(sum((im - cim).^2))/numel(im);
+PSNR_contourletRestored = 20*log10(255/sqrt(MSE_contourletRestored));
+
+subplot(2,2,1), imagesc(im, range); colormap gray; axis('image');
 set(gca, 'FontSize', 8);
 title('Original Image', 'FontSize', 10);
 
-subplot(2,2,2), imagesc(nim(41:168, 181:308), range); axis image off
+subplot(2,2,2), imagesc(nim, range); colormap gray; axis('image');
 set(gca, 'FontSize', 8);
 title(sprintf('Noisy Image (SNR = %.2f dB)', ...
-              SNR(im, nim)), 'FontSize', 10);
+              PSNR_noisy), 'FontSize', 10);
 
-subplot(2,2,3), imagesc(wim(41:168, 181:308), range); axis image off
+subplot(2,2,3), imagesc(wim, range); colormap gray; axis('image');
 set(gca, 'FontSize', 8);
 title(sprintf('Denoise using Wavelets (SNR = %.2f dB)', ...
-              SNR(im, wim)), 'FontSize', 10);
+              PSNR_waveletRestored), 'FontSize', 10);
 
-subplot(2,2,4), imagesc(cim(41:168, 181:308), range); axis image off
+subplot(2,2,4), imagesc(cim, range); colormap gray; axis('image');
 set(gca, 'FontSize', 8);
 title(sprintf('Denoise using Contourlets (SNR = %.2f dB)', ...
-              SNR(im, cim)), 'FontSize', 10);
+              PSNR_contourletRestored), 'FontSize', 10);

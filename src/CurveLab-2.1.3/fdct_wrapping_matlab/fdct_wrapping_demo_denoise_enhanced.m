@@ -181,14 +181,17 @@ for xshift = 1:nshifts
   end
 end
 
-MSE = sum(sum((img-restored_img).^2))/N^2;
-PSNR = 20*log10(255/sqrt(MSE));
-disp(['PSNR = ',num2str(PSNR)]);
+MSE_noisy = sum(sum((img-noisy_img).^2))/N^2;
+PSNR_noisy = 20*log10(255/sqrt(MSE_noisy));
+MSE_restored = sum(sum((img-restored_img).^2))/N^2;
+PSNR_restored = 20*log10(255/sqrt(MSE_restored));
+disp(['PSNR (noisy image) = ',num2str(PSNR_noisy)]);
+disp(['PSNR (restored image) = ',num2str(PSNR_restored)]);
 disp(['Time elapsed = ',num2str(toc)]);
 
 figure(1); clf; imagesc(img); colormap gray; axis('image');
-title('Original Image')
+title('Original Image');
 figure(2); clf; imagesc(noisy_img); colormap gray; axis('image');
-title('Noisy Image')
+title(sprintf('Noisy Image, PSNR = %.2fdB', PSNR_noisy));
 figure(3); clf; imagesc(restored_img); colormap gray; axis('image');
-title('Restored image');
+title(sprintf('Restored image, PSNR = %.2fdB', PSNR_restored));
