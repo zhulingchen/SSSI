@@ -45,6 +45,7 @@ load('./modelData/denoising/timodel_shot_data_II_shot001-320.mat'); % shot data 
 nBoundary = 20;
 % dataTrue = dataTrue(nBoundary+1:end-nBoundary,:)';
 dataTrue = dataTrue(1:8*floor(size(dataTrue, 1)/8), 1:8*floor(size(dataTrue, 2)/8));
+% dataTrue = dataTrue(1:8*floor(size(dataTrue, 1)/8), 1:128);
 [nSamples, nRecs] = size(dataTrue);
 
 
@@ -132,12 +133,23 @@ fprintf('Denoised Seismic Data (Contourlet), PSNR = %.2fdB\n', psnrCleanData_con
 
 %% Reference: denoising using Curvelet
 is_real = 1;
-coeffCurvelet = fdct_wrapping(noisyData, is_real);
+nbscales = 4;
+nbangles_coarse = 8;
+
+if ~isunix
+    coeffCurvelet = fdct_wrapping(noisyData, is_real, 2, nbscales, nbangles_coarse);
+else
+    coeffCurvelet = fdct_wrapping(noisyData, is_real, nbscales, nbangles_coarse);
+end
 
 % Set up thresholds for all scales
 F = ones(nSamples, nRecs);
 X = fftshift(ifft2(F)) * sqrt(nSamples * nRecs);
-coeffX = fdct_wrapping(X, 0);
+if ~isunix
+    coeffX = fdct_wrapping(X, 0, 2, nbscales, nbangles_coarse);
+else
+    coeffX = fdct_wrapping(X, 0, nbscales, nbangles_coarse);
+end
 thres_curvelet = cell(size(coeffX));
 for s = 1:length(coeffX)
     thres_curvelet{s} = cell(size(coeffX{s}));
@@ -158,7 +170,11 @@ for s = 1:length(coeffCurvelet)
 end
 
 % Reconstruction
-cleanData_curvelet = real(ifdct_wrapping(coeffCurvelet, is_real));
+if ~isunix
+    cleanData_curvelet = real(ifdct_wrapping(coeffCurvelet, is_real));
+else
+    cleanData_curvelet = real(ifdct_wrapping(coeffCurvelet, is_real, nbscales, nbangles_coarse));
+end
 
 % Plot figures and PSNR output
 figure; imshow(cleanData_curvelet);
@@ -167,24 +183,18 @@ title(sprintf('Denoised Seismic Data (Curvelet), PSNR = %.2fdB', psnrCleanData_c
 fprintf('------------------------------------------------------------\n');
 fprintf('Denoised Seismic Data (Curvelet), PSNR = %.2fdB\n', psnrCleanData_curvelet);
 
-% % Take inverse curvelet transform
-% disp(' ');
-% disp('Take inverse transform of thresholded data: ifdct_wrapping');
-% tic; restored_img = real(ifdct_wrapping(Ct,1)); toc;
-
 
 %% Parameters for dictionary learning using sparse K-SVD
 gain = 1.15;
 trainBlockSize = 16;                        % for each dimension
-trainBlockNum = 5000;                       % number of training blocks in the training set
+trainBlockNum = 6000;                       % number of training blocks in the training set
 trainIter = 10;
 sigSpThres = sigma * trainBlockSize * gain; % pre-defined l2-norm error for BPDN
-atomSpThres = 100;                           % a self-determind value to control the sparsity of matrix A
+atomSpThres = 200;                           % a self-determind value to control the sparsity of matrix A
 
 
 %% Base dictionary setting
-% wavelet
-nlevels_wavelet = [0, 0, 0];      % Decomposition level, all 0 means wavelet
+nlevels_wavelet = [0, 0];      % Decomposition level, all 0 means wavelet
 pfilter_wavelet = '9/7' ;	% Pyramidal filter
 dfilter_wavelet = 'pkva' ;	% Directional filter
 
@@ -214,8 +224,9 @@ for ibatch = 1:nRecs-trainBlockSize+1
     fprintf('Batch %d... ', ibatch);
     % the current batch of blocks
     blocks = im2colstep(noisyData(:, ibatch:ibatch+trainBlockSize-1), trainBlockSize * [1, 1], [1, 1]);
-    % remove DC (mean values)
-    [blocks, dc] = remove_dc(blocks,'columns');
+    
+    % % remove DC (mean values)
+    % [blocks, dc] = remove_dc(blocks,'columns');
     
     cleanBlocks = zeros(size(blocks));
     blockCoeff = zeros(length(vecTrainBlockCoeff), nSamples - trainBlockSize + 1);
@@ -225,8 +236,9 @@ for ibatch = 1:nRecs-trainBlockSize+1
         % blockCoeff(:, iblk) = OMP({@(x) baseSynOp(learnedDict*x), @(x) learnedDict'*baseAnaOp(x)}, blocks(:, iblk), sigSpThres);
         cleanBlocks(:, iblk) = learnedOp(blockCoeff(:, iblk), baseSynOp, baseAnaOp, learnedDict, 1);
     end
-    % add DC (mean values)
-    cleanBlocks = add_dc(cleanBlocks, dc, 'columns');
+    
+    % % add DC (mean values)
+    % cleanBlocks = add_dc(cleanBlocks, dc, 'columns');
     
     cleanBatch = col2imstep(cleanBlocks, [nSamples, trainBlockSize], trainBlockSize * [1, 1], [1, 1]);
     cleanData_sparseKsvd(:,ibatch:ibatch+trainBlockSize-1) = cleanData_sparseKsvd(:,ibatch:ibatch+trainBlockSize-1) + cleanBatch;

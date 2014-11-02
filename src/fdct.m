@@ -32,7 +32,7 @@ function y = fdct(x, s, is_real, nz, nx, mode)
 
 if (mode == 1) % inverse Curvelet transform
     x = vec2curvelet(x, s);
-    y = ifdct_wrapping(x, is_real);
+    y = real(ifdct_wrapping(x, is_real));
     y = y(:);
 elseif (mode == 2) % Curvelet transform
     x = reshape(x, nz, nx);

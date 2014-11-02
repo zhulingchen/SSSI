@@ -33,7 +33,7 @@ function C = fdct_wrapping(x, is_real, finest, nbscales, nbangles_coarse)
 %               'cosine' and 'sine'. For a given scale j, the 'cosine'
 %               coefficients are stored in the first two quadrants (low
 %               values of l), the 'sine' coefficients in the last two
-%               quadrants (high values of l).  
+%               quadrants (high values of l).
 %
 % See also ifdct_wrapping.m, fdct_wrapping_param.m
 %
@@ -58,19 +58,19 @@ end;
 M1 = N1/3;
 M2 = N2/3;
 if finest == 1,
-
+    
     % Initialization: smooth periodic extension of high frequencies
     bigN1 = 2*floor(2*M1)+1;
     bigN2 = 2*floor(2*M2)+1;
     equiv_index_1 = 1+mod(floor(N1/2)-floor(2*M1)+(1:bigN1)-1,N1);
     equiv_index_2 = 1+mod(floor(N2/2)-floor(2*M2)+(1:bigN2)-1,N2);
     X = X(equiv_index_1,equiv_index_2);
-        % Invariant: equiv_index_1(floor(2*M1)+1) == (N1 + 2 - mod(N1,2))/2
-        % is the center in frequency. Same for M2, N2.
+    % Invariant: equiv_index_1(floor(2*M1)+1) == (N1 + 2 - mod(N1,2))/2
+    % is the center in frequency. Same for M2, N2.
     window_length_1 = floor(2*M1) - floor(M1) - 1 - (mod(N1,3)==0);
     window_length_2 = floor(2*M2) - floor(M2) - 1 - (mod(N2,3)==0);
-        % Invariant: floor(M1) + floor(2*M1) == N1 - (mod(M1,3)~=0)
-        % Same for M2, N2.
+    % Invariant: floor(M1) + floor(2*M1) == N1 - (mod(M1,3)~=0)
+    % Same for M2, N2.
     coord_1 = 0:(1/window_length_1):1;
     coord_2 = 0:(1/window_length_2):1;
     [wl_1,wr_1] = fdct_wrapping_window(coord_1);
@@ -81,9 +81,9 @@ if finest == 1,
     if mod(N2,3)==0, lowpass_2 = [0, lowpass_2, 0]; end;
     lowpass = lowpass_1'*lowpass_2;
     Xlow = X .* lowpass;
-
+    
     scales = nbscales:-1:2;
-
+    
 else
     
     M1 = M1/2;
@@ -107,10 +107,10 @@ else
     if is_real, C{nbscales}{1} = real(C{nbscales}{1}); end;
     
     scales = (nbscales-1):-1:2;
-
+    
 end;
 for j = scales,
-
+    
     M1 = M1/2;
     M2 = M2/2;
     window_length_1 = floor(2*M1) - floor(M1) - 1;
@@ -148,7 +148,7 @@ for j = scales,
         end;
         wedge_endpoints = wedge_ticks(2:2:(end-1));         % integers
         wedge_midpoints = (wedge_endpoints(1:(end-1)) + wedge_endpoints(2:end))/2;
-                % integers or half-integers
+        % integers or half-integers
         
         % Left corner wedge
         l = l+1;
@@ -159,15 +159,15 @@ for j = scales,
         width_wedge = wedge_endpoints(2) + wedge_endpoints(1) - 1;
         slope_wedge = (floor(4*M_horiz) + 1 - wedge_endpoints(1))/floor(4*M_vert);
         left_line = round(2 - wedge_endpoints(1) + slope_wedge*(Y_corner - 1));
-                                                            % integers
+        % integers
         [wrapped_data, wrapped_XX, wrapped_YY] = deal(zeros(length_corner_wedge,width_wedge));
         first_row = floor(4*M_vert)+2-ceil((length_corner_wedge+1)/2)+...
             mod(length_corner_wedge+1,2)*(quadrant-2 == mod(quadrant-2,2));
         first_col = floor(4*M_horiz)+2-ceil((width_wedge+1)/2)+...
             mod(width_wedge+1,2)*(quadrant-3 == mod(quadrant-3,2));
-                % Coordinates of the top-left corner of the wedge wrapped
-                % around the origin. Some subtleties when the wedge is
-                % even-sized because of the forthcoming 90 degrees rotation
+        % Coordinates of the top-left corner of the wedge wrapped
+        % around the origin. Some subtleties when the wedge is
+        % even-sized because of the forthcoming 90 degrees rotation
         for row = Y_corner
             cols = left_line(row) + mod((0:(width_wedge-1))-(left_line(row)-first_col),width_wedge);
             admissible_cols = round(1/2*(cols+1+abs(cols-1)));
@@ -178,7 +178,7 @@ for j = scales,
         end;
         slope_wedge_right = (floor(4*M_horiz)+1 - wedge_midpoints(1))/floor(4*M_vert);
         mid_line_right = wedge_midpoints(1) + slope_wedge_right*(wrapped_YY - 1);
-                % not integers in general
+        % not integers in general
         coord_right = 1/2 + floor(4*M_vert)/(wedge_endpoints(2) - wedge_endpoints(1)) * ...
             (wrapped_XX - mid_line_right)./(floor(4*M_vert)+1 - wrapped_YY);
         C2 = 1/(1/(2*(floor(4*M_horiz))/(wedge_endpoints(1) - 1) - 1) + 1/(2*(floor(4*M_vert))/(first_wedge_endpoint_vert - 1) - 1));
@@ -190,7 +190,7 @@ for j = scales,
         wl_left = fdct_wrapping_window(coord_corner);
         [wl_right,wr_right] = fdct_wrapping_window(coord_right);
         wrapped_data = wrapped_data .* (wl_left .* wr_right);
-
+        
         switch is_real
             case 0
                 wrapped_data = rot90(wrapped_data,-(quadrant-1));
@@ -201,7 +201,7 @@ for j = scales,
                 C{j}{l} = sqrt(2)*real(x);
                 C{j}{l+nbangles(j)/2} = sqrt(2)*imag(x);
         end;
-                
+        
         % Regular wedges
         length_wedge = floor(4*M_vert) - floor(M_vert);
         Y = 1:length_wedge;
@@ -220,7 +220,7 @@ for j = scales,
                 new_row = 1 + mod(row - first_row, length_wedge);
                 wrapped_data(new_row,:) = Xhi(row,cols);
                 wrapped_XX(new_row,:) = XX(row,cols);
-                wrapped_YY(new_row,:) = YY(row,cols);             
+                wrapped_YY(new_row,:) = YY(row,cols);
             end;
             slope_wedge_left = ((floor(4*M_horiz)+1) - wedge_midpoints(subl-1))/floor(4*M_vert);
             mid_line_left = wedge_midpoints(subl-1) + slope_wedge_left*(wrapped_YY - 1);
@@ -244,7 +244,7 @@ for j = scales,
                     C{j}{l+nbangles(j)/2} = sqrt(2)*imag(x);
             end;
         end;
-
+        
         % Right corner wedge
         l = l+1;
         width_wedge = 4*floor(4*M_horiz) + 3 - wedge_endpoints(end) - wedge_endpoints(end-1);
@@ -275,7 +275,7 @@ for j = scales,
             ((wrapped_XX - 1)/(floor(4*M_horiz)) - (wrapped_YY - 1)/(floor(4*M_vert)));
         wl_left = fdct_wrapping_window(coord_left);
         [wl_right,wr_right] = fdct_wrapping_window(coord_corner);
-
+        
         wrapped_data = wrapped_data .* (wl_left .* wr_right);
         switch is_real
             case 0
@@ -287,7 +287,7 @@ for j = scales,
                 C{j}{l} = sqrt(2)*real(x);
                 C{j}{l+nbangles(j)/2} = sqrt(2)*imag(x);
         end;
-
+        
         if quadrant < nbquadrants, Xhi = rot90(Xhi); end;
     end;
 end;
