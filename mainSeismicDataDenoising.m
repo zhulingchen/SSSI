@@ -36,7 +36,9 @@ if ~isunix
     rmpath(genpath('./src/CurveLab-2.1.3/fdct3d'));
 end
 
-load('./modelData/denoising/timodel_shot_data_II_shot001-320.mat'); % shot data from Hess VTI synthetic datasets
+dataFile = './modelData/denoising/timodel_shot_data_II_shot001-320.mat';
+[dataFileDir, dataFileName] = fileparts(dataFile);
+load(dataFile); % shot data from Hess VTI synthetic datasets
 
 % % try barbara
 % load('./modelData/denoising/barbara.mat'); % dataTrue
@@ -66,24 +68,26 @@ dataTrue = bsxfun(@times, bsxfun(@minus, dataTrue, meanData), 1./abs(maxData - m
 sigma = 0.1;
 noise = sigma * randn(size(dataTrue));
 noisyData = dataTrue + noise;
+save(fullfile(dataFileDir, [dataFileName, '_noisyData.mat']), 'noisyData', '-v7.3');
 trainData = noisyData;
 
 
 %% Plot figures
-figure; imshow(dataTrue);
+hFigDataTrue = figure; imshow(dataTrue);
 title('Original Seismic Data');
 
-figure; imshow(noisyData);
+hFigNoisyData = figure; imshow(noisyData);
 psnrNoisyData = 20*log10(sqrt(numel(noisyData)) / norm(dataTrue(:) - noisyData(:), 2));
 title(sprintf('Noisy Seismic Data, PSNR = %.2fdB', psnrNoisyData));
+saveas(hFigNoisyData, fullfile(dataFileDir, [dataFileName, '_noisyData']), 'fig');
 fprintf('------------------------------------------------------------\n');
 fprintf('Noisy Seismic Data, PSNR = %.2fdB\n', psnrNoisyData);
 
 
 %% Reference: denoising using wavelet
-nlevels_wavelet = [0, 0, 0];      % Decomposition level, all 0 means wavelet
-pfilter_wavelet = '9/7' ;	% Pyramidal filter
-dfilter_wavelet = 'pkva' ;	% Directional filter
+nlevels_wavelet = [0, 0, 0];        % Decomposition level, all 0 means wavelet
+pfilter_wavelet = '9/7';            % Pyramidal filter
+dfilter_wavelet = 'pkva';           % Directional filter
 [vecWaveletCoeff, str] = pdfb2vec(pdfbdec(noisyData, pfilter_wavelet, dfilter_wavelet, nlevels_wavelet));
 
 % Thresholding
@@ -93,19 +97,21 @@ vecWaveletCoeff = vecWaveletCoeff .* (abs(vecWaveletCoeff) > thres_wavelet);
 
 % Reconstruction
 cleanData_wavelet = pdfbrec(vec2pdfb(vecWaveletCoeff, str), pfilter_wavelet, dfilter_wavelet);
+save(fullfile(dataFileDir, [dataFileName, '_cleanData_wavelet.mat']), 'cleanData_wavelet', '-v7.3');
 
 % Plot figures and PSNR output
-figure; imshow(cleanData_wavelet);
+hFigCleanedDataWavelet = figure; imshow(cleanData_wavelet);
 psnrCleanData_wavelet = 20*log10(sqrt(numel(cleanData_wavelet)) / norm(dataTrue(:) - cleanData_wavelet(:), 2));
 title(sprintf('Denoised Seismic Data (Wavelet), PSNR = %.2fdB', psnrCleanData_wavelet));
+saveas(hFigCleanedDataWavelet, fullfile(dataFileDir, [dataFileName, '_cleanData_wavelet']), 'fig');
 fprintf('------------------------------------------------------------\n');
 fprintf('Denoised Seismic Data (Wavelet), PSNR = %.2fdB\n', psnrCleanData_wavelet);
 
 
 %% Reference: denoising using Contourlet
-nlevels_contourlet = [0, 3, 4];      % Decomposition level, all 0 means wavelet
-pfilter_contourlet = '9/7' ;	% Pyramidal filter
-dfilter_contourlet = 'pkva' ;	% Directional filter
+nlevels_contourlet = [0, 3, 4];     % Decomposition level, all 0 means wavelet
+pfilter_contourlet = '9/7';         % Pyramidal filter
+dfilter_contourlet = 'pkva';        % Directional filter
 [vecContourletCoeff, str] = pdfb2vec(pdfbdec(noisyData, pfilter_contourlet, dfilter_contourlet, nlevels_contourlet));
 
 % Set up thresholds for coarse scales
@@ -122,11 +128,13 @@ vecContourletCoeff = vecContourletCoeff .* (abs(vecContourletCoeff) > thres_cont
 
 % Reconstruction
 cleanData_contourlet = pdfbrec(vec2pdfb(vecContourletCoeff, str), pfilter_contourlet, dfilter_contourlet);
+save(fullfile(dataFileDir, [dataFileName, '_cleanData_contourlet.mat']), 'cleanData_contourlet', '-v7.3');
 
 % Plot figures and PSNR output
-figure; imshow(cleanData_contourlet);
+hFigCleanedDataContourlet = figure; imshow(cleanData_contourlet);
 psnrCleanData_contourlet = 20*log10(sqrt(numel(cleanData_contourlet)) / norm(dataTrue(:) - cleanData_contourlet(:), 2));
 title(sprintf('Denoised Seismic Data (Contourlet), PSNR = %.2fdB', psnrCleanData_contourlet));
+saveas(hFigCleanedDataContourlet, fullfile(dataFileDir, [dataFileName, '_cleanData_contourlet']), 'fig');
 fprintf('------------------------------------------------------------\n');
 fprintf('Denoised Seismic Data (Contourlet), PSNR = %.2fdB\n', psnrCleanData_contourlet);
 
@@ -175,28 +183,30 @@ if ~isunix
 else
     cleanData_curvelet = real(ifdct_wrapping(coeffCurvelet, is_real, nbscales, nbangles_coarse));
 end
+save(fullfile(dataFileDir, [dataFileName, '_cleanData_curvelet.mat']), 'cleanData_curvelet', '-v7.3');
 
 % Plot figures and PSNR output
-figure; imshow(cleanData_curvelet);
+hFigCleanedDataCurvelet = figure; imshow(cleanData_curvelet);
 psnrCleanData_curvelet = 20*log10(sqrt(numel(cleanData_curvelet)) / norm(dataTrue(:) - cleanData_curvelet(:), 2));
 title(sprintf('Denoised Seismic Data (Curvelet), PSNR = %.2fdB', psnrCleanData_curvelet));
+saveas(hFigCleanedDataCurvelet, fullfile(dataFileDir, [dataFileName, '_cleanData_curvelet']), 'fig');
 fprintf('------------------------------------------------------------\n');
 fprintf('Denoised Seismic Data (Curvelet), PSNR = %.2fdB\n', psnrCleanData_curvelet);
 
 
 %% Parameters for dictionary learning using sparse K-SVD
-gain = 1.15;
+gain = 1;                                   % noise gain (default value 1.15)
 trainBlockSize = 16;                        % for each dimension
 trainBlockNum = 6000;                       % number of training blocks in the training set
-trainIter = 10;
+trainIter = 20;
 sigSpThres = sigma * trainBlockSize * gain; % pre-defined l2-norm error for BPDN
-atomSpThres = 200;                           % a self-determind value to control the sparsity of matrix A
+atomSpThres = 200;                          % a self-determind value to control the sparsity of matrix A
 
 
 %% Base dictionary setting
-nlevels_wavelet = [0, 0];      % Decomposition level, all 0 means wavelet
-pfilter_wavelet = '9/7' ;	% Pyramidal filter
-dfilter_wavelet = 'pkva' ;	% Directional filter
+nlevels_wavelet = [0, 0];       % Decomposition level, all 0 means wavelet
+pfilter_wavelet = '9/7' ;       % Pyramidal filter
+dfilter_wavelet = 'pkva' ;      % Directional filter
 
 
 %% Dictionary learning using sparse K-SVD
@@ -211,12 +221,18 @@ baseAnaOp = @(x) pdfb(x, str, pfilter_wavelet, dfilter_wavelet, nlevels_wavelet,
     initDict, trainIter, trainBlockSize, trainBlockNum, atomSpThres, sigSpThres, 'bpdn');
 
 
+%% show trained dictionary
+[PhiSyn, PhiAna] = operator2matrix(baseSynOp, baseAnaOp, trainBlockSize * trainBlockSize);
+dictImg = showdict(PhiSyn * learnedDict, [1 1]*sqrt(size(PhiSyn * learnedDict, 1)), round(sqrt(size(PhiSyn * learnedDict, 2))), round(sqrt(size(PhiSyn * learnedDict, 2))), 'whitelines', 'highcontrast');
+hFigLearnedDict = figure; imshow(imresize(dictImg, 2, 'nearest')); title(sprintf('Trained Dictionary (Iteration %d)', iter));
+saveas(hFigLearnedDict, fullfile(dataFileDir, [dataFileName, '_learnedDict']), 'fig');
+
+
 %% Denoising
 fprintf('------------------------------------------------------------\n');
 fprintf('Denoising\n');
 
 cleanData_sparseKsvd = zeros(size(dataTrue));
-% nSamples, nRecs
 totalBlockNum = (nSamples - trainBlockSize + 1) * (nRecs - trainBlockSize + 1);
 processedBlocks = 0;
 
@@ -250,11 +266,13 @@ end
 % average the denoised and noisy signals
 cnt = countcover(size(noisyData), trainBlockSize * [1, 1], [1, 1]);
 cleanData_sparseKsvd = cleanData_sparseKsvd./cnt;
+save(fullfile(dataFileDir, [dataFileName, '_cleanData_sparseKsvd.mat']), 'cleanData_sparseKsvd', '-v7.3');
 
 
 %% Plot figures and PSNR output
-figure; imshow(cleanData_sparseKsvd);
+hFigCleanedDataSparseKsvd = figure; imshow(cleanData_sparseKsvd);
 psnrCleanData_sparseKsvd = 20*log10(sqrt(numel(cleanData_sparseKsvd)) / norm(dataTrue(:) - cleanData_sparseKsvd(:), 2));
 title(sprintf('Denoised Seismic Data, PSNR = %.2fdB', psnrCleanData_sparseKsvd));
+saveas(hFigCleanedDataSparseKsvd, fullfile(dataFileDir, [dataFileName, '_cleanData_sparseKsvd']), 'fig');
 fprintf('------------------------------------------------------------\n');
 fprintf('Denoised Seismic Data, PSNR = %.2fdB\n', psnrCleanData_sparseKsvd);

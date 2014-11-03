@@ -172,8 +172,8 @@ for iter = 1:trainIter
     end
     
     %% show trained dictionary
-    dictimg = showdict(PhiSyn * A, [1 1]*sqrt(size(PhiSyn * A, 1)), round(sqrt(size(PhiSyn * A, 2))), round(sqrt(size(PhiSyn * A, 2))), 'whitelines', 'highcontrast');
-    figure(hFigTrainedDict); imshow(imresize(dictimg,2,'nearest')); title(sprintf('Trained Dictionary (Iteration %d)', iter));
+    dictImg = showdict(PhiSyn * A, [1 1]*sqrt(size(PhiSyn * A, 1)), round(sqrt(size(PhiSyn * A, 2))), round(sqrt(size(PhiSyn * A, 2))), 'whitelines', 'highcontrast');
+    figure(hFigTrainedDict); imshow(imresize(dictImg, 2, 'nearest')); title(sprintf('Trained Dictionary (Iteration %d)', iter));
     
 end
 
