@@ -277,3 +277,4 @@ saveas(hFigCleanedDataSparseKsvd, fullfile(dataFileDir, [dataFileName, '_cleanDa
 fprintf('------------------------------------------------------------\n');
 fprintf('Denoised Seismic Data, PSNR = %.2fdB\n', psnrCleanData_sparseKsvd);
 
+%% EOF
