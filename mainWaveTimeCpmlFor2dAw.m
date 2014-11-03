@@ -17,11 +17,14 @@
 close all;
 clear;
 clc;
+
+
 %% MicroSeismic Time reversal Example - Layer Cake Model
 % in time domain
 % modified by Entao Liu
 % support arbitrary / random microseismic and receiver positions
 % support Nonsplit Convolutional-PML (CPML)
+
 EPSILON = 1e-3;
 
 
@@ -70,7 +73,7 @@ vmax = max(velocityModel(:));
 
 % calculate time step dt from stability crierion for finite difference
 % solution of the wave equation.
-dt = 0.75*(dz/vmax/sqrt(2));
+dt = 0.5*(dz/vmax/sqrt(2));
 
 % determine time samples nt from wave travelime to depth and back to
 % surface
@@ -80,29 +83,20 @@ t  = (0:nt-1).*dt;
 % add region around model for applying absorbing boundary conditions
 V = extBoundary(velocityModel, nBoundary, 2);
 
-% add some randomness on the fault model
-VS = [repmat(V(1, :), nBoundary, 1); V];
-nAvgSize = [3, 3];
-hImageSmooth = fspecial('average', nAvgSize);
-VS = imfilter(VS, hImageSmooth);
-velocityModel2 = VS(nBoundary+1:end-nBoundary, nBoundary+1:end-nBoundary);
-
-V2 = extBoundary(velocityModel2, nBoundary, 2);
-
 
 % number of approximation order for differentiator operator
 nDiffOrder = 2;
 
 % Define frequency parameter for ricker wavelet
-f = 15;
+f = 20;
 
 
 %% Generate shot signals
 % grids and positions of shot array
 nShots = 1;
-zShotGrid = 90;
+zShotGrid = 60;
 zShot = zShotGrid * dz;
-xShotGrid = 40;
+xShotGrid = 50;
 xShot = xShotGrid * dx;
 delayTimeGrid = 0;
 
@@ -134,7 +128,7 @@ colormap(seismic);
 
 %% Generate shots and save to file and video
 
-filenameVideo = './videos/MSforward_robustTest.mp4';
+filenameVideo = './videos/MSforward.mp4';
 if ~exist(filenameVideo, 'file')
     objVideoModelShots = VideoWriter(filenameVideo, 'MPEG-4');
     open(objVideoModelShots);
@@ -209,17 +203,7 @@ end
 
 %% Time Reversal
 
-% plot the velocity model
-subplot(2,2,1);
-imagesc(x, z, velocityModel2)
-xlabel('Distance (m)'); ylabel('Depth (m)');
-title('Velocity Model');
-hold on;
-hShotPos = plot(xShot, zShot, 'w*');
-hold off;
-colormap(seismic);
-
-filenameVideo = './videos/MSreverse_robustTest.mp4';
+filenameVideo = './videos/MSreverse.mp4';
 if ~exist(filenameVideo, 'file')
     objVideoModelReverse = VideoWriter(filenameVideo, 'MPEG-4');
     open(objVideoModelReverse);
@@ -230,11 +214,11 @@ load('./modelData/dataTrue.mat'); % dataTrue
 noisyDataTrue = dataTrue;
 
 for ixr = 1:nRecs
-    noisyDataTrue(xRecGrid(ixr)+nBoundary,:) = awgn(dataTrue(xRecGrid(ixr)+nBoundary,:), -10, 'measured');
+    noisyDataTrue(xRecGrid(ixr)+nBoundary,:) = awgn(dataTrue(xRecGrid(ixr)+nBoundary,:), 10, 'measured');
 end
 
 tic;
-[~, rtmsnapshot] = rvsTimeCpmlFor2dAw(V2, noisyDataTrue, nDiffOrder, nBoundary, dz, dx, dt);
+[~, rtmsnapshot] = rvsTimeCpmlFor2dAw(V, noisyDataTrue, nDiffOrder, nBoundary, dz, dx, dt);
 timeRT = toc;
 fprintf('Generate Reverse Time Record, elapsed time = %fs\n', timeRT);
 
