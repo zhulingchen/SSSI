@@ -168,7 +168,6 @@ nDiffOrder = 2;
 
 % Define analog frequency parameter for ricker wavelet
 f = 20;
-% f = w(550)/(2*pi);
 
 
 %% Wavelet transform parameters
