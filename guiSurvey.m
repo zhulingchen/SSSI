@@ -22,7 +22,7 @@ function varargout = guiSurvey(varargin)
 
 % Edit the above text to modify the response to help guiSurvey
 
-% Last Modified by GUIDE v2.5 04-Nov-2014 00:05:23
+% Last Modified by GUIDE v2.5 04-Nov-2014 12:32:03
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -80,9 +80,9 @@ function btn_shot_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 
-% --- Executes on button press in btn_loadVelocityModel.
-function btn_loadVelocityModel_Callback(hObject, eventdata, handles)
-% hObject    handle to btn_loadVelocityModel (see GCBO)
+% --- Executes on button press in btn_loadPWaveVelocityModel.
+function btn_loadPWaveVelocityModel_Callback(hObject, eventdata, handles)
+% hObject    handle to btn_loadPWaveVelocityModel (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
@@ -98,6 +98,12 @@ set(handles.edit_dx, 'Enable', 'on');
 set(handles.edit_dz, 'Enable', 'on');
 set(handles.edit_dt, 'Enable', 'on');
 set(handles.edit_boundary, 'Enable', 'on');
+set(handles.ppm_approxOrder, 'Enable', 'on');
+set(handles.edit_centerFreq, 'Enable', 'on');
+set(handles.edit_sx, 'Enable', 'on');
+set(handles.edit_sz, 'Enable', 'on');
+set(handles.ppm_sweepAll, 'Enable', 'on');
+set(handles.ppm_receiveAll, 'Enable', 'on');
 % set finite difference setting values
 dx = 10;
 dz = 10;
@@ -106,6 +112,10 @@ dt = 0.5*(min([dx, dz])/vmax/sqrt(2));
 nt = round((sqrt((dx*nx)^2 + (dz*nz)^2)*2/vmin/dt + 1));
 x = (1:nx) * dx;
 z = (1:nz) * dz;
+
+nBoundary = 20;
+nDiffOrder = 2;
+f = 20;
 % set values in edit texts
 set(handles.edit_dx, 'String', num2str(dx));
 set(handles.edit_dz, 'String', num2str(dz));
@@ -113,11 +123,15 @@ set(handles.edit_dt, 'String', num2str(dt));
 set(handles.edit_nx, 'String', num2str(nx));
 set(handles.edit_nz, 'String', num2str(nz));
 set(handles.edit_nt, 'String', num2str(nt));
+set(handles.edit_boundary, 'String', num2str(nBoundary));
+set(handles.ppm_approxOrder, 'Value', nDiffOrder);
+set(handles.edit_centerFreq, 'String', num2str(f));
 
 % 3D case
 if (dim > 2)
     % enable edit texts for y-axis
     set(handles.edit_dy, 'Enable', 'on');
+    set(handles.edit_sy, 'Enable', 'on');
     % set finite difference setting values
     dy = 10;
     dt = 0.5*(min([dx, dy, dz])/vmax/sqrt(3));
@@ -396,6 +410,290 @@ function edit_boundary_Callback(hObject, eventdata, handles)
 % --- Executes during object creation, after setting all properties.
 function edit_boundary_CreateFcn(hObject, eventdata, handles)
 % hObject    handle to edit_boundary (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on selection change in ppm_approxOrder.
+function ppm_approxOrder_Callback(hObject, eventdata, handles)
+% hObject    handle to ppm_approxOrder (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = cellstr(get(hObject,'String')) returns ppm_approxOrder contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from ppm_approxOrder
+
+
+% --- Executes during object creation, after setting all properties.
+function ppm_approxOrder_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to ppm_approxOrder (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function edit_centerFreq_Callback(hObject, eventdata, handles)
+% hObject    handle to edit_centerFreq (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of edit_centerFreq as text
+%        str2double(get(hObject,'String')) returns contents of edit_centerFreq as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function edit_centerFreq_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit_centerFreq (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function edit_sx_Callback(hObject, eventdata, handles)
+% hObject    handle to edit_sx (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of edit_sx as text
+%        str2double(get(hObject,'String')) returns contents of edit_sx as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function edit_sx_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit_sx (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function edit_sy_Callback(hObject, eventdata, handles)
+% hObject    handle to edit_sy (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of edit_sy as text
+%        str2double(get(hObject,'String')) returns contents of edit_sy as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function edit_sy_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit_sy (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function edit_sz_Callback(hObject, eventdata, handles)
+% hObject    handle to edit_sz (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of edit_sz as text
+%        str2double(get(hObject,'String')) returns contents of edit_sz as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function edit_sz_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit_sz (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on selection change in ppm_sweepAll.
+function ppm_sweepAll_Callback(hObject, eventdata, handles)
+% hObject    handle to ppm_sweepAll (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = cellstr(get(hObject,'String')) returns ppm_sweepAll contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from ppm_sweepAll
+
+velocityModel = handles.velocityModel;
+dim = length(size(velocityModel));
+
+isSweepAll = get(hObject, 'Value');
+if (isSweepAll == 1) % Yes
+    set(handles.edit_sx, 'Enable', 'off');
+    set(handles.edit_sz, 'Enable', 'off');
+end
+if (isSweepAll == 2) % No
+    set(handles.edit_sx, 'Enable', 'on');
+    set(handles.edit_sz, 'Enable', 'on');
+end
+
+% 3D case
+if (dim > 2)
+    if (isSweepAll == 1) % Yes
+        set(handles.edit_sy, 'Enable', 'off');
+    end
+    if (isSweepAll == 2) % No
+        set(handles.edit_sy, 'Enable', 'on');
+    end
+end
+
+
+% --- Executes during object creation, after setting all properties.
+function ppm_sweepAll_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to ppm_sweepAll (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on selection change in ppm_receiveAll.
+function ppm_receiveAll_Callback(hObject, eventdata, handles)
+% hObject    handle to ppm_receiveAll (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = cellstr(get(hObject,'String')) returns ppm_receiveAll contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from ppm_receiveAll
+
+velocityModel = handles.velocityModel;
+[nz, nx, ~] = size(velocityModel);
+dim = length(size(velocityModel));
+
+isReceiveAll = get(hObject, 'Value');
+if (isReceiveAll == 1) % Yes
+    set(handles.edit_rx, 'Enable', 'off');
+    set(handles.edit_rz, 'Enable', 'off');
+end
+if (isReceiveAll == 2) % No
+    set(handles.edit_rx, 'Enable', 'on');
+    set(handles.edit_rz, 'Enable', 'on');
+    str_rx = sprintf('1:%d', nx);
+    str_rz = sprintf('%d', 1);
+    set(handles.edit_rx, 'String', str_rx);
+    set(handles.edit_rz, 'String', str_rz);
+end
+
+% 3D case
+if (dim > 2)
+    [~, ~, ny] = size(velocityModel);
+    if (isReceiveAll == 1) % Yes
+        set(handles.edit_ry, 'Enable', 'off');
+    end
+    if (isReceiveAll == 2) % No
+        set(handles.edit_ry, 'Enable', 'on');
+        str_ry = sprintf('1:%d', ny);
+        set(handles.edit_ry, 'String', str_ry);
+    end
+end
+
+
+% --- Executes during object creation, after setting all properties.
+function ppm_receiveAll_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to ppm_receiveAll (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function edit_rx_Callback(hObject, eventdata, handles)
+% hObject    handle to edit_rx (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of edit_rx as text
+%        str2double(get(hObject,'String')) returns contents of edit_rx as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function edit_rx_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit_rx (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function edit_ry_Callback(hObject, eventdata, handles)
+% hObject    handle to edit_ry (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of edit_ry as text
+%        str2double(get(hObject,'String')) returns contents of edit_ry as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function edit_ry_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit_ry (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function edit_rz_Callback(hObject, eventdata, handles)
+% hObject    handle to edit_rz (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of edit_rz as text
+%        str2double(get(hObject,'String')) returns contents of edit_rz as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function edit_rz_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit_rz (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
