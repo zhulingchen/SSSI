@@ -22,7 +22,7 @@ function varargout = guiSurvey(varargin)
 
 % Edit the above text to modify the response to help guiSurvey
 
-% Last Modified by GUIDE v2.5 04-Nov-2014 12:32:03
+% Last Modified by GUIDE v2.5 04-Nov-2014 13:42:15
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -42,6 +42,13 @@ else
     gui_mainfcn(gui_State, varargin{:});
 end
 % End initialization code - DO NOT EDIT
+
+% only add the directory into path when it is not in the path to load GUI
+% faster
+pathCell = regexp(path, pathsep, 'split');
+if ~any(strcmpi('./src', pathCell))
+    addpath(genpath('./src'));
+end
 
 
 % --- Executes just before guiSurvey is made visible.
@@ -78,6 +85,78 @@ function btn_shot_Callback(hObject, eventdata, handles)
 % hObject    handle to btn_shot (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+
+%% load parameter
+velocityModel = handles.velocityModel;
+dim = length(size(velocityModel));
+[nz, nx, ~] = size(velocityModel);
+dx = str2double(get(handles.edit_dx, 'String'));
+dz = str2double(get(handles.edit_dz, 'String'));
+dt = str2double(get(handles.edit_dt, 'String'));
+nt = str2double(get(handles.edit_nt, 'String'));
+x = (1:nx) * dx;
+z = (1:nz) * dz;
+t  = (0:nt-1).*dt;
+nBoundary = str2double(get(handles.edit_boundary, 'String'));
+nDiffOrder = get(handles.ppm_approxOrder, 'Value');
+f = str2double(get(handles.edit_centerFreq, 'String'));
+sx = str2double(get(handles.edit_sx, 'String'));
+sz = str2double(get(handles.edit_sz, 'String'));
+xShot = sx * dx;
+zShot = sz * dz;
+
+axes(handles.axes_velocityModel);
+hold on;
+plot(xShot, zShot, 'w*');
+hold off;
+
+% 3D case
+if (dim > 2)
+    [~, ~, ny] = size(velocityModel);
+    dy = str2double(get(handles.edit_dy, 'String'));
+    sy = str2double(get(handles.edit_sy, 'String'));
+end
+
+% add region around model for applying absorbing boundary conditions
+V = extBoundary(velocityModel, nBoundary, dim);
+
+%% generate shot source field and shot record using FDTD
+sourceTime = zeros([size(V), nt]);
+wave1dTime = ricker(f, nt, dt);
+
+if (dim <= 2)	% 2D case
+    sourceTime(sz, sx+nBoundary, :) = reshape(wave1dTime, 1, 1, nt);
+    [dataTrue, snapshotTrue] = fwdTimeCpmlFor2dAw(V, sourceTime, nDiffOrder, nBoundary, dz, dx, dt);
+else            % 3D case
+    sourceTime(sz, sx+nBoundary, sy+nBoundary, :) = reshape(wave1dTime, 1, 1, 1, nt);
+    [dataTrue, snapshotTrue] = fwdTimeCpmlFor2dAw(V, sourceTime, nDiffOrder, nBoundary, dz, dx, dy, dt);
+end
+
+
+%% plot figures into axes
+for it = 1:nt
+    axes(handles.axes_sourceTime);
+    plot([1:nt], wave1dTime); hold on;
+    plot(it, wave1dTime(it), 'r*'); hold off;
+    xlim([1, nt]);
+    xlabel('Time'); ylabel('Amplitude');
+    title(sprintf('Shot at x = %dm', sx));
+    colormap(seismic);
+    
+    axes(handles.axes_data);
+    dat = zeros(nt, nx);
+    dat(1:it, :) = dataTrue(nBoundary+1:end-nBoundary, 1:it).';
+    imagesc(x, t, dat);
+    xlabel('Distance (m)'), ylabel('Time (s)')
+    title('Shot Record (True)')
+    caxis([-0.1 0.1]);
+    
+    axes(handles.axes_snapshot);
+    imagesc(x, z, snapshotTrue(1:end-nBoundary, nBoundary+1:end-nBoundary, it))
+    xlabel('Distance (m)'), ylabel('Depth (m)')
+    title(sprintf('Wave Propagation (True) t = %.3f', t(it)));
+    caxis([-0.14 1])
+end
 
 
 % --- Executes on button press in btn_loadPWaveVelocityModel.
@@ -116,6 +195,13 @@ z = (1:nz) * dz;
 nBoundary = 20;
 nDiffOrder = 2;
 f = 20;
+
+sx = round(nx / 2);
+sz = 1;
+
+str_rx = sprintf('1:%d', nx);
+str_rz = sprintf('%d', 1);
+
 % set values in edit texts
 set(handles.edit_dx, 'String', num2str(dx));
 set(handles.edit_dz, 'String', num2str(dz));
@@ -126,6 +212,10 @@ set(handles.edit_nt, 'String', num2str(nt));
 set(handles.edit_boundary, 'String', num2str(nBoundary));
 set(handles.ppm_approxOrder, 'Value', nDiffOrder);
 set(handles.edit_centerFreq, 'String', num2str(f));
+set(handles.edit_sx, 'String', num2str(sx));
+set(handles.edit_sz, 'String', num2str(sz));
+set(handles.edit_rx, 'String', str_rx);
+set(handles.edit_rz, 'String', str_rz);
 
 % 3D case
 if (dim > 2)
@@ -137,11 +227,18 @@ if (dim > 2)
     dt = 0.5*(min([dx, dy, dz])/vmax/sqrt(3));
     [~, ~, ny] = size(velocityModel);
     nt = round((sqrt((dx*nx)^2 + (dy*ny)^2 + (dz*nz)^2)*2/vmin/dt + 1));
+    
+    sy = round(ny / 2);
+    
+    str_ry = sprintf('1:%d', ny);
+    
     % set values in edit texts for y-axis
     set(handles.edit_dy, 'String', num2str(dy));
     set(handles.edit_dt, 'String', num2str(dt));
     set(handles.edit_ny, 'String', num2str(ny));
     set(handles.edit_nt, 'String', num2str(nt));
+    set(handles.edit_sy, 'String', num2str(sy));
+    set(handles.edit_ry, 'String', str_ry);
 end
 
 axes(handles.axes_velocityModel);
@@ -178,6 +275,7 @@ set(handles.edit_nt, 'String', num2str(nt));
 
 % 3D case
 if (dim > 2)
+    dy = str2double(get(handles.edit_dy, 'String'));
     dt = 0.5*(min([dx, dy, dz])/vmax/sqrt(3));
     [~, ~, ny] = size(velocityModel);
     nt = round((sqrt((dx*nx)^2 + (dy*ny)^2 + (dz*nz)^2)*2/vmin/dt + 1));
@@ -207,6 +305,20 @@ function edit_dy_Callback(hObject, eventdata, handles)
 
 % Hints: get(hObject,'String') returns contents of edit_dy as text
 %        str2double(get(hObject,'String')) returns contents of edit_dy as a double
+
+% only happen in 3D case
+velocityModel = handles.velocityModel;
+vmin = min(velocityModel(:));
+vmax = max(velocityModel(:));
+
+dx = str2double(get(handles.edit_dx, 'String'));
+dy = str2double(get(handles.edit_dy, 'String'));
+dz = str2double(get(handles.edit_dz, 'String'));
+dt = 0.5*(min([dx, dy, dz])/vmax/sqrt(3));
+[nz, nx, ny] = size(velocityModel);
+nt = round((sqrt((dx*nx)^2 + (dy*ny)^2 + (dz*nz)^2)*2/vmin/dt + 1));
+set(handles.edit_dt, 'String', num2str(dt));
+set(handles.edit_nt, 'String', num2str(nt));
 
 
 % --- Executes during object creation, after setting all properties.
@@ -246,6 +358,7 @@ set(handles.edit_nt, 'String', num2str(nt));
 
 % 3D case
 if (dim > 2)
+    dy = str2double(get(handles.edit_dy, 'String'));
     dt = 0.5*(min([dx, dy, dz])/vmax/sqrt(3));
     [~, ~, ny] = size(velocityModel);
     nt = round((sqrt((dx*nx)^2 + (dy*ny)^2 + (dz*nz)^2)*2/vmin/dt + 1));
