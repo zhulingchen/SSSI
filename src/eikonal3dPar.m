@@ -34,7 +34,7 @@ parpool(8)
 for iter=1:iMax
     
     spmd(8)
-        if labelindex ==1;
+        if labindex ==1;
 %% first Sweep i=1:nz, j=1:nx, k=1:ny
 for i=1:nz
     for j=1:nx
@@ -74,7 +74,7 @@ for i=1:nz
    end
 end
 
-        elseif labelindex == 2;
+        elseif labindex == 2;
 %% second Sweep i=nz:1, j=1:nx, k=1:ny
 for i=nz:-1:1
     for j=1:nx
@@ -114,7 +114,7 @@ for i=nz:-1:1
    end
 end
 
-        elseif labelindex == 3;
+        elseif labindex == 3;
 
 
 %% third Sweep i=nz:1, j=nx:1, k=1:ny
@@ -156,7 +156,7 @@ for i=nz:-1:1
    end
 end
 
-        elseif labelindex == 4;
+        elseif labindex == 4;
 
 %% fourth Sweep i=nz:1, j=nx:1, k=ny:1
 for i=nz:-1:1
@@ -197,7 +197,7 @@ for i=nz:-1:1
    end
 end
 
-        elseif labelindex == 5;
+        elseif labindex == 5;
         
 %% fifth Sweep i=1:nz, j=nx:1, k=ny:1
 for i=1:nz
@@ -238,7 +238,7 @@ for i=1:nz
    end
 end
  
-        elseif labelindex == 6;
+        elseif labindex == 6;
 
 %% sixth Sweep i=1:nz, j=1:nx, k=ny:1
 
@@ -280,7 +280,7 @@ for i=1:nz
    end
 end
         
-        elseif labelindex == 7;
+        elseif labindex == 7;
 %% seventh Sweep i=1:nz, j=nx:1, k=1:ny
 
 for i=1:nz
@@ -368,8 +368,7 @@ end
 Told = min(min(min(min(min(min(min(Tnew{1},Tnew{2}),Tnew{3}),Tnew{4}),Tnew{5}),Tnew{6}),Tnew{7}),Tnew{8});
 
 end
-toc
 T=Told;
 
-
+delete(gcp)
 
