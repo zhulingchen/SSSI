@@ -232,6 +232,132 @@ for i=1:nz
 end
 
 Told=Tnew;
+
+%% sixth Sweep i=1:nz, j=1:nx, k=ny:1
+
+for i=1:nz
+    for j=1:nx
+        for k=ny:-1:1
+            if (i==sz && j==sx && k==sy)
+                Tnew(i,j,k) = Told(i,j,k);
+            else
+                
+              if i==1
+                   a=Told(2,j,k);
+              elseif i==nz
+                   a=Told(nz-1,j,k);
+              else
+                   a=min(Told(i-1,j,k),Told(i+1,j,k));
+              end
+         
+                 if j==1
+                     b=Told(i,2,k);
+                 elseif j==nx
+                     b=Told(i,nx-1,k);
+                 else
+                     b=min(Told(i,j-1,k),Told(i,j+1,k));
+                 end
+                 
+                 if k==1
+                     c=Told(i,j,2);
+                 elseif k==ny
+                     c=Told(i,j,ny-1);
+                 else
+                     c=min(Told(i,j,k-1),Told(i,j,k+1));
+                 end
+                 
+                  TT = sqSolver(a,b,c,Slow(i,j,k)*dx);
+                  Tnew(i,j,k) = min(Told(i,j,k),TT);
+             end
+       end
+   end
+end
+
+Told=Tnew;
+
+%% seventh Sweep i=1:nz, j=nx:1, k=1:ny
+
+for i=1:nz
+    for j=nx:-1:1
+        for k=1:ny
+            if (i==sz && j==sx && k==sy)
+                Tnew(i,j,k) = Told(i,j,k);
+            else
+                
+              if i==1
+                   a=Told(2,j,k);
+              elseif i==nz
+                   a=Told(nz-1,j,k);
+              else
+                   a=min(Told(i-1,j,k),Told(i+1,j,k));
+              end
+         
+                 if j==1
+                     b=Told(i,2,k);
+                 elseif j==nx
+                     b=Told(i,nx-1,k);
+                 else
+                     b=min(Told(i,j-1,k),Told(i,j+1,k));
+                 end
+                 
+                 if k==1
+                     c=Told(i,j,2);
+                 elseif k==ny
+                     c=Told(i,j,ny-1);
+                 else
+                     c=min(Told(i,j,k-1),Told(i,j,k+1));
+                 end
+                 
+                  TT = sqSolver(a,b,c,Slow(i,j,k)*dx);
+                  Tnew(i,j,k) = min(Told(i,j,k),TT);
+             end
+       end
+   end
+end
+
+Told = Tnew;
+
+%% eighth Sweep i = nz:1, j=1:nx, k= ny:1
+
+for i=nz:-1:1
+    for j=1:nx
+        for k=ny:-1:1
+            if (i==sz && j==sx && k==sy)
+                Tnew(i,j,k) = Told(i,j,k);
+            else
+                
+              if i==1
+                   a=Told(2,j,k);
+              elseif i==nz
+                   a=Told(nz-1,j,k);
+              else
+                   a=min(Told(i-1,j,k),Told(i+1,j,k));
+              end
+         
+                 if j==1
+                     b=Told(i,2,k);
+                 elseif j==nx
+                     b=Told(i,nx-1,k);
+                 else
+                     b=min(Told(i,j-1,k),Told(i,j+1,k));
+                 end
+                 
+                 if k==1
+                     c=Told(i,j,2);
+                 elseif k==ny
+                     c=Told(i,j,ny-1);
+                 else
+                     c=min(Told(i,j,k-1),Told(i,j,k+1));
+                 end
+                 
+                  TT = sqSolver(a,b,c,Slow(i,j,k)*dx);
+                  Tnew(i,j,k) = min(Told(i,j,k),TT);
+             end
+       end
+   end
+end
+
+Told = Tnew;
 end
 toc
 T=Told;

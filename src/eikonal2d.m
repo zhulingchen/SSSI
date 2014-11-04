@@ -19,12 +19,12 @@ function T = eikonal2d(V, dx, sz, sx, iMax)
 
 %% initialization 
 [nz, nx]= size(V);
-Slow = 1./V; 
+Slow = 1./V;
 Told = 1e6*ones(nz,nx);
 Tnew = 1e6*ones(nz,nx);
 Told(sz,sx)=0;
 
-tic
+
 for iter=1:iMax
 %% first Sweep i=1:nz, j=1:nx
 for i=1:nz
@@ -169,5 +169,4 @@ end
 
 
 T=Told;
-toc
 
