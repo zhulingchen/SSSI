@@ -140,6 +140,8 @@ fprintf('Denoised Seismic Data (Contourlet), PSNR = %.2fdB\n', psnrCleanData_con
 
 
 %% Reference: denoising using Curvelet
+% 2dB loss if we replace fdct_wrapping and ifdct_wrapping with fdct_usfft
+% and ifdct_usfft. respectively
 is_real = 1;
 nbscales = 4;
 nbangles_coarse = 8;
