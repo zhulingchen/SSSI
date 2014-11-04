@@ -29,7 +29,7 @@ Told = 1e6*ones(nz,nx,ny);
 Tnew = 1e6*ones(nz,nx,ny);
 Told(sz,sx,sy) = 0; % set the source point
 
-parpool(4)
+parpool(8)
 
 for iter=1:iMax
     
