@@ -88,6 +88,9 @@ function btn_loadPWaveVelocityModel_Callback(hObject, eventdata, handles)
 
 %% load velocity model
 [file, path] = uigetfile('*.mat', 'Select a velocity model');
+if (~any([file, path])) % user pressed cancel button
+    return;
+end
 load(fullfile(path, file));
 
 dim = length(size(velocityModel));
@@ -151,6 +154,7 @@ if (dim > 2)
     dt = 0.5*(min([dx, dy, dz])/vmax/sqrt(3));
     [~, ~, ny] = size(velocityModel);
     nt = round((sqrt((dx*nx)^2 + (dy*ny)^2 + (dz*nz)^2)*2/vmin/dt + 1));
+    y = (1:ny) * dy;
     
     sy = round(ny / 2);
     
@@ -166,10 +170,23 @@ if (dim > 2)
 end
 
 %% plot velocity model
-imagesc(x, z, velocityModel, 'Parent', handles.axes_velocityModel);
-xlabel(handles.axes_velocityModel, 'Distance (m)'); ylabel(handles.axes_velocityModel, 'Depth (m)');
-title(handles.axes_velocityModel, 'Velocity Model');
-colormap(handles.axes_sourceTime, seismic);
+if (dim <= 2)	% 2D case
+    imagesc(x, z, velocityModel, 'Parent', handles.axes_velocityModel);
+    xlabel(handles.axes_velocityModel, 'Distance (m)'); ylabel(handles.axes_velocityModel, 'Depth (m)');
+    title(handles.axes_velocityModel, 'Velocity Model');
+    colormap(handles.axes_velocityModel, seismic);
+else            % 3D case
+    slice(handles.axes_velocityModel, x, y, z, permute(velocityModel, [2, 3, 1]), ...
+        round(linspace(2 * dx, (size(velocityModel, 3)-1) * dx, 5)), ...
+        round(linspace(2 * dy, (size(velocityModel, 2)-1) * dy, 5)), ...
+        round(linspace(2 * dz, (size(velocityModel, 1)-1) * dz, 10)));
+    xlabel(handles.axes_velocityModel, 'Distance (m)');
+    ylabel(handles.axes_velocityModel, 'Distance (m)');
+    zlabel(handles.axes_velocityModel, 'Depth (m)');
+    title(handles.axes_velocityModel, 'Velocity Model');
+    shading(handles.axes_velocityModel, 'interp');
+    colormap(handles.axes_velocityModel, seismic);
+end
 
 %% share variables among callback functions
 data = guidata(hObject);
@@ -207,10 +224,11 @@ t  = (0:nt-1).*dt;
 nBoundary = str2double(get(handles.edit_boundary, 'String'));
 nDiffOrder = get(handles.ppm_approxOrder, 'Value');
 f = str2double(get(handles.edit_centerFreq, 'String'));
-sx = str2double(get(handles.edit_sx, 'String'));
-sz = str2double(get(handles.edit_sz, 'String'));
-xShot = sx * dx;
-zShot = sz * dz;
+sx = eval(sprintf('[%s]', get(handles.edit_sx, 'String')));
+sz = eval(sprintf('[%s]', get(handles.edit_sz, 'String')));
+[szMesh, sxMesh] = meshgrid(sz, sx);
+sMesh = [szMesh(:), sxMesh(:)];
+nShots = size(sMesh, 1);
 rx = eval(sprintf('[%s]', get(handles.edit_rx, 'String')));
 rz = eval(sprintf('[%s]', get(handles.edit_rz, 'String')));
 
@@ -218,72 +236,102 @@ rz = eval(sprintf('[%s]', get(handles.edit_rz, 'String')));
 if (dim > 2)
     [~, ~, ny] = size(velocityModel);
     dy = str2double(get(handles.edit_dy, 'String'));
-    sy = str2double(get(handles.edit_sy, 'String'));
+    y = (1:ny) * dy;
+    sy = eval(sprintf('[%s]', get(handles.edit_sy, 'String')));
+    [szMesh, sxMesh, syMesh] = meshgrid(sz, sx, sy);
+    sMesh = [szMesh(:), sxMesh(:), syMesh(:)];
+    nShots = size(sMesh, 1);
     ry = eval(sprintf('[%s]', get(handles.edit_ry, 'String')))
 end
 
 % add region around model for applying absorbing boundary conditions
 V = extBoundary(velocityModel, nBoundary, dim);
 
-%% plot velocity model and shot position
-imagesc(x, z, velocityModel, 'Parent', handles.axes_velocityModel);
-xlabel(handles.axes_velocityModel, 'Distance (m)'); ylabel(handles.axes_velocityModel, 'Depth (m)');
-title(handles.axes_velocityModel, 'Velocity Model');
-colormap(handles.axes_sourceTime, seismic);
-hold(handles.axes_velocityModel, 'on');
-plot(handles.axes_velocityModel, xShot, zShot, 'w*');
-hold(handles.axes_velocityModel, 'off');
-
-%% generate shot source field and shot record using FDTD
-sourceTime = zeros([size(V), nt]);
-wave1dTime = ricker(f, nt, dt);
-
-if (dim <= 2)	% 2D case
-    sourceTime(sz, sx+nBoundary, :) = reshape(wave1dTime, 1, 1, nt);
-    [dataTrue, snapshotTrue] = fwdTimeCpmlFor2dAw(V, sourceTime, nDiffOrder, nBoundary, dz, dx, dt);
-else            % 3D case
-    sourceTime(sz, sx+nBoundary, sy+nBoundary, :) = reshape(wave1dTime, 1, 1, 1, nt);
-    [dataTrue, snapshotTrue] = fwdTimeCpmlFor3dAw(V, sourceTime, nDiffOrder, nBoundary, dz, dx, dy, dt);
-end
-
-%% plot figures into axes
-for it = 1:nt
-    % stop plotting when hObject becomes invalid (due to its deletion)
-    if (~ishandle(hObject))
-        break;
+for ixs = 1:nShots
+    %% locating current source
+    cur_sz = sMesh(ixs, 1);
+    cur_sx = sMesh(ixs, 2);
+    
+    %% generate shot source field and shot record using FDTD
+    sourceTime = zeros([size(V), nt]);
+    wave1dTime = ricker(f, nt, dt);
+    
+    if (dim <= 2)	% 2D case
+        % plot velocity model and shot position
+        imagesc(x, z, velocityModel, 'Parent', handles.axes_velocityModel);
+        xlabel(handles.axes_velocityModel, 'Distance (m)'); ylabel(handles.axes_velocityModel, 'Depth (m)');
+        title(handles.axes_velocityModel, 'Velocity Model');
+        colormap(handles.axes_velocityModel, seismic);
+        hold(handles.axes_velocityModel, 'on');
+        plot(handles.axes_velocityModel, cur_sx * dx, cur_sz * dz, 'w*');
+        hold(handles.axes_velocityModel, 'off');
+        
+        sourceTime(cur_sz, cur_sx+nBoundary, :) = reshape(wave1dTime, 1, 1, nt);
+        [dataTrue, snapshotTrue] = fwdTimeCpmlFor2dAw(V, sourceTime, nDiffOrder, nBoundary, dz, dx, dt);
+    else            % 3D case
+        slice(handles.axes_velocityModel, x, y, z, permute(velocityModel, [2, 3, 1]), ...
+            round(linspace(2 * dx, (size(velocityModel, 3)-1) * dx, 5)), ...
+            round(linspace(2 * dy, (size(velocityModel, 2)-1) * dy, 5)), ...
+            round(linspace(2 * dz, (size(velocityModel, 1)-1) * dz, 10)));
+        xlabel(handles.axes_velocityModel, 'Distance (m)');
+        ylabel(handles.axes_velocityModel, 'Distance (m)');
+        zlabel(handles.axes_velocityModel, 'Depth (m)');
+        title(handles.axes_velocityModel, 'Velocity Model');
+        shading(handles.axes_velocityModel, 'interp');
+        colormap(handles.axes_velocityModel, seismic);
+        cur_sy = sMesh(ixs, 3);
+        
+        hold(handles.axes_velocityModel, 'on');
+        plot3(handles.axes_velocityModel, cur_sx * dx, cur_sy * dy, cur_sz * dz, 'k*');
+        hold(handles.axes_velocityModel, 'off');
+        
+        sourceTime(cur_sz, cur_sx+nBoundary, cur_sy+nBoundary, :) = reshape(wave1dTime, 1, 1, 1, nt);
+        [dataTrue, snapshotTrue] = fwdTimeCpmlFor3dAw(V, sourceTime, nDiffOrder, nBoundary, dz, dx, dy, dt);
     end
     
-    % stop plotting when stop button has been pushed
-    data = guidata(hObject);
-    if (data.stopFlag)
-        break;
+    %% plot figures into axes
+    for it = 1:nt
+        % stop plotting when hObject becomes invalid (due to its deletion)
+        if (~ishandle(hObject))
+            return;
+        end
+        
+        % stop plotting when stop button has been pushed
+        data = guidata(hObject);
+        if (data.stopFlag)
+            return;
+        end
+        
+        if (dim <= 2)	% 2D case
+            plot(handles.axes_sourceTime, [1:nt], wave1dTime); hold(handles.axes_sourceTime, 'on');
+            plot(handles.axes_sourceTime, it, wave1dTime(it), 'r*'); hold(handles.axes_sourceTime, 'off');
+            xlim(handles.axes_sourceTime, [1, nt]);
+            xlabel(handles.axes_sourceTime, 'Time'); ylabel(handles.axes_sourceTime, 'Amplitude');
+            title(handles.axes_sourceTime, sprintf('Shot at x = %dm', cur_sx));
+            colormap(handles.axes_sourceTime, seismic);
+            
+            dataDisplay = zeros(nt, nx);
+            dataDisplay(1:it, rx) = dataTrue(rx+nBoundary, 1:it).';
+            imagesc(x, t, dataDisplay, 'Parent', handles.axes_data, [-0.1 0.1]);
+            xlabel(handles.axes_data, 'Distance (m)'); ylabel(handles.axes_data, 'Time (s)');
+            title(handles.axes_data, 'Shot Record (True)');
+            
+            imagesc(x, z, snapshotTrue(1:end-nBoundary, nBoundary+1:end-nBoundary, it), 'Parent', handles.axes_snapshot, [-0.14 1]);
+            xlabel(handles.axes_snapshot, 'Distance (m)'); ylabel(handles.axes_snapshot, 'Depth (m)');
+            title(handles.axes_snapshot, sprintf('Wave Propagation (True) t = %.3fs', t(it)));
+        else            % 3D case
+            
+        end
+        
+        drawnow;
     end
     
-    plot(handles.axes_sourceTime, [1:nt], wave1dTime); hold(handles.axes_sourceTime, 'on');
-    plot(handles.axes_sourceTime, it, wave1dTime(it), 'r*'); hold(handles.axes_sourceTime, 'off');
-    xlim(handles.axes_sourceTime, [1, nt]);
-    xlabel(handles.axes_sourceTime, 'Time'); ylabel(handles.axes_sourceTime, 'Amplitude');
-    title(handles.axes_sourceTime, sprintf('Shot at x = %dm', sx));
-    colormap(handles.axes_sourceTime, seismic);
-    
-    dataDisplay = zeros(nt, nx);
-    dataDisplay(1:it, rx) = dataTrue(rx+nBoundary, 1:it).';
-    imagesc(x, t, dataDisplay, 'Parent', handles.axes_data, [-0.1 0.1]);
-    xlabel(handles.axes_data, 'Distance (m)'), ylabel(handles.axes_data, 'Time (s)');
-    title(handles.axes_data, 'Shot Record (True)');
-    
-    imagesc(x, z, snapshotTrue(1:end-nBoundary, nBoundary+1:end-nBoundary, it), 'Parent', handles.axes_snapshot, [-0.14 1]);
-    xlabel(handles.axes_snapshot, 'Distance (m)'), ylabel(handles.axes_snapshot, 'Depth (m)');
-    title(handles.axes_snapshot, sprintf('Wave Propagation (True) t = %.3fs', t(it)));
-    
-    drawnow;
 end
 
 %% enable / disable objects
-if (ishandle(hObject))
-    set(handles.btn_shot, 'Enable', 'on');
-    set(handles.btn_stop, 'Enable', 'off');
-end
+set(handles.btn_shot, 'Enable', 'on');
+set(handles.btn_stop, 'Enable', 'off');
+
 
 % --- Executes on button press in btn_stop.
 function btn_stop_Callback(hObject, eventdata, handles)
@@ -732,9 +780,12 @@ function ppm_sweepAll_Callback(hObject, eventdata, handles)
 data = guidata(hObject);
 velocityModel = data.velocityModel;
 dim = length(size(velocityModel));
+[nz, nx, ~] = size(velocityModel);
 
 isSweepAll = get(hObject, 'Value');
 if (isSweepAll == 1) % Yes
+    str_sx = sprintf('1:%d', nx);
+    set(handles.edit_sx, 'String', str_sx);
     set(handles.edit_sx, 'Enable', 'off');
     set(handles.edit_sz, 'Enable', 'off');
 end
@@ -745,7 +796,10 @@ end
 
 % 3D case
 if (dim > 2)
+    [~, ~, ny] = size(velocityModel);
     if (isSweepAll == 1) % Yes
+        str_sy = sprintf('1:%d', ny);
+        set(handles.edit_sy, 'String', str_sy);
         set(handles.edit_sy, 'Enable', 'off');
     end
     if (isSweepAll == 2) % No
