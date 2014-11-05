@@ -59,11 +59,9 @@ handles.output = hObject;
 guidata(hObject, handles);
 
 % display logos
-axes(handles.axes_logo1);
-imshow('logo_cegp.jpg');
+imshow('logo_cegp.jpg', 'Parent', handles.axes_logo1);
 
-axes(handles.axes_logo2);
-imshow('logo_csip.jpg');
+imshow('logo_csip.jpg', 'Parent', handles.axes_logo2);
 
 % UIWAIT makes guiAbout wait for user response (see UIRESUME)
 % uiwait(handles.figure1);
