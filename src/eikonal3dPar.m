@@ -35,13 +35,12 @@ for iter=1:iMax
     
     spmd(8)
         if labindex ==1;
-%% first Sweep i=1:nz, j=1:nx, k=1:ny
+            
+% first Sweep i=1:nz, j=1:nx, k=1:ny
 for i=1:nz
     for j=1:nx
         for k=1:ny
-            if (i==sz && j==sx && k==sy)
-                Tnew(i,j,k) = Told(i,j,k);
-            else
+          
                 
               if i==1
                    a=Told(2,j,k);
@@ -69,19 +68,19 @@ for i=1:nz
                  
                   TT = sqSolver(a,b,c,Slow(i,j,k)*dx);
                   Tnew(i,j,k) = min(Told(i,j,k),TT);
-             end
+             
        end
    end
 end
+Tnew(sz,sx,sy)=0;
 
         elseif labindex == 2;
-%% second Sweep i=nz:1, j=1:nx, k=1:ny
+            
+% second Sweep i=nz:1, j=1:nx, k=1:ny
 for i=nz:-1:1
     for j=1:nx
         for k=1:ny
-            if (i==sz && j==sx && k==sy)
-                Tnew(i,j,k) = Told(i,j,k);
-            else
+            
                 
               if i==1
                    a=Told(2,j,k);
@@ -109,21 +108,20 @@ for i=nz:-1:1
                  
                   TT = sqSolver(a,b,c,Slow(i,j,k)*dx);
                   Tnew(i,j,k) = min(Told(i,j,k),TT);
-             end
+             
        end
    end
 end
+Tnew(sz,sx,sy)=0;
 
         elseif labindex == 3;
 
 
-%% third Sweep i=nz:1, j=nx:1, k=1:ny
+% third Sweep i=nz:1, j=nx:1, k=1:ny
 for i=nz:-1:1
     for j=nx:-1:1
         for k=1:ny
-            if (i==sz && j==sx && k==sy)
-                Tnew(i,j,k) = Told(i,j,k);
-            else
+            
                 
               if i==1
                    a=Told(2,j,k);
@@ -151,20 +149,19 @@ for i=nz:-1:1
                  
                   TT = sqSolver(a,b,c,Slow(i,j,k)*dx);
                   Tnew(i,j,k) = min(Told(i,j,k),TT);
-             end
+             
        end
    end
 end
+Tnew(sz,sx,sy)=0;
 
         elseif labindex == 4;
 
-%% fourth Sweep i=nz:1, j=nx:1, k=ny:1
+% fourth Sweep i=nz:1, j=nx:1, k=ny:1
 for i=nz:-1:1
     for j=nx:-1:1
         for k=ny:-1:1
-            if (i==sz && j==sx && k==sy)
-                Tnew(i,j,k) = Told(i,j,k);
-            else
+            
                 
               if i==1
                    a=Told(2,j,k);
@@ -192,20 +189,19 @@ for i=nz:-1:1
                  
                   TT = sqSolver(a,b,c,Slow(i,j,k)*dx);
                   Tnew(i,j,k) = min(Told(i,j,k),TT);
-             end
+             
        end
    end
 end
+Tnew(sz,sx,sy)=0;
 
         elseif labindex == 5;
         
-%% fifth Sweep i=1:nz, j=nx:1, k=ny:1
+% fifth Sweep i=1:nz, j=nx:1, k=ny:1
 for i=1:nz
     for j=nx:-1:1
         for k=ny:-1:1
-            if (i==sz && j==sx && k==sy)
-                Tnew(i,j,k) = Told(i,j,k);
-            else
+            
                 
               if i==1
                    a=Told(2,j,k);
@@ -233,21 +229,20 @@ for i=1:nz
                  
                   TT = sqSolver(a,b,c,Slow(i,j,k)*dx);
                   Tnew(i,j,k) = min(Told(i,j,k),TT);
-             end
+             
        end
    end
 end
- 
+Tnew(sz,sx,sy)=0;
+
         elseif labindex == 6;
 
-%% sixth Sweep i=1:nz, j=1:nx, k=ny:1
+% sixth Sweep i=1:nz, j=1:nx, k=ny:1
 
 for i=1:nz
     for j=1:nx
         for k=ny:-1:1
-            if (i==sz && j==sx && k==sy)
-                Tnew(i,j,k) = Told(i,j,k);
-            else
+            
                 
               if i==1
                    a=Told(2,j,k);
@@ -275,20 +270,19 @@ for i=1:nz
                  
                   TT = sqSolver(a,b,c,Slow(i,j,k)*dx);
                   Tnew(i,j,k) = min(Told(i,j,k),TT);
-             end
+             
        end
    end
 end
-        
+Tnew(sz,sx,sy)=0;
+
         elseif labindex == 7;
-%% seventh Sweep i=1:nz, j=nx:1, k=1:ny
+% seventh Sweep i=1:nz, j=nx:1, k=1:ny
 
 for i=1:nz
     for j=nx:-1:1
         for k=1:ny
-            if (i==sz && j==sx && k==sy)
-                Tnew(i,j,k) = Told(i,j,k);
-            else
+            
                 
               if i==1
                    a=Told(2,j,k);
@@ -316,20 +310,19 @@ for i=1:nz
                  
                   TT = sqSolver(a,b,c,Slow(i,j,k)*dx);
                   Tnew(i,j,k) = min(Told(i,j,k),TT);
-             end
+             
        end
    end
 end
+Tnew(sz,sx,sy)=0;
    
         else 
-%% eighth Sweep i = nz:1, j=1:nx, k= ny:1
+% eighth Sweep i = nz:1, j=1:nx, k= ny:1
 
 for i=nz:-1:1
     for j=1:nx
         for k=ny:-1:1
-            if (i==sz && j==sx && k==sy)
-                Tnew(i,j,k) = Told(i,j,k);
-            else
+            
                 
               if i==1
                    a=Told(2,j,k);
@@ -357,10 +350,11 @@ for i=nz:-1:1
                  
                   TT = sqSolver(a,b,c,Slow(i,j,k)*dx);
                   Tnew(i,j,k) = min(Told(i,j,k),TT);
-             end
+             
        end
    end
 end
+Tnew(sz,sx,sy)=0;
 
         end
 end

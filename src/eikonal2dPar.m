@@ -37,9 +37,7 @@ spmd(4)
         %% first Sweep i=1:nz, j=1:nx
  for i=1:nz
      for j=1:nx
-       if (i==sz && j==sx)
-         Tnew(i,j) = Told(i,j);
-      else
+       
           
          if i==1
              a=Told(2,j);
@@ -63,19 +61,17 @@ spmd(4)
              TT=min(a,b)+Slow(i,j)*dx;
          end
          Tnew(i,j) = min(Told(i,j),TT);
-      end
-   end
+     
+     end
 end
-
+Tnew(sz,sx)=0;
 
 
     elseif labindex == 2;
 %% second sweep
 for i=nz:-1:1
     for j=1:nx
-      if (i==sz && j==sx)
-         Tnew(i,j) = Told(i,j);
-      else
+      
           
          if i==1
              a=Told(2,j);
@@ -99,19 +95,17 @@ for i=nz:-1:1
              TT=min(a,b)+Slow(i,j)*dx;
          end
          Tnew(i,j) = min(Told(i,j),TT);
-      end
+      
    end
 end
-
+Tnew(sz,sx)=0;
 
 
     elseif labindex == 3;
 %% Third sweep
 for i=nz:-1:1
     for j=nx:-1:1
-      if (i==sz && j==sx)
-         Tnew(i,j) = Told(i,j);
-      else
+      
           
          if i==1
              a=Told(2,j);
@@ -135,19 +129,17 @@ for i=nz:-1:1
              TT=min(a,b)+Slow(i,j)*dx;
          end
          Tnew(i,j) = min(Told(i,j),TT);
-      end
+      
    end
 end
-
+Tnew(sz,sx)=0;
 
 
     else 
 %% Fourth sweep
 for i=1:nz
     for j=nx:-1:1
-      if (i==sz && j==sx)
-         Tnew(i,j) = Told(i,j);
-      else
+      
           
          if i==1
              a=Told(2,j);
@@ -171,9 +163,10 @@ for i=1:nz
              TT=min(a,b)+Slow(i,j)*dx;
          end
          Tnew(i,j) = min(Told(i,j),TT);
-      end
+      
    end
 end
+Tnew(sz,sx)=0;
 
 
     end

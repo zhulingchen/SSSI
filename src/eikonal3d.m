@@ -25,15 +25,13 @@ Told = 1e6*ones(nz,nx,ny);
 Tnew = 1e6*ones(nz,nx,ny);
 Told(sz,sx,sy) = 0; % set the source point
 
-tic
+
 for iter=1:iMax
 %% first Sweep i=1:nz, j=1:nx, k=1:ny
 for i=1:nz
     for j=1:nx
         for k=1:ny
-            if (i==sz && j==sx && k==sy)
-                Tnew(i,j,k) = Told(i,j,k);
-            else
+            
                 
               if i==1
                    a=Told(2,j,k);
@@ -61,20 +59,19 @@ for i=1:nz
                  
                   TT = sqSolver(a,b,c,Slow(i,j,k)*dx);
                   Tnew(i,j,k) = min(Told(i,j,k),TT);
-             end
+             
        end
    end
 end
 
+Tnew(sz,sx,sy)=0;
 Told=Tnew;
 
 %% second Sweep i=nz:1, j=1:nx, k=1:ny
 for i=nz:-1:1
     for j=1:nx
         for k=1:ny
-            if (i==sz && j==sx && k==sy)
-                Tnew(i,j,k) = Told(i,j,k);
-            else
+            
                 
               if i==1
                    a=Told(2,j,k);
@@ -102,11 +99,11 @@ for i=nz:-1:1
                  
                   TT = sqSolver(a,b,c,Slow(i,j,k)*dx);
                   Tnew(i,j,k) = min(Told(i,j,k),TT);
-             end
+             
        end
    end
 end
-
+Tnew(sz,sx,sy)=0;
 Told=Tnew;
 
 
@@ -114,9 +111,7 @@ Told=Tnew;
 for i=nz:-1:1
     for j=nx:-1:1
         for k=1:ny
-            if (i==sz && j==sx && k==sy)
-                Tnew(i,j,k) = Told(i,j,k);
-            else
+            
                 
               if i==1
                    a=Told(2,j,k);
@@ -144,20 +139,18 @@ for i=nz:-1:1
                  
                   TT = sqSolver(a,b,c,Slow(i,j,k)*dx);
                   Tnew(i,j,k) = min(Told(i,j,k),TT);
-             end
+             
        end
    end
 end
-
+Tnew(sz,sx,sy)=0;
 Told=Tnew;
 
 %% fourth Sweep i=nz:1, j=nx:1, k=ny:1
 for i=nz:-1:1
     for j=nx:-1:1
         for k=ny:-1:1
-            if (i==sz && j==sx && k==sy)
-                Tnew(i,j,k) = Told(i,j,k);
-            else
+            
                 
               if i==1
                    a=Told(2,j,k);
@@ -185,20 +178,18 @@ for i=nz:-1:1
                  
                   TT = sqSolver(a,b,c,Slow(i,j,k)*dx);
                   Tnew(i,j,k) = min(Told(i,j,k),TT);
-             end
+             
        end
    end
 end
-
+Tnew(sz,sx,sy)=0;
 Told=Tnew;
 
 %% fifth Sweep i=1:nz, j=nx:1, k=ny:1
 for i=1:nz
     for j=nx:-1:1
         for k=ny:-1:1
-            if (i==sz && j==sx && k==sy)
-                Tnew(i,j,k) = Told(i,j,k);
-            else
+            
                 
               if i==1
                    a=Told(2,j,k);
@@ -226,11 +217,11 @@ for i=1:nz
                  
                   TT = sqSolver(a,b,c,Slow(i,j,k)*dx);
                   Tnew(i,j,k) = min(Told(i,j,k),TT);
-             end
+            
        end
    end
 end
-
+Tnew(sz,sx,sy)=0;
 Told=Tnew;
 
 %% sixth Sweep i=1:nz, j=1:nx, k=ny:1
@@ -238,9 +229,7 @@ Told=Tnew;
 for i=1:nz
     for j=1:nx
         for k=ny:-1:1
-            if (i==sz && j==sx && k==sy)
-                Tnew(i,j,k) = Told(i,j,k);
-            else
+            
                 
               if i==1
                    a=Told(2,j,k);
@@ -268,11 +257,11 @@ for i=1:nz
                  
                   TT = sqSolver(a,b,c,Slow(i,j,k)*dx);
                   Tnew(i,j,k) = min(Told(i,j,k),TT);
-             end
+             
        end
    end
 end
-
+Tnew(sz,sx,sy)=0;
 Told=Tnew;
 
 %% seventh Sweep i=1:nz, j=nx:1, k=1:ny
@@ -280,9 +269,7 @@ Told=Tnew;
 for i=1:nz
     for j=nx:-1:1
         for k=1:ny
-            if (i==sz && j==sx && k==sy)
-                Tnew(i,j,k) = Told(i,j,k);
-            else
+            
                 
               if i==1
                    a=Told(2,j,k);
@@ -310,11 +297,11 @@ for i=1:nz
                  
                   TT = sqSolver(a,b,c,Slow(i,j,k)*dx);
                   Tnew(i,j,k) = min(Told(i,j,k),TT);
-             end
+             
        end
    end
 end
-
+Tnew(sz,sx,sy)=0;
 Told = Tnew;
 
 %% eighth Sweep i = nz:1, j=1:nx, k= ny:1
@@ -322,9 +309,7 @@ Told = Tnew;
 for i=nz:-1:1
     for j=1:nx
         for k=ny:-1:1
-            if (i==sz && j==sx && k==sy)
-                Tnew(i,j,k) = Told(i,j,k);
-            else
+            
                 
               if i==1
                    a=Told(2,j,k);
@@ -352,14 +337,13 @@ for i=nz:-1:1
                  
                   TT = sqSolver(a,b,c,Slow(i,j,k)*dx);
                   Tnew(i,j,k) = min(Told(i,j,k),TT);
-             end
+             
        end
    end
 end
-
+Tnew(sz,sx,sy)=0;
 Told = Tnew;
 end
-toc
 T=Told;
 
 
