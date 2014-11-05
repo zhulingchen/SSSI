@@ -7,6 +7,12 @@ function VelocityModel = layerModelGenerator(Vel, LayerSize, Width, varargin)
 % Output:
 % VelocityMoel: Velocity model in size of sum(LayerSize) by Width in which
 % the velocity of each layer is specified by Vel
+%
+% This matlab source file is free for use in academic research.
+% All rights reserved.
+%
+% Written by Lijun Zhu (gatechzhu@gmail.com) Center for Energy & Geo 
+% Processing Georgia Institute of Technology
 
 %% Input check
 if length(Vel) ~= length(LayerSize)
