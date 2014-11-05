@@ -22,7 +22,7 @@ function varargout = guiSurvey(varargin)
 
 % Edit the above text to modify the response to help guiSurvey
 
-% Last Modified by GUIDE v2.5 04-Nov-2014 23:04:46
+% Last Modified by GUIDE v2.5 05-Nov-2014 01:00:49
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -105,7 +105,8 @@ set(handles.edit_sx, 'Enable', 'on');
 set(handles.edit_sz, 'Enable', 'on');
 set(handles.ppm_sweepAll, 'Enable', 'on');
 set(handles.ppm_receiveAll, 'Enable', 'on');
-set(handles.tgbtn_shot, 'Enable', 'on');
+set(handles.btn_shot, 'Enable', 'on');
+
 %% set finite difference setting values
 dx = 10;
 dz = 10;
@@ -171,104 +172,133 @@ title(handles.axes_velocityModel, 'Velocity Model');
 colormap(handles.axes_sourceTime, seismic);
 
 %% share variables among callback functions
-handles.velocityModel = velocityModel;
-guidata(hObject, handles);
+data = guidata(hObject);
+data.velocityModel = velocityModel;
+guidata(hObject, data); % hObject can be any object contained in the figure, including push button, edit text, popup menu, etc.
 
 
-% --- Executes on button press in tgbtn_shot.
-function tgbtn_shot_Callback(hObject, eventdata, handles)
-% hObject    handle to tgbtn_shot (see GCBO)
+% --- Executes on button press in btn_shot.
+function btn_shot_Callback(hObject, eventdata, handles)
+% hObject    handle to btn_shot (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hint: get(hObject,'Value') returns toggle state of tgbtn_shot
+%% enable / disable objects
+set(handles.btn_stop, 'Enable', 'on');
+set(handles.btn_shot, 'Enable', 'off');
 
-if (get(hObject, 'Value'))
-    %% load parameter
-    velocityModel = handles.velocityModel;
-    dim = length(size(velocityModel));
-    [nz, nx, ~] = size(velocityModel);
-    dx = str2double(get(handles.edit_dx, 'String'));
-    dz = str2double(get(handles.edit_dz, 'String'));
-    dt = str2double(get(handles.edit_dt, 'String'));
-    nt = str2double(get(handles.edit_nt, 'String'));
-    x = (1:nx) * dx;
-    z = (1:nz) * dz;
-    t  = (0:nt-1).*dt;
-    nBoundary = str2double(get(handles.edit_boundary, 'String'));
-    nDiffOrder = get(handles.ppm_approxOrder, 'Value');
-    f = str2double(get(handles.edit_centerFreq, 'String'));
-    sx = str2double(get(handles.edit_sx, 'String'));
-    sz = str2double(get(handles.edit_sz, 'String'));
-    xShot = sx * dx;
-    zShot = sz * dz;
-    rx = eval(sprintf('[%s]', get(handles.edit_rx, 'String')));
-    rz = eval(sprintf('[%s]', get(handles.edit_rz, 'String')));
-    
-    hold(handles.axes_velocityModel, 'on');
-    plot(handles.axes_velocityModel, xShot, zShot, 'w*');
-    hold(handles.axes_velocityModel, 'off');
-    
-    % 3D case
-    if (dim > 2)
-        [~, ~, ny] = size(velocityModel);
-        dy = str2double(get(handles.edit_dy, 'String'));
-        sy = str2double(get(handles.edit_sy, 'String'));
-        ry = eval(sprintf('[%s]', get(handles.edit_ry, 'String')))
-    end
-    
-    % add region around model for applying absorbing boundary conditions
-    V = extBoundary(velocityModel, nBoundary, dim);
-    
-    %% generate shot source field and shot record using FDTD
-    sourceTime = zeros([size(V), nt]);
-    wave1dTime = ricker(f, nt, dt);
-    
-    if (dim <= 2)	% 2D case
-        sourceTime(sz, sx+nBoundary, :) = reshape(wave1dTime, 1, 1, nt);
-        [dataTrue, snapshotTrue] = fwdTimeCpmlFor2dAw(V, sourceTime, nDiffOrder, nBoundary, dz, dx, dt);
-    else            % 3D case
-        sourceTime(sz, sx+nBoundary, sy+nBoundary, :) = reshape(wave1dTime, 1, 1, 1, nt);
-        [dataTrue, snapshotTrue] = fwdTimeCpmlFor3dAw(V, sourceTime, nDiffOrder, nBoundary, dz, dx, dy, dt);
-    end
-    
-    %% plot figures into axes
-    for it = 1:nt
-        % stop plotting when hObject becomes invalid (due to its deletion)
-        if (~ishandle(hObject))
-            break;
-        end
-        
-        % stop plotting when toggle state becomes false
-        if (~get(hObject, 'Value'))
-            break;
-        end
-        
-        plot(handles.axes_sourceTime, [1:nt], wave1dTime); hold(handles.axes_sourceTime, 'on');
-        plot(handles.axes_sourceTime, it, wave1dTime(it), 'r*'); hold(handles.axes_sourceTime, 'off');
-        xlim(handles.axes_sourceTime, [1, nt]);
-        xlabel(handles.axes_sourceTime, 'Time'); ylabel(handles.axes_sourceTime, 'Amplitude');
-        title(handles.axes_sourceTime, sprintf('Shot at x = %dm', sx));
-        colormap(handles.axes_sourceTime, seismic);
-        
-        dataDisplay = zeros(nt, nx);
-        dataDisplay(1:it, rx) = dataTrue(rx+nBoundary, 1:it).';
-        imagesc(x, t, dataDisplay, 'Parent', handles.axes_data, [-0.1 0.1]);
-        xlabel(handles.axes_data, 'Distance (m)'), ylabel(handles.axes_data, 'Time (s)');
-        title(handles.axes_data, 'Shot Record (True)');
-        
-        imagesc(x, z, snapshotTrue(1:end-nBoundary, nBoundary+1:end-nBoundary, it), 'Parent', handles.axes_snapshot, [-0.14 1]);
-        xlabel(handles.axes_snapshot, 'Distance (m)'), ylabel(handles.axes_snapshot, 'Depth (m)');
-        title(handles.axes_snapshot, sprintf('Wave Propagation (True) t = %.3fs', t(it)));
-        
-        drawnow;
-    end
-    
-    if (ishandle(hObject))
-        set(hObject, 'Value', 0);
-    end
-    
+%% share variables among callback functions
+data = guidata(hObject);
+data.stopFlag = false;
+guidata(hObject, data);
+
+%% load parameter
+data = guidata(hObject);
+velocityModel = data.velocityModel;
+dim = length(size(velocityModel));
+[nz, nx, ~] = size(velocityModel);
+dx = str2double(get(handles.edit_dx, 'String'));
+dz = str2double(get(handles.edit_dz, 'String'));
+dt = str2double(get(handles.edit_dt, 'String'));
+nt = str2double(get(handles.edit_nt, 'String'));
+x = (1:nx) * dx;
+z = (1:nz) * dz;
+t  = (0:nt-1).*dt;
+nBoundary = str2double(get(handles.edit_boundary, 'String'));
+nDiffOrder = get(handles.ppm_approxOrder, 'Value');
+f = str2double(get(handles.edit_centerFreq, 'String'));
+sx = str2double(get(handles.edit_sx, 'String'));
+sz = str2double(get(handles.edit_sz, 'String'));
+xShot = sx * dx;
+zShot = sz * dz;
+rx = eval(sprintf('[%s]', get(handles.edit_rx, 'String')));
+rz = eval(sprintf('[%s]', get(handles.edit_rz, 'String')));
+
+% 3D case
+if (dim > 2)
+    [~, ~, ny] = size(velocityModel);
+    dy = str2double(get(handles.edit_dy, 'String'));
+    sy = str2double(get(handles.edit_sy, 'String'));
+    ry = eval(sprintf('[%s]', get(handles.edit_ry, 'String')))
 end
+
+% add region around model for applying absorbing boundary conditions
+V = extBoundary(velocityModel, nBoundary, dim);
+
+%% plot velocity model and shot position
+imagesc(x, z, velocityModel, 'Parent', handles.axes_velocityModel);
+xlabel(handles.axes_velocityModel, 'Distance (m)'); ylabel(handles.axes_velocityModel, 'Depth (m)');
+title(handles.axes_velocityModel, 'Velocity Model');
+colormap(handles.axes_sourceTime, seismic);
+hold(handles.axes_velocityModel, 'on');
+plot(handles.axes_velocityModel, xShot, zShot, 'w*');
+hold(handles.axes_velocityModel, 'off');
+
+%% generate shot source field and shot record using FDTD
+sourceTime = zeros([size(V), nt]);
+wave1dTime = ricker(f, nt, dt);
+
+if (dim <= 2)	% 2D case
+    sourceTime(sz, sx+nBoundary, :) = reshape(wave1dTime, 1, 1, nt);
+    [dataTrue, snapshotTrue] = fwdTimeCpmlFor2dAw(V, sourceTime, nDiffOrder, nBoundary, dz, dx, dt);
+else            % 3D case
+    sourceTime(sz, sx+nBoundary, sy+nBoundary, :) = reshape(wave1dTime, 1, 1, 1, nt);
+    [dataTrue, snapshotTrue] = fwdTimeCpmlFor3dAw(V, sourceTime, nDiffOrder, nBoundary, dz, dx, dy, dt);
+end
+
+%% plot figures into axes
+for it = 1:nt
+    % stop plotting when hObject becomes invalid (due to its deletion)
+    if (~ishandle(hObject))
+        break;
+    end
+    
+    % stop plotting when stop button has been pushed
+    data = guidata(hObject);
+    if (data.stopFlag)
+        break;
+    end
+    
+    plot(handles.axes_sourceTime, [1:nt], wave1dTime); hold(handles.axes_sourceTime, 'on');
+    plot(handles.axes_sourceTime, it, wave1dTime(it), 'r*'); hold(handles.axes_sourceTime, 'off');
+    xlim(handles.axes_sourceTime, [1, nt]);
+    xlabel(handles.axes_sourceTime, 'Time'); ylabel(handles.axes_sourceTime, 'Amplitude');
+    title(handles.axes_sourceTime, sprintf('Shot at x = %dm', sx));
+    colormap(handles.axes_sourceTime, seismic);
+    
+    dataDisplay = zeros(nt, nx);
+    dataDisplay(1:it, rx) = dataTrue(rx+nBoundary, 1:it).';
+    imagesc(x, t, dataDisplay, 'Parent', handles.axes_data, [-0.1 0.1]);
+    xlabel(handles.axes_data, 'Distance (m)'), ylabel(handles.axes_data, 'Time (s)');
+    title(handles.axes_data, 'Shot Record (True)');
+    
+    imagesc(x, z, snapshotTrue(1:end-nBoundary, nBoundary+1:end-nBoundary, it), 'Parent', handles.axes_snapshot, [-0.14 1]);
+    xlabel(handles.axes_snapshot, 'Distance (m)'), ylabel(handles.axes_snapshot, 'Depth (m)');
+    title(handles.axes_snapshot, sprintf('Wave Propagation (True) t = %.3fs', t(it)));
+    
+    drawnow;
+end
+
+%% enable / disable objects
+if (ishandle(hObject))
+    set(handles.btn_shot, 'Enable', 'on');
+    set(handles.btn_stop, 'Enable', 'off');
+end
+
+% --- Executes on button press in btn_stop.
+function btn_stop_Callback(hObject, eventdata, handles)
+% hObject    handle to btn_stop (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+%% enable / disable objects
+set(handles.btn_shot, 'Enable', 'on');
+set(handles.btn_stop, 'Enable', 'off');
+
+%% share variables among callback functions
+data = guidata(hObject);
+data.stopFlag = true;
+guidata(hObject, data);
 
 
 function edit_dx_Callback(hObject, eventdata, handles)
@@ -279,7 +309,8 @@ function edit_dx_Callback(hObject, eventdata, handles)
 % Hints: get(hObject,'String') returns contents of edit_dx as text
 %        str2double(get(hObject,'String')) returns contents of edit_dx as a double
 
-velocityModel = handles.velocityModel;
+data = guidata(hObject);
+velocityModel = data.velocityModel;
 dim = length(size(velocityModel));
 vmin = min(velocityModel(:));
 vmax = max(velocityModel(:));
@@ -325,7 +356,8 @@ function edit_dy_Callback(hObject, eventdata, handles)
 %        str2double(get(hObject,'String')) returns contents of edit_dy as a double
 
 % only happen in 3D case
-velocityModel = handles.velocityModel;
+data = guidata(hObject);
+velocityModel = data.velocityModel;
 vmin = min(velocityModel(:));
 vmax = max(velocityModel(:));
 
@@ -361,7 +393,8 @@ function edit_dz_Callback(hObject, eventdata, handles)
 % Hints: get(hObject,'String') returns contents of edit_dz as text
 %        str2double(get(hObject,'String')) returns contents of edit_dz as a double
 
-velocityModel = handles.velocityModel;
+data = guidata(hObject);
+velocityModel = data.velocityModel;
 dim = length(size(velocityModel));
 vmin = min(velocityModel(:));
 vmax = max(velocityModel(:));
@@ -398,7 +431,6 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 
 
-
 function edit_dt_Callback(hObject, eventdata, handles)
 % hObject    handle to edit_dt (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
@@ -406,6 +438,28 @@ function edit_dt_Callback(hObject, eventdata, handles)
 
 % Hints: get(hObject,'String') returns contents of edit_dt as text
 %        str2double(get(hObject,'String')) returns contents of edit_dt as a double
+
+data = guidata(hObject);
+velocityModel = data.velocityModel;
+dim = length(size(velocityModel));
+vmin = min(velocityModel(:));
+vmax = max(velocityModel(:));
+
+dx = str2double(get(handles.edit_dx, 'String'));
+dz = str2double(get(handles.edit_dz, 'String'));
+dt = str2double(get(handles.edit_dt, 'String'));
+[nz, nx, ~] = size(velocityModel);
+nt = round((sqrt((dx*nx)^2 + (dz*nz)^2)*2/vmin/dt + 1));
+set(handles.edit_nt, 'String', num2str(nt));
+
+% 3D case
+if (dim > 2)
+    dy = str2double(get(handles.edit_dy, 'String'));
+    dt = str2double(get(handles.edit_dt, 'String'));
+    [~, ~, ny] = size(velocityModel);
+    nt = round((sqrt((dx*nx)^2 + (dy*ny)^2 + (dz*nz)^2)*2/vmin/dt + 1));
+    set(handles.edit_nt, 'String', num2str(nt));
+end
 
 
 % --- Executes during object creation, after setting all properties.
@@ -675,7 +729,8 @@ function ppm_sweepAll_Callback(hObject, eventdata, handles)
 % Hints: contents = cellstr(get(hObject,'String')) returns ppm_sweepAll contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from ppm_sweepAll
 
-velocityModel = handles.velocityModel;
+data = guidata(hObject);
+velocityModel = data.velocityModel;
 dim = length(size(velocityModel));
 
 isSweepAll = get(hObject, 'Value');
@@ -721,7 +776,8 @@ function ppm_receiveAll_Callback(hObject, eventdata, handles)
 % Hints: contents = cellstr(get(hObject,'String')) returns ppm_receiveAll contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from ppm_receiveAll
 
-velocityModel = handles.velocityModel;
+data = guidata(hObject);
+velocityModel = data.velocityModel;
 [nz, nx, ~] = size(velocityModel);
 dim = length(size(velocityModel));
 
@@ -837,4 +893,3 @@ function figureMain_CloseRequestFcn(hObject, eventdata, handles)
 
 % Hint: delete(hObject) closes the figure
 delete(hObject);
-
