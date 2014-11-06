@@ -22,7 +22,7 @@ function varargout = guiSurvey(varargin)
 
 % Edit the above text to modify the response to help guiSurvey
 
-% Last Modified by GUIDE v2.5 06-Nov-2014 10:00:27
+% Last Modified by GUIDE v2.5 06-Nov-2014 12:35:00
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -80,24 +80,37 @@ function varargout = guiSurvey_OutputFcn(hObject, eventdata, handles)
 varargout{1} = handles.output;
 
 
-% --- Executes on button press in btn_loadPWaveVelocityModel.
-function btn_loadPWaveVelocityModel_Callback(hObject, eventdata, handles)
-% hObject    handle to btn_loadPWaveVelocityModel (see GCBO)
+% --------------------------------------------------------------------
+function menu_file_Callback(hObject, eventdata, handles)
+% hObject    handle to menu_file (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-%% load velocity model
-[file, path] = uigetfile('*.mat', 'Select a velocity model');
+
+% --------------------------------------------------------------------
+function menu_loadPWaveVModel_Callback(hObject, eventdata, handles)
+% hObject    handle to menu_loadPWaveVModel (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+%% load P-wave velocity model
+[file, path] = uigetfile('*.mat', 'Select a velocity model for P-wave');
 if (~any([file, path])) % user pressed cancel button
     return;
 end
 load(fullfile(path, file));
+if (~exist('velocityModel', 'var'))
+    errordlg('This is not a valid velocity model!', 'File Error');
+    return;
+end
+loadFlag = true;
 
 dim = length(size(velocityModel));
 vmin = min(velocityModel(:));
 vmax = max(velocityModel(:));
 
-%% enable objects
+%% prepare objects
+% enable objects
 set(handles.edit_dx, 'Enable', 'on');
 set(handles.edit_dz, 'Enable', 'on');
 set(handles.edit_dt, 'Enable', 'on');
@@ -110,6 +123,13 @@ set(handles.edit_sz, 'Enable', 'on');
 set(handles.pmenu_sweepAll, 'Enable', 'on');
 set(handles.pmenu_receiveAll, 'Enable', 'on');
 set(handles.btn_shot, 'Enable', 'on');
+
+% disable objects
+set(handles.edit_dy, 'Enable', 'off');
+set(handles.edit_sy, 'Enable', 'off');
+set(handles.edit_rx, 'Enable', 'off');
+set(handles.edit_ry, 'Enable', 'off');
+set(handles.edit_rz, 'Enable', 'off');
 
 %% set finite difference setting values
 dx = 10;
@@ -130,7 +150,7 @@ sz = 1;
 str_rx = sprintf('1:%d', nx);
 str_rz = sprintf('%d', 1);
 
-%% set values in edit texts
+%% set default values in edit texts
 set(handles.edit_dx, 'String', num2str(dx));
 set(handles.edit_dz, 'String', num2str(dz));
 set(handles.edit_dt, 'String', num2str(dt));
@@ -140,9 +160,13 @@ set(handles.edit_nt, 'String', num2str(nt));
 set(handles.edit_boundary, 'String', num2str(nBoundary));
 set(handles.pmenu_approxOrder, 'Value', nDiffOrder);
 set(handles.edit_centerFreq, 'String', num2str(f));
+set(handles.pmenu_sweepAll, 'Value', 2); % default is no
 set(handles.edit_sx, 'String', num2str(sx));
+set(handles.edit_sy, 'String', '');
 set(handles.edit_sz, 'String', num2str(sz));
+set(handles.pmenu_receiveAll, 'Value', 1); % default is yes
 set(handles.edit_rx, 'String', str_rx);
+set(handles.edit_ry, 'String', '');
 set(handles.edit_rz, 'String', str_rz);
 
 % 3D case
@@ -150,6 +174,7 @@ if (dim > 2)
     % enable edit texts for y-axis
     set(handles.edit_dy, 'Enable', 'on');
     set(handles.edit_sy, 'Enable', 'on');
+    
     % set finite difference setting values
     dy = 10;
     dt = 0.5*(min([dx, dy, dz])/vmax/sqrt(3));
@@ -181,8 +206,8 @@ else            % 3D case
         round(linspace(2 * dx, (size(velocityModel, 3)-1) * dx, 5)), ...
         round(linspace(2 * dy, (size(velocityModel, 2)-1) * dy, 5)), ...
         round(linspace(2 * dz, (size(velocityModel, 1)-1) * dz, 10)));
-    xlabel(handles.axes_velocityModel, 'Distance (m)');
-    ylabel(handles.axes_velocityModel, 'Distance (m)');
+    xlabel(handles.axes_velocityModel, 'Easting (m)');
+    ylabel(handles.axes_velocityModel, 'Northing (m)');
     zlabel(handles.axes_velocityModel, 'Depth (m)');
     title(handles.axes_velocityModel, 'Velocity Model');
     set(handles.axes_velocityModel, 'ZDir', 'reverse');
@@ -190,10 +215,46 @@ else            % 3D case
     colormap(handles.axes_velocityModel, seismic);
 end
 
+% clear other axes & set them invisible
+cla(handles.axes_sourceTime, 'reset');
+cla(handles.axes_data, 'reset');
+cla(handles.axes_snapshot, 'reset');
+set(handles.axes_sourceTime, 'Visible', 'off');
+set(handles.axes_data, 'Visible', 'off');
+set(handles.axes_snapshot, 'Visible', 'off');
+
+
 %% share variables among callback functions
 data = guidata(hObject);
+data.loadFlag = loadFlag;
 data.velocityModel = velocityModel;
 guidata(hObject, data); % hObject can be any object contained in the figure, including push button, edit text, popup menu, etc.
+
+
+% --------------------------------------------------------------------
+function menu_loadSWaveVModel_Callback(hObject, eventdata, handles)
+% hObject    handle to menu_loadSWaveVModel (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+%% load S-wave velocity model
+[file, path] = uigetfile('*.mat', 'Select a velocity model for S-wave');
+if (~any([file, path])) % user pressed cancel button
+    return;
+end
+load(fullfile(path, file));
+if (~exist('velocityModel', 'var'))
+    errordlg('This is not a valid velocity model!', 'File Error');
+    return;
+end
+loadFlag = true;
+
+%% share variables among callback functions
+data = guidata(hObject);
+data.loadFlag = loadFlag;
+data.velocityModel = velocityModel;
+guidata(hObject, data);
+
 
 
 % --- Executes on button press in btn_shot.
@@ -209,6 +270,7 @@ set(handles.btn_shot, 'Enable', 'off');
 %% share variables among callback functions
 data = guidata(hObject);
 data.stopFlag = false;
+data.loadFlag = false;
 guidata(hObject, data);
 
 %% load parameter
@@ -275,8 +337,8 @@ for ixs = 1:nShots
             round(linspace(2 * dx, (size(velocityModel, 3)-1) * dx, 5)), ...
             round(linspace(2 * dy, (size(velocityModel, 2)-1) * dy, 5)), ...
             round(linspace(2 * dz, (size(velocityModel, 1)-1) * dz, 10)));
-        xlabel(handles.axes_velocityModel, 'Distance (m)');
-        ylabel(handles.axes_velocityModel, 'Distance (m)');
+        xlabel(handles.axes_velocityModel, 'Easting (m)');
+        ylabel(handles.axes_velocityModel, 'Northing (m)');
         zlabel(handles.axes_velocityModel, 'Depth (m)');
         title(handles.axes_velocityModel, 'Velocity Model');
         set(handles.axes_velocityModel, 'ZDir', 'reverse');
@@ -302,6 +364,12 @@ for ixs = 1:nShots
         % stop plotting when stop button has been pushed
         data = guidata(hObject);
         if (data.stopFlag)
+            return;
+        end
+        
+        % stop plotting when another new velocity model has been loaded
+        data = guidata(hObject);
+        if (data.loadFlag)
             return;
         end
         
@@ -338,8 +406,8 @@ for ixs = 1:nShots
                 round(linspace(2 * dx, (nx-1) * dx, 3)), ...
                 round(linspace(2 * dy, (ny-1) * dy, 3)), ...
                 t(1:it));
-            xlabel(handles.axes_data, 'Distance (m)');
-            ylabel(handles.axes_data, 'Distance (m)');
+            xlabel(handles.axes_data, 'Easting (m)');
+            ylabel(handles.axes_data, 'Northing (m)');
             zlabel(handles.axes_data, 'Time (s)');
             title(handles.axes_data, 'Shot Record (True)');
             set(handles.axes_data, 'ZDir', 'reverse');
@@ -351,8 +419,8 @@ for ixs = 1:nShots
                 round(linspace(2 * dx, (nx-1) * dx, 3)), ...
                 round(linspace(2 * dy, (ny-1) * dy, 3)), ...
                 round(linspace(2 * dz, (nz-1) * dz, 3)));
-            xlabel(handles.axes_snapshot, 'Distance (m)');
-            ylabel(handles.axes_snapshot, 'Distance (m)');
+            xlabel(handles.axes_snapshot, 'Easting (m)');
+            ylabel(handles.axes_snapshot, 'Northing (m)');
             zlabel(handles.axes_snapshot, 'Depth (m)');
             title(handles.axes_snapshot, sprintf('Wave Propagation (True) t = %.3fs', t(it)));
             set(handles.axes_snapshot, 'ZDir', 'reverse');
@@ -469,7 +537,6 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 
 
-
 function edit_dz_Callback(hObject, eventdata, handles)
 % hObject    handle to edit_dz (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
@@ -560,7 +627,6 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 
 
-
 function edit_nx_Callback(hObject, eventdata, handles)
 % hObject    handle to edit_nx (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
@@ -581,7 +647,6 @@ function edit_nx_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
-
 
 
 function edit_ny_Callback(hObject, eventdata, handles)
@@ -606,7 +671,6 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 
 
-
 function edit_nz_Callback(hObject, eventdata, handles)
 % hObject    handle to edit_nz (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
@@ -627,7 +691,6 @@ function edit_nz_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
-
 
 
 function edit_nt_Callback(hObject, eventdata, handles)
@@ -713,7 +776,6 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 
 
-
 function edit_centerFreq_Callback(hObject, eventdata, handles)
 % hObject    handle to edit_centerFreq (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
@@ -734,7 +796,6 @@ function edit_centerFreq_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
-
 
 
 function edit_sx_Callback(hObject, eventdata, handles)
@@ -759,7 +820,6 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 
 
-
 function edit_sy_Callback(hObject, eventdata, handles)
 % hObject    handle to edit_sy (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
@@ -780,7 +840,6 @@ function edit_sy_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
-
 
 
 function edit_sz_Callback(hObject, eventdata, handles)
@@ -907,7 +966,6 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 
 
-
 function edit_rx_Callback(hObject, eventdata, handles)
 % hObject    handle to edit_rx (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
@@ -930,7 +988,6 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 
 
-
 function edit_ry_Callback(hObject, eventdata, handles)
 % hObject    handle to edit_ry (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
@@ -951,7 +1008,6 @@ function edit_ry_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
-
 
 
 function edit_rz_Callback(hObject, eventdata, handles)
