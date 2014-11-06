@@ -101,6 +101,7 @@ vmax = max(velocityModel(:));
 set(handles.edit_dx, 'Enable', 'on');
 set(handles.edit_dz, 'Enable', 'on');
 set(handles.edit_dt, 'Enable', 'on');
+set(handles.edit_nt, 'Enable', 'on');
 set(handles.edit_boundary, 'Enable', 'on');
 set(handles.ppm_approxOrder, 'Enable', 'on');
 set(handles.edit_centerFreq, 'Enable', 'on');
@@ -184,6 +185,7 @@ else            % 3D case
     ylabel(handles.axes_velocityModel, 'Distance (m)');
     zlabel(handles.axes_velocityModel, 'Depth (m)');
     title(handles.axes_velocityModel, 'Velocity Model');
+    set(handles.axes_velocityModel, 'ZDir', 'reverse');
     shading(handles.axes_velocityModel, 'interp');
     colormap(handles.axes_velocityModel, seismic);
 end
@@ -241,7 +243,7 @@ if (dim > 2)
     [szMesh, sxMesh, syMesh] = meshgrid(sz, sx, sy);
     sMesh = [szMesh(:), sxMesh(:), syMesh(:)];
     nShots = size(sMesh, 1);
-    ry = eval(sprintf('[%s]', get(handles.edit_ry, 'String')))
+    ry = eval(sprintf('[%s]', get(handles.edit_ry, 'String')));
 end
 
 % add region around model for applying absorbing boundary conditions
@@ -277,12 +279,13 @@ for ixs = 1:nShots
         ylabel(handles.axes_velocityModel, 'Distance (m)');
         zlabel(handles.axes_velocityModel, 'Depth (m)');
         title(handles.axes_velocityModel, 'Velocity Model');
+        set(handles.axes_velocityModel, 'ZDir', 'reverse');
         shading(handles.axes_velocityModel, 'interp');
         colormap(handles.axes_velocityModel, seismic);
         cur_sy = sMesh(ixs, 3);
         
         hold(handles.axes_velocityModel, 'on');
-        plot3(handles.axes_velocityModel, cur_sx * dx, cur_sy * dy, cur_sz * dz, 'k*');
+        plot3(handles.axes_velocityModel, cur_sx * dx, cur_sy * dy, cur_sz * dz, 'w*');
         hold(handles.axes_velocityModel, 'off');
         
         sourceTime(cur_sz, cur_sx+nBoundary, cur_sy+nBoundary, :) = reshape(wave1dTime, 1, 1, 1, nt);
@@ -302,30 +305,64 @@ for ixs = 1:nShots
             return;
         end
         
+        % plot source function in time domain
+        plot(handles.axes_sourceTime, [1:nt], wave1dTime); hold(handles.axes_sourceTime, 'on');
+        plot(handles.axes_sourceTime, it, wave1dTime(it), 'r*'); hold(handles.axes_sourceTime, 'off');
+        xlim(handles.axes_sourceTime, [1, nt]);
+        xlabel(handles.axes_sourceTime, 'Time'); ylabel(handles.axes_sourceTime, 'Amplitude');
+        colormap(handles.axes_sourceTime, seismic);
+        
         if (dim <= 2)	% 2D case
-            plot(handles.axes_sourceTime, [1:nt], wave1dTime); hold(handles.axes_sourceTime, 'on');
-            plot(handles.axes_sourceTime, it, wave1dTime(it), 'r*'); hold(handles.axes_sourceTime, 'off');
-            xlim(handles.axes_sourceTime, [1, nt]);
-            xlabel(handles.axes_sourceTime, 'Time'); ylabel(handles.axes_sourceTime, 'Amplitude');
+            % source function title
             title(handles.axes_sourceTime, sprintf('Shot at x = %dm', cur_sx));
-            colormap(handles.axes_sourceTime, seismic);
             
+            % plot received data traces
             dataDisplay = zeros(nt, nx);
             dataDisplay(1:it, rx) = dataTrue(rx+nBoundary, 1:it).';
             imagesc(x, t, dataDisplay, 'Parent', handles.axes_data, [-0.1 0.1]);
             xlabel(handles.axes_data, 'Distance (m)'); ylabel(handles.axes_data, 'Time (s)');
             title(handles.axes_data, 'Shot Record (True)');
             
+            % plot wave propagation snapshots
             imagesc(x, z, snapshotTrue(1:end-nBoundary, nBoundary+1:end-nBoundary, it), 'Parent', handles.axes_snapshot, [-0.14 1]);
             xlabel(handles.axes_snapshot, 'Distance (m)'); ylabel(handles.axes_snapshot, 'Depth (m)');
             title(handles.axes_snapshot, sprintf('Wave Propagation (True) t = %.3fs', t(it)));
         else            % 3D case
+            % source function title
+            title(handles.axes_sourceTime, sprintf('Shot at x = %dm, y = %dm', cur_sx, cur_sy));
             
+            % plot received data traces
+            dataDisplay = zeros(nx, ny, nt);
+            dataDisplay(rx, ry, 1:it) = dataTrue(rx+nBoundary, ry+nBoundary, 1:it);
+            slice(handles.axes_data, x, y, t, dataDisplay, ...
+                round(linspace(2 * dx, (nx-1) * dx, 3)), ...
+                round(linspace(2 * dy, (ny-1) * dy, 3)), ...
+                t(1:it));
+            xlabel(handles.axes_data, 'Distance (m)');
+            ylabel(handles.axes_data, 'Distance (m)');
+            zlabel(handles.axes_data, 'Time (s)');
+            title(handles.axes_data, 'Shot Record (True)');
+            set(handles.axes_data, 'ZDir', 'reverse');
+            shading(handles.axes_data, 'interp');
+            caxis(handles.axes_data, [-0.1 0.1]);
+            
+            % plot wave propagation snapshots
+            slice(handles.axes_snapshot, x, y, z, permute(snapshotTrue(1:end-nBoundary, nBoundary+1:end-nBoundary, nBoundary+1:end-nBoundary, it), [2, 3, 1]), ...
+                round(linspace(2 * dx, (nx-1) * dx, 3)), ...
+                round(linspace(2 * dy, (ny-1) * dy, 3)), ...
+                round(linspace(2 * dz, (nz-1) * dz, 3)));
+            xlabel(handles.axes_snapshot, 'Distance (m)');
+            ylabel(handles.axes_snapshot, 'Distance (m)');
+            zlabel(handles.axes_snapshot, 'Depth (m)');
+            title(handles.axes_snapshot, sprintf('Wave Propagation (True) t = %.3fs', t(it)));
+            set(handles.axes_snapshot, 'ZDir', 'reverse');
+            shading(handles.axes_snapshot, 'interp');
+            caxis(handles.axes_snapshot, [-0.14 1]);
         end
         
         drawnow;
+        
     end
-    
 end
 
 %% enable / disable objects
