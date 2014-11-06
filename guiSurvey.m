@@ -22,7 +22,7 @@ function varargout = guiSurvey(varargin)
 
 % Edit the above text to modify the response to help guiSurvey
 
-% Last Modified by GUIDE v2.5 05-Nov-2014 01:00:49
+% Last Modified by GUIDE v2.5 06-Nov-2014 10:00:27
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -103,12 +103,12 @@ set(handles.edit_dz, 'Enable', 'on');
 set(handles.edit_dt, 'Enable', 'on');
 set(handles.edit_nt, 'Enable', 'on');
 set(handles.edit_boundary, 'Enable', 'on');
-set(handles.ppm_approxOrder, 'Enable', 'on');
+set(handles.pmenu_approxOrder, 'Enable', 'on');
 set(handles.edit_centerFreq, 'Enable', 'on');
 set(handles.edit_sx, 'Enable', 'on');
 set(handles.edit_sz, 'Enable', 'on');
-set(handles.ppm_sweepAll, 'Enable', 'on');
-set(handles.ppm_receiveAll, 'Enable', 'on');
+set(handles.pmenu_sweepAll, 'Enable', 'on');
+set(handles.pmenu_receiveAll, 'Enable', 'on');
 set(handles.btn_shot, 'Enable', 'on');
 
 %% set finite difference setting values
@@ -138,7 +138,7 @@ set(handles.edit_nx, 'String', num2str(nx));
 set(handles.edit_nz, 'String', num2str(nz));
 set(handles.edit_nt, 'String', num2str(nt));
 set(handles.edit_boundary, 'String', num2str(nBoundary));
-set(handles.ppm_approxOrder, 'Value', nDiffOrder);
+set(handles.pmenu_approxOrder, 'Value', nDiffOrder);
 set(handles.edit_centerFreq, 'String', num2str(f));
 set(handles.edit_sx, 'String', num2str(sx));
 set(handles.edit_sz, 'String', num2str(sz));
@@ -224,7 +224,7 @@ x = (1:nx) * dx;
 z = (1:nz) * dz;
 t  = (0:nt-1).*dt;
 nBoundary = str2double(get(handles.edit_boundary, 'String'));
-nDiffOrder = get(handles.ppm_approxOrder, 'Value');
+nDiffOrder = get(handles.pmenu_approxOrder, 'Value');
 f = str2double(get(handles.edit_centerFreq, 'String'));
 sx = eval(sprintf('[%s]', get(handles.edit_sx, 'String')));
 sz = eval(sprintf('[%s]', get(handles.edit_sz, 'String')));
@@ -690,19 +690,19 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 
 
-% --- Executes on selection change in ppm_approxOrder.
-function ppm_approxOrder_Callback(hObject, eventdata, handles)
-% hObject    handle to ppm_approxOrder (see GCBO)
+% --- Executes on selection change in pmenu_approxOrder.
+function pmenu_approxOrder_Callback(hObject, eventdata, handles)
+% hObject    handle to pmenu_approxOrder (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hints: contents = cellstr(get(hObject,'String')) returns ppm_approxOrder contents as cell array
-%        contents{get(hObject,'Value')} returns selected item from ppm_approxOrder
+% Hints: contents = cellstr(get(hObject,'String')) returns pmenu_approxOrder contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from pmenu_approxOrder
 
 
 % --- Executes during object creation, after setting all properties.
-function ppm_approxOrder_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to ppm_approxOrder (see GCBO)
+function pmenu_approxOrder_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to pmenu_approxOrder (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
@@ -805,14 +805,14 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 
 
-% --- Executes on selection change in ppm_sweepAll.
-function ppm_sweepAll_Callback(hObject, eventdata, handles)
-% hObject    handle to ppm_sweepAll (see GCBO)
+% --- Executes on selection change in pmenu_sweepAll.
+function pmenu_sweepAll_Callback(hObject, eventdata, handles)
+% hObject    handle to pmenu_sweepAll (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hints: contents = cellstr(get(hObject,'String')) returns ppm_sweepAll contents as cell array
-%        contents{get(hObject,'Value')} returns selected item from ppm_sweepAll
+% Hints: contents = cellstr(get(hObject,'String')) returns pmenu_sweepAll contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from pmenu_sweepAll
 
 data = guidata(hObject);
 velocityModel = data.velocityModel;
@@ -846,8 +846,8 @@ end
 
 
 % --- Executes during object creation, after setting all properties.
-function ppm_sweepAll_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to ppm_sweepAll (see GCBO)
+function pmenu_sweepAll_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to pmenu_sweepAll (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
@@ -858,14 +858,14 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 
 
-% --- Executes on selection change in ppm_receiveAll.
-function ppm_receiveAll_Callback(hObject, eventdata, handles)
-% hObject    handle to ppm_receiveAll (see GCBO)
+% --- Executes on selection change in pmenu_receiveAll.
+function pmenu_receiveAll_Callback(hObject, eventdata, handles)
+% hObject    handle to pmenu_receiveAll (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hints: contents = cellstr(get(hObject,'String')) returns ppm_receiveAll contents as cell array
-%        contents{get(hObject,'Value')} returns selected item from ppm_receiveAll
+% Hints: contents = cellstr(get(hObject,'String')) returns pmenu_receiveAll contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from pmenu_receiveAll
 
 data = guidata(hObject);
 velocityModel = data.velocityModel;
@@ -895,8 +895,8 @@ end
 
 
 % --- Executes during object creation, after setting all properties.
-function ppm_receiveAll_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to ppm_receiveAll (see GCBO)
+function pmenu_receiveAll_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to pmenu_receiveAll (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
