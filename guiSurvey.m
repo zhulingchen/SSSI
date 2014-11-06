@@ -22,7 +22,7 @@ function varargout = guiSurvey(varargin)
 
 % Edit the above text to modify the response to help guiSurvey
 
-% Last Modified by GUIDE v2.5 06-Nov-2014 12:35:00
+% Last Modified by GUIDE v2.5 06-Nov-2014 17:16:49
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -103,7 +103,7 @@ if (~exist('velocityModel', 'var'))
     errordlg('This is not a valid velocity model!', 'File Error');
     return;
 end
-loadFlag = true;
+loadPFlag = true;
 
 dim = length(size(velocityModel));
 vmin = min(velocityModel(:));
@@ -118,9 +118,9 @@ set(handles.edit_nt, 'Enable', 'on');
 set(handles.edit_boundary, 'Enable', 'on');
 set(handles.pmenu_approxOrder, 'Enable', 'on');
 set(handles.edit_centerFreq, 'Enable', 'on');
+set(handles.pmenu_sweepAll, 'Enable', 'on');
 set(handles.edit_sx, 'Enable', 'on');
 set(handles.edit_sz, 'Enable', 'on');
-set(handles.pmenu_sweepAll, 'Enable', 'on');
 set(handles.pmenu_receiveAll, 'Enable', 'on');
 set(handles.btn_shot, 'Enable', 'on');
 
@@ -203,9 +203,9 @@ if (dim <= 2)	% 2D case
     colormap(handles.axes_velocityModel, seismic);
 else            % 3D case
     slice(handles.axes_velocityModel, x, y, z, permute(velocityModel, [2, 3, 1]), ...
-        round(linspace(2 * dx, (size(velocityModel, 3)-1) * dx, 5)), ...
-        round(linspace(2 * dy, (size(velocityModel, 2)-1) * dy, 5)), ...
-        round(linspace(2 * dz, (size(velocityModel, 1)-1) * dz, 10)));
+        round(linspace(x(2), x(end-1), 5)), ...
+        round(linspace(y(2), y(end-1), 5)), ...
+        round(linspace(z(2), z(end-1), 10)));
     xlabel(handles.axes_velocityModel, 'Easting (m)');
     ylabel(handles.axes_velocityModel, 'Northing (m)');
     zlabel(handles.axes_velocityModel, 'Depth (m)');
@@ -217,16 +217,20 @@ end
 
 % clear other axes & set them invisible
 cla(handles.axes_sourceTime, 'reset');
-cla(handles.axes_data, 'reset');
-cla(handles.axes_snapshot, 'reset');
+cla(handles.axes_out1, 'reset');
+cla(handles.axes_out2, 'reset');
 set(handles.axes_sourceTime, 'Visible', 'off');
-set(handles.axes_data, 'Visible', 'off');
-set(handles.axes_snapshot, 'Visible', 'off');
+set(handles.axes_out1, 'Visible', 'off');
+set(handles.axes_out2, 'Visible', 'off');
 
+%% update status
+str_status = get(handles.edit_status, 'String');
+str_status{end+1} = sprintf('Loaded P-wave Velocity Model: %s', fullfile(path, file));
+set(handles.edit_status, 'String', str_status);
 
 %% share variables among callback functions
 data = guidata(hObject);
-data.loadFlag = loadFlag;
+data.loadPFlag = loadPFlag;
 data.velocityModel = velocityModel;
 guidata(hObject, data); % hObject can be any object contained in the figure, including push button, edit text, popup menu, etc.
 
@@ -247,11 +251,16 @@ if (~exist('velocityModel', 'var'))
     errordlg('This is not a valid velocity model!', 'File Error');
     return;
 end
-loadFlag = true;
+loadSFlag = true;
+
+%% update status
+str_status = get(handles.edit_status, 'String');
+str_status{end+1} = sprintf('Loaded S-wave Velocity Model: %s', fullfile(path, file));
+set(handles.edit_status, 'String', str_status);
 
 %% share variables among callback functions
 data = guidata(hObject);
-data.loadFlag = loadFlag;
+data.loadSFlag = loadSFlag;
 data.velocityModel = velocityModel;
 guidata(hObject, data);
 
@@ -270,7 +279,8 @@ set(handles.btn_shot, 'Enable', 'off');
 %% share variables among callback functions
 data = guidata(hObject);
 data.stopFlag = false;
-data.loadFlag = false;
+data.loadPFlag = false;
+data.loadSFlag = false;
 guidata(hObject, data);
 
 %% load parameter
@@ -330,13 +340,19 @@ for ixs = 1:nShots
         plot(handles.axes_velocityModel, cur_sx * dx, cur_sz * dz, 'w*');
         hold(handles.axes_velocityModel, 'off');
         
+        % shot
         sourceTime(cur_sz, cur_sx+nBoundary, :) = reshape(wave1dTime, 1, 1, nt);
         [dataTrue, snapshotTrue] = fwdTimeCpmlFor2dAw(V, sourceTime, nDiffOrder, nBoundary, dz, dx, dt);
+        
+        % update status
+        str_status = get(handles.edit_status, 'String');
+        str_status{end+1} = sprintf('Shot at x = %dm, z = %dm', cur_sx * dx, cur_sz * dz);
+        set(handles.edit_status, 'String', str_status);
     else            % 3D case
         slice(handles.axes_velocityModel, x, y, z, permute(velocityModel, [2, 3, 1]), ...
-            round(linspace(2 * dx, (size(velocityModel, 3)-1) * dx, 5)), ...
-            round(linspace(2 * dy, (size(velocityModel, 2)-1) * dy, 5)), ...
-            round(linspace(2 * dz, (size(velocityModel, 1)-1) * dz, 10)));
+            round(linspace(x(2), x(end-1), 5)), ...
+            round(linspace(y(2), y(end-1), 5)), ...
+            round(linspace(z(2), z(end-1), 10)));
         xlabel(handles.axes_velocityModel, 'Easting (m)');
         ylabel(handles.axes_velocityModel, 'Northing (m)');
         zlabel(handles.axes_velocityModel, 'Depth (m)');
@@ -345,13 +361,18 @@ for ixs = 1:nShots
         shading(handles.axes_velocityModel, 'interp');
         colormap(handles.axes_velocityModel, seismic);
         cur_sy = sMesh(ixs, 3);
-        
         hold(handles.axes_velocityModel, 'on');
         plot3(handles.axes_velocityModel, cur_sx * dx, cur_sy * dy, cur_sz * dz, 'w*');
         hold(handles.axes_velocityModel, 'off');
         
+        % shot
         sourceTime(cur_sz, cur_sx+nBoundary, cur_sy+nBoundary, :) = reshape(wave1dTime, 1, 1, 1, nt);
         [dataTrue, snapshotTrue] = fwdTimeCpmlFor3dAw(V, sourceTime, nDiffOrder, nBoundary, dz, dx, dy, dt);
+        
+        % update status
+        str_status = get(handles.edit_status, 'String');
+        str_status{end+1} = sprintf('Shot at x = %dm, y = %dm, z = %dm', cur_sx * dx, cur_sy * dy, cur_sz * dz);
+        set(handles.edit_status, 'String', str_status);
     end
     
     %% plot figures into axes
@@ -369,7 +390,7 @@ for ixs = 1:nShots
         
         % stop plotting when another new velocity model has been loaded
         data = guidata(hObject);
-        if (data.loadFlag)
+        if (data.loadPFlag || data.loadSFlag)
             return;
         end
         
@@ -382,50 +403,50 @@ for ixs = 1:nShots
         
         if (dim <= 2)	% 2D case
             % source function title
-            title(handles.axes_sourceTime, sprintf('Shot at x = %dm', cur_sx));
+            title(handles.axes_sourceTime, sprintf('Shot at x = %dm', cur_sx * dx));
             
             % plot received data traces
             dataDisplay = zeros(nt, nx);
             dataDisplay(1:it, rx) = dataTrue(rx+nBoundary, 1:it).';
-            imagesc(x, t, dataDisplay, 'Parent', handles.axes_data, [-0.1 0.1]);
-            xlabel(handles.axes_data, 'Distance (m)'); ylabel(handles.axes_data, 'Time (s)');
-            title(handles.axes_data, 'Shot Record (True)');
+            imagesc(x, t, dataDisplay, 'Parent', handles.axes_out1, [-0.1 0.1]);
+            xlabel(handles.axes_out1, 'Distance (m)'); ylabel(handles.axes_out1, 'Time (s)');
+            title(handles.axes_out1, 'Shot Record');
             
             % plot wave propagation snapshots
-            imagesc(x, z, snapshotTrue(1:end-nBoundary, nBoundary+1:end-nBoundary, it), 'Parent', handles.axes_snapshot, [-0.14 1]);
-            xlabel(handles.axes_snapshot, 'Distance (m)'); ylabel(handles.axes_snapshot, 'Depth (m)');
-            title(handles.axes_snapshot, sprintf('Wave Propagation (True) t = %.3fs', t(it)));
+            imagesc(x, z, snapshotTrue(1:end-nBoundary, nBoundary+1:end-nBoundary, it), 'Parent', handles.axes_out2, [-0.14 1]);
+            xlabel(handles.axes_out2, 'Distance (m)'); ylabel(handles.axes_out2, 'Depth (m)');
+            title(handles.axes_out2, sprintf('Wave Propagation t = %.3fs', t(it)));
         else            % 3D case
             % source function title
-            title(handles.axes_sourceTime, sprintf('Shot at x = %dm, y = %dm', cur_sx, cur_sy));
+            title(handles.axes_sourceTime, sprintf('Shot at x = %dm, y = %dm', cur_sx * dx, cur_sy * dy));
             
             % plot received data traces
             dataDisplay = zeros(nx, ny, nt);
             dataDisplay(rx, ry, 1:it) = dataTrue(rx+nBoundary, ry+nBoundary, 1:it);
-            slice(handles.axes_data, x, y, t, dataDisplay, ...
-                round(linspace(2 * dx, (nx-1) * dx, 3)), ...
-                round(linspace(2 * dy, (ny-1) * dy, 3)), ...
-                t(1:it));
-            xlabel(handles.axes_data, 'Easting (m)');
-            ylabel(handles.axes_data, 'Northing (m)');
-            zlabel(handles.axes_data, 'Time (s)');
-            title(handles.axes_data, 'Shot Record (True)');
-            set(handles.axes_data, 'ZDir', 'reverse');
-            shading(handles.axes_data, 'interp');
-            caxis(handles.axes_data, [-0.1 0.1]);
+            slice(handles.axes_out1, x, y, t, dataDisplay, ...
+                round(linspace(x(2), x(end-1), 5)), ...
+                round(linspace(y(2), y(end-1), 5)), ...
+                t);
+            xlabel(handles.axes_out1, 'Easting (m)');
+            ylabel(handles.axes_out1, 'Northing (m)');
+            zlabel(handles.axes_out1, 'Time (s)');
+            title(handles.axes_out1, 'Shot Record');
+            set(handles.axes_out1, 'ZDir', 'reverse');
+            shading(handles.axes_out1, 'interp');
+            caxis(handles.axes_out1, [-0.1 0.1]);
             
             % plot wave propagation snapshots
-            slice(handles.axes_snapshot, x, y, z, permute(snapshotTrue(1:end-nBoundary, nBoundary+1:end-nBoundary, nBoundary+1:end-nBoundary, it), [2, 3, 1]), ...
-                round(linspace(2 * dx, (nx-1) * dx, 3)), ...
-                round(linspace(2 * dy, (ny-1) * dy, 3)), ...
-                round(linspace(2 * dz, (nz-1) * dz, 3)));
-            xlabel(handles.axes_snapshot, 'Easting (m)');
-            ylabel(handles.axes_snapshot, 'Northing (m)');
-            zlabel(handles.axes_snapshot, 'Depth (m)');
-            title(handles.axes_snapshot, sprintf('Wave Propagation (True) t = %.3fs', t(it)));
-            set(handles.axes_snapshot, 'ZDir', 'reverse');
-            shading(handles.axes_snapshot, 'interp');
-            caxis(handles.axes_snapshot, [-0.14 1]);
+            slice(handles.axes_out2, x, y, z, permute(snapshotTrue(1:end-nBoundary, nBoundary+1:end-nBoundary, nBoundary+1:end-nBoundary, it), [2, 3, 1]), ...
+                round(linspace(x(2), x(end-1), 5)), ...
+                round(linspace(y(2), y(end-1), 5)), ...
+                z);
+            xlabel(handles.axes_out2, 'Easting (m)');
+            ylabel(handles.axes_out2, 'Northing (m)');
+            zlabel(handles.axes_out2, 'Depth (m)');
+            title(handles.axes_out2, sprintf('Wave Propagation t = %.3fs', t(it)));
+            set(handles.axes_out2, 'ZDir', 'reverse');
+            shading(handles.axes_out2, 'interp');
+            caxis(handles.axes_out2, [-0.14 1]);
         end
         
         drawnow;
@@ -447,6 +468,11 @@ function btn_stop_Callback(hObject, eventdata, handles)
 %% enable / disable objects
 set(handles.btn_shot, 'Enable', 'on');
 set(handles.btn_stop, 'Enable', 'off');
+
+%% update status
+str_status = get(handles.edit_status, 'String');
+str_status{end+1} = 'Stopped';
+set(handles.edit_status, 'String', str_status);
 
 %% share variables among callback functions
 data = guidata(hObject);
@@ -1040,3 +1066,26 @@ function figureMain_CloseRequestFcn(hObject, eventdata, handles)
 
 % Hint: delete(hObject) closes the figure
 delete(hObject);
+
+
+
+function edit_status_Callback(hObject, eventdata, handles)
+% hObject    handle to edit_status (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of edit_status as text
+%        str2double(get(hObject,'String')) returns contents of edit_status as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function edit_status_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit_status (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
