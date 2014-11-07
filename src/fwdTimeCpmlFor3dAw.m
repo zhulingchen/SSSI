@@ -1,26 +1,28 @@
 function [data, snapshot] = fwdTimeCpmlFor3dAw(v, source, nDiffOrder, nBoundary, dz, dx, dy, dt)
 %
-% FWDTIMECPMLFOR2DAW Simulate 2-d acoustic wave forward propagating using
+% FWDTIMECPMLFOR3DAW Simulate 3-d acoustic wave forward propagating using
 % finite difference in time domain with the following partial differential
 % equation (PDE)
 %
-% (1/v^2)*(d^2)u(z, x, t)/dt^2 + s(z, x, t) = zP + xP
-% Update xPhi, zPhi, xA, zA, xPsi, zPsi, xP, zP and solve u(z, x, t) with Nonsplit Convolutional-PML (CPML)
+% (1/v^2)*(d^2)u(z, x, y, t)/dt^2 + s(z, x, y, t) = zP + xP + yP Update
+% xPhi, yPhi, zPhi, xA, yA, zA, xPsi, yPsi, zPsi, xP, yP, zP and solve u(z,
+% x, y, t) with Nonsplit Convolutional-PML (CPML)
 %
 % input arguments
-% v(nz,nx)          velocity model
-% source(nz,nx)     source vector (e.g., shots)
-% nDiffOrder        number of order of differentiator operator
-% nBoundary         thickness of the absorbing boundary
-% dx                horizontal distance per sample
-% dz                depth distance per sample
-% dt                time difference per sample
+% v(nz,nx,ny)           velocity model
+% source(nz,nx,ny,nt)   source vector (e.g., shots)
+% nDiffOrder            number of order of differentiator operator
+% nBoundary             thickness of the absorbing boundary
+% dx                    easting distance per sample
+% dy                    northing distance per sample
+% dz                    depth distance per sample
+% dt                    time difference per sample
 %
 % output arguments
-% data              received 2-d x - time signal on the surface
-% snapshot          pressure field u(z, x, t) in time domain
+% data              received 3-d (x, y) - time signal on the surface
+% snapshot          pressure field u(z, x, y, t) in time domain
 %
-% Reference: 
+% Reference:
 % D. Komatitsch and R. Martin, An unsplit convolutional perfectly matched
 % layer improved at grazing incidence for the seismic wave equation,
 % Geophysics, Vol. 72 No. 5, pp. SM155-SM167, 2007
@@ -58,11 +60,11 @@ xb = exp(-xDamp * dt);
 
 yDampFront  = zeros(nz,nx,nBoundary);
 for i=1:nBoundary
-  yDampFront(:,:,i) = (nBoundary-i+1)*ones(nz,nx);    
+    yDampFront(:,:,i) = (nBoundary-i+1)*ones(nz,nx);
 end
 yDampRear  = zeros(nz,nx,nBoundary);
 for i=1:nBoundary
-  yDampRear(:,:,i) = i*ones(nz,nx);    
+    yDampRear(:,:,i) = i*ones(nz,nx);
 end
 yDamp=cat(3, yDampFront, zeros(nz, nx, ny-2*nBoundary), yDampRear);
 yb = exp(-yDamp * dt);
@@ -152,16 +154,16 @@ for it = 1:nt
     snapshot(:, :, :, it) = fdm(izi, ixi, iyi, 2);
     
     
-
-%     % figure(3); imagesc(snapshot(1:nz-nBoundary,nBoundary+1:nx-nBoundary,it));
-%     figure(3); imagesc(fdm(:, :, 2));
-%     title(['Iteration: ',num2str(it)])
-%     colorbar;
-%     drawnow
-%     writeVideo(objVideoFm2d, getframe(gcf));
-
-
-
+    
+    %     % figure(3); imagesc(snapshot(1:nz-nBoundary,nBoundary+1:nx-nBoundary,it));
+    %     figure(3); imagesc(fdm(:, :, 2));
+    %     title(['Iteration: ',num2str(it)])
+    %     colorbar;
+    %     drawnow
+    %     writeVideo(objVideoFm2d, getframe(gcf));
+    
+    
+    
 end % time loop
 
 % close(objVideoFm2d);

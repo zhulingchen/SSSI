@@ -9,7 +9,7 @@ function [data, snapshot] = fwdTimeCpmlFor2dAw(v, source, nDiffOrder, nBoundary,
 %
 % input arguments
 % v(nz,nx)          velocity model
-% source(nz,nx)     source vector (e.g., shots)
+% source(nz,nx,nt)  source vector (e.g., shots)
 % nDiffOrder        number of approximation order for differentiator operator
 % nBoundary         thickness of the absorbing boundary
 % dx                horizontal distance per sample
