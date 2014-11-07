@@ -10,8 +10,8 @@
 % finite diffrence method.
 
 % Reference:
-% Ke-Yang Chen, ?Finite-Difference Simulation of Elastic Wave with
-% Separation in Pure P- and S-Modes,? Journal of Computational Methods in
+% Ke-Yang Chen, Finite-Difference Simulation of Elastic Wave with
+% Separation in Pure P- and S-Modes, Journal of Computational Methods in
 % Physics, vol. 2014, Article ID 108713, 14 pages, 2014.
 % doi:10.1155/2014/108713
 %
