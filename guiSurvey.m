@@ -235,6 +235,7 @@ if (~exist('velocityModel', 'var'))
 end
 vp = velocityModel;
 
+% dimension check
 data = guidata(hObject);
 if (isfield(data, 'vs'))
     if (ndims(vp) ~= ndims(data.vs))

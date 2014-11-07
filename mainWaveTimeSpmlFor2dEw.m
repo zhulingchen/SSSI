@@ -16,7 +16,7 @@
 % This matlab source file is free for use in academic research.
 % All rights reserved.
 %
-% Written by Entao Liu (liuentao@gmail.com)
+% Written by Entao Liu (liuentao@gmail.com), Lingchen Zhu (zhulingchen@gmail.com)
 % Center for Signal and Information Processing, Center for Energy & Geo Processing
 % Georgia Institute of Technology
 
@@ -30,18 +30,27 @@ addpath(genpath('./src'));
 
 
 %% Model Parameters setup
-load('./modelData/velocityModel.mat');
+% vp = P-wave velocity, vs = S-wave velocity
+
+load('./modelData/velocityModelP.mat');
+vp = velocityModel;
+load('./modelData/velocityModelS.mat');
+vs = velocityModel;
+
+% dimension check
+if (ndims(vp) ~= ndims(vs))
+    error('Dimension of P-wave and S-wave velocity models are not the same!');
+end
+if (any(size(vp) ~= size(vs)))
+    error('Dimension of P-wave and S-wave velocity models are not the same!');
+end
+
 [nz, nx] = size(velocityModel);
 
 dz = 10;
 dx = 10;
 x = (1:nx)*dx;
 z = (1:nz)*dz;
-
-%% vp = p wave velocity, vs = S wave velocity, rho = density
-vp = velocityModel;
-vs = velocityModel/sqrt(2);
-rho = velocityModel;
 
 vpmin = min(vp(:));
 vpmax = max(vp(:));
@@ -51,22 +60,6 @@ vsmax = max(vs(:));
 dt = 0.75*(dz/vpmax/sqrt(2));
 nt = round(sqrt((dx*nx)^2 + (dz*nz)^2)*2/vpmin/dt + 1);
 t  = (0:nt-1).*dt;
-
-% %************** Velocity Model #1 *********************
-% z1=600;m1=find(z==z1);        % deepth of the reflector
-% for i=1:nz
-%     for j=1:nx
-%         if i<=m1
-%             vp(i,j)=2e3;vs(i,j)=vp(i,j)/sqrt(3);rho(i,j)=2e3;
-%         else
-%             vp(i,j)=2.5e3;vs(i,j)=vp(i,j)/sqrt(3);rho(i,j)=2.5e3;
-%         end
-%     end
-% end
-% %*******************************************************
-
-miu = rho.*vs.^2;                 % setup Lame parameters miu and lambda
-lambda = rho.*(vp.^2-2*vs.^2);
 
 % shot position
 zShot = 50 * dz;
@@ -78,7 +71,7 @@ set(hFig, 'PaperPositionMode', 'auto');
 
 % plot the velocity model
 subplot(2,3,1);
-imagesc(x, z, velocityModel)
+imagesc(x, z, vp);
 xlabel('Distance (m)'); ylabel('Depth (m)');
 title('Velocity Model');
 hold on;
@@ -94,53 +87,40 @@ if dt*sqrt(vpmax^2/dx^2+vsmax^2/dz^2)>1
 end
 
 
-%% Extend rho, miu, lambda, vs, and vp with a layer of width nBoundary on left, right, and bottom (except top)
+%% add region around model (vp and vs) for applying absorbing boundary conditions
 nBoundary = 20;
 
-rho = [repmat(rho(:,1),1,nBoundary) rho repmat(rho(:,end),1,nBoundary)];
-rho(end+1:end+nBoundary,:) = repmat(rho(end,:),nBoundary,1);
+VP = extBoundary(vp, nBoundary, 2);
+VS = extBoundary(vs, nBoundary, 2);
 
-miu = [repmat(miu(:,1),1,nBoundary) miu repmat(miu(:,end),1,nBoundary)];
-miu(end+1:end+nBoundary,:) = repmat(miu(end,:),nBoundary,1);
-
-lambda = [repmat(lambda(:,1),1,nBoundary) lambda repmat(lambda(:,end),1,nBoundary)];
-lambda(end+1:end+nBoundary,:) = repmat(lambda(end,:),nBoundary,1);
-
-vs = [repmat(vs(:,1),1,nBoundary) vs repmat(vs(:,end),1,nBoundary)];
-vs(end+1:end+nBoundary,:) = repmat(vs(end,:),nBoundary,1);
-
-vp = [repmat(vp(:,1),1,nBoundary) vp repmat(vp(:,end),1,nBoundary)];
-vp(end+1:end+nBoundary,:) = repmat(vp(end,:),nBoundary,1);
-
-[nz,nx]=size(rho);          % update nz, nx for the extended model
+[nz, nx] = size(VP);          % update nz, nx for the extended model
 
 
 %% Generate Ricker wavelet as source function
 f = 20;               % peak frequency
-srcf = zeros([size(rho), nt]);
-R = ricker(f, nt, dt);
-srcf(zShot/dz, xShot/dx + nBoundary, :) = reshape(R, 1, 1, nt);
+sourceTime = zeros([size(VP), nt]);
+wave1dTime = ricker(f, nt, dt);
+sourceTime(zShot/dz, xShot/dx + nBoundary, :) = reshape(wave1dTime, 1, 1, nt);
 
 
-%% Absorbing boundary condition (ABC): Nonsplit Convolutional-PML (CPML)
+%% Absorbing boundary condition (ABC): Split PML (SPML)
 
 ixb = 1:nBoundary;          % index of x outside left boundary
 ixb2 = nx-nBoundary+ixb;    % index of x outside right boundary
 izb  = 1:nz-nBoundary;      % index of z inside down boundary
 izb2 = nz-nBoundary+ixb;    % index of z outside down boundary
 
-xDampLeft = dampPml(repmat(fliplr(ixb), nz, 1), vp(:, ixb), nBoundary);
-xDampRight = dampPml(repmat(ixb, nz, 1), vp(:, ixb2), nBoundary);
+xDampLeft = dampPml(repmat(fliplr(ixb), nz, 1), VP(:, ixb), nBoundary);
+xDampRight = dampPml(repmat(ixb, nz, 1), VP(:, ixb2), nBoundary);
 xDamp = [xDampLeft, zeros(nz, nx-2*nBoundary), xDampRight];
 
-
-zDampUp = dampPml(repmat(fliplr(ixb.'), 1, nx), vp(1:nBoundary, :), nBoundary);
-zDampDown = dampPml(repmat(ixb.', 1, nx), vp(izb2, :), nBoundary);
+zDampUp = dampPml(repmat(fliplr(ixb.'), 1, nx), VP(1:nBoundary, :), nBoundary);
+zDampDown = dampPml(repmat(ixb.', 1, nx), VP(izb2, :), nBoundary);
 zDamp = [zeros(nz-nBoundary, nx); zDampDown];
 
 % common parameters
-alpha2=(lambda+2*miu)./rho;  % alpha square
-beta2=miu./rho;              % beta square
+VP2=VP.^2;
+VS2=VS.^2;
 TOX=dt/dx;                   % dt over dx
 TOZ=dt/dz;                   % dt over dz
 
@@ -167,10 +147,8 @@ dataVzs = zeros(nz,nx,nt);
 
 % common indicies
 r=3; C = dCoef(r,'s'); % differential coefficients for order 2*r
-iz   = 1+r:nz-r;      % interior z
-ix   = 1+r:nx-r;      % interior x
-
-
+iz = 1+r:nz-r;      % interior z
+ix = 1+r:nx-r;      % interior x
 
 
 %% ************* Time Iteration *********************
@@ -199,25 +177,24 @@ for it=1:nt
     
     B(iz,ix,2) = B_1(iz,ix,2) + B_2(iz,ix,2);
     
-    
     Vxp(iz,ix,3) = (1-0.5.*zDamp(iz,ix).*dt)./(1+0.5.*zDamp(iz,ix).*dt).*Vxp(iz,ix,2)...
-        + alpha2(iz,ix).*TOX./(1+0.5.*zDamp(iz,ix).*dt).*(C(1).*(A(iz,ix,2)-A(iz-1,ix,2))+C(2).*(A(iz+1,ix,2)-A(iz-2,ix,2))...
+        + VP2(iz,ix).*TOX./(1+0.5.*zDamp(iz,ix).*dt).*(C(1).*(A(iz,ix,2)-A(iz-1,ix,2))+C(2).*(A(iz+1,ix,2)-A(iz-2,ix,2))...
         + C(3).*(A(iz+2,ix,2)-A(iz-3,ix,2)))...
-        + srcf(iz,ix,it);      % soure term
+        + sourceTime(iz,ix,it);      % soure term
     
     Vzp(iz,ix,3) = (1-0.5.*xDamp(iz,ix).*dt)./(1+0.5.*xDamp(iz,ix).*dt).*Vzp(iz,ix,2)...
-        + 0.25.*(alpha2(iz+1,ix)+alpha2(iz+1,ix+1)+alpha2(iz,ix)+alpha2(iz,ix+1))...
+        + 0.25.*(VP2(iz+1,ix)+VP2(iz+1,ix+1)+VP2(iz,ix)+VP2(iz,ix+1))...
         .*TOZ./(1+0.5.*xDamp(iz,ix).*dt).*(C(1)*(A(iz,ix+1,2)-A(iz,ix,2))+C(2)*(A(iz,ix+2,2)-A(iz,ix-1,2))...
         + C(3)*(A(iz,ix+3,2)-A(iz,ix-2,2)) );
     
     Vxs(iz,ix,3) = (1-0.5.*xDamp(iz,ix).*dt)./(1+0.5.*xDamp(iz,ix).*dt).*Vxs(iz,ix,2)...
-        + beta2(iz,ix).*TOZ./(1+0.5.*xDamp(iz,ix).*dt).*(C(1)*(B(iz,ix,2)-B(iz,ix-1,2))+C(2)*(B(iz,ix+1,2)-B(iz,ix-2,2))...
+        + VS2(iz,ix).*TOZ./(1+0.5.*xDamp(iz,ix).*dt).*(C(1)*(B(iz,ix,2)-B(iz,ix-1,2))+C(2)*(B(iz,ix+1,2)-B(iz,ix-2,2))...
         + C(3)*(B(iz,ix+2,2)-B(iz,ix-3,2)))...
-        + srcf(iz,ix,it);      % source term
+        + sourceTime(iz,ix,it);      % source term
     
     
     Vzs(iz,ix,3) = (1-0.5.*zDamp(iz,ix).*dt)./(1+0.5.*zDamp(iz,ix).*dt).*Vzs(iz,ix,2)...
-        - 0.25.*(beta2(iz,ix)+beta2(iz,ix-1)+beta2(iz-1,ix)+beta2(iz-1,ix-1))...
+        - 0.25.*(VS2(iz,ix)+VS2(iz,ix-1)+VS2(iz-1,ix)+VS2(iz-1,ix-1))...
         .*TOX./(1+0.5.*zDamp(iz,ix).*dt).*(C(1)*(B(iz+1,ix,2)-B(iz,ix,2))+C(2)*(B(iz+2,ix,2)-B(iz-1,ix,2))...
         + C(3)*(B(iz+3,ix,2)-B(iz-2,ix,2)) );
     
@@ -271,8 +248,8 @@ for it=1:nt
     
     % plot shot function
     subplot(2,3,4);
-    plot([1:nt], R); hold on;
-    plot(it, R(it), 'r*'); hold off;
+    plot([1:nt], wave1dTime); hold on;
+    plot(it, wave1dTime(it), 'r*'); hold off;
     xlim([1, nt]);
     xlabel('Time'); ylabel('Amplitude');
     title(sprintf('Input source waveform'));
