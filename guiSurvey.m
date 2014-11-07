@@ -80,35 +80,15 @@ function varargout = guiSurvey_OutputFcn(hObject, eventdata, handles)
 varargout{1} = handles.output;
 
 
-% --------------------------------------------------------------------
-function menu_file_Callback(hObject, eventdata, handles)
-% hObject    handle to menu_file (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
+% --------------------------------------------------
+% begin of self-defined functions
 
+% set up objects after loading velocity model for either P-wave or S-wave
+function loadVModel(v, handles)
 
-% --------------------------------------------------------------------
-function menu_loadPWaveVModel_Callback(hObject, eventdata, handles)
-% hObject    handle to menu_loadPWaveVModel (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-%% load P-wave velocity model
-[file, path] = uigetfile('*.mat', 'Select a velocity model for P-wave');
-if (~any([file, path])) % user pressed cancel button
-    return;
-end
-load(fullfile(path, file));
-if (~exist('velocityModel', 'var'))
-    errordlg('This is not a valid velocity model!', 'File Error');
-    return;
-end
-vp = velocityModel;
-loadPFlag = true;
-
-dim = length(size(vp));
-vpmin = min(vp(:));
-vpmax = max(vp(:));
+dim = ndims(v);
+vmin = min(v(:));
+vmax = max(v(:));
 
 %% prepare objects
 % enable objects
@@ -135,9 +115,9 @@ set(handles.edit_rz, 'Enable', 'off');
 %% set finite difference setting values
 dx = 10;
 dz = 10;
-dt = 0.5*(min([dx, dz])/vpmax/sqrt(2));
-[nz, nx, ~] = size(vp);
-nt = round((sqrt((dx*nx)^2 + (dz*nz)^2)*2/vpmin/dt + 1));
+dt = 0.5*(min([dx, dz])/vmax/sqrt(2));
+[nz, nx, ~] = size(v);
+nt = round((sqrt((dx*nx)^2 + (dz*nz)^2)*2/vmin/dt + 1));
 x = (1:nx) * dx;
 z = (1:nz) * dz;
 
@@ -178,9 +158,9 @@ if (dim > 2)
     
     % set finite difference setting values
     dy = 10;
-    dt = 0.5*(min([dx, dy, dz])/vpmax/sqrt(3));
-    [~, ~, ny] = size(vp);
-    nt = round((sqrt((dx*nx)^2 + (dy*ny)^2 + (dz*nz)^2)*2/vpmin/dt + 1));
+    dt = 0.5*(min([dx, dy, dz])/vmax/sqrt(3));
+    [~, ~, ny] = size(v);
+    nt = round((sqrt((dx*nx)^2 + (dy*ny)^2 + (dz*nz)^2)*2/vmin/dt + 1));
     y = (1:ny) * dy;
     
     sy = round(ny / 2);
@@ -198,12 +178,12 @@ end
 
 %% plot velocity model
 if (dim <= 2)	% 2D case
-    imagesc(x, z, vp, 'Parent', handles.axes_velocityModel);
+    imagesc(x, z, v, 'Parent', handles.axes_velocityModel);
     xlabel(handles.axes_velocityModel, 'Distance (m)'); ylabel(handles.axes_velocityModel, 'Depth (m)');
     title(handles.axes_velocityModel, 'Velocity Model');
     colormap(handles.axes_velocityModel, seismic);
 else            % 3D case
-    slice(handles.axes_velocityModel, x, y, z, permute(vp, [2, 3, 1]), ...
+    slice(handles.axes_velocityModel, x, y, z, permute(v, [2, 3, 1]), ...
         round(linspace(x(2), x(end-1), 5)), ...
         round(linspace(y(2), y(end-1), 5)), ...
         round(linspace(z(2), z(end-1), 10)));
@@ -223,6 +203,54 @@ cla(handles.axes_out2, 'reset');
 set(handles.axes_sourceTime, 'Visible', 'off');
 set(handles.axes_out1, 'Visible', 'off');
 set(handles.axes_out2, 'Visible', 'off');
+
+
+
+% end of self-defined functions
+% --------------------------------------------------
+
+
+% --------------------------------------------------------------------
+function menu_file_Callback(hObject, eventdata, handles)
+% hObject    handle to menu_file (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+
+% --------------------------------------------------------------------
+function menu_loadPWaveVModel_Callback(hObject, eventdata, handles)
+% hObject    handle to menu_loadPWaveVModel (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+%% load P-wave velocity model
+[file, path] = uigetfile('*.mat', 'Select a velocity model for P-wave');
+if (~any([file, path])) % user pressed cancel button
+    return;
+end
+load(fullfile(path, file));
+if (~exist('velocityModel', 'var'))
+    errordlg('This is not a valid velocity model!', 'File Error');
+    return;
+end
+vp = velocityModel;
+
+data = guidata(hObject);
+if (isfield(data, 'vs'))
+    if (ndims(vp) ~= ndims(data.vs))
+        errordlg('Dimension of P-wave and S-wave velocity models are not the same!', 'Model Error');
+        return;
+    end
+    if (any(size(vp) ~= size(data.vs)))
+        errordlg('Dimension of P-wave and S-wave velocity models are not the same!', 'Model Error');
+        return;
+    end
+end
+
+loadPFlag = true;
+
+%% load velocity model
+loadVModel(vp, handles);
 
 %% update status
 str_status = get(handles.edit_status, 'String');
@@ -253,7 +281,23 @@ if (~exist('velocityModel', 'var'))
     return;
 end
 vs = velocityModel;
+
+data = guidata(hObject);
+if (isfield(data, 'vp'))
+    if (ndims(vs) ~= ndims(data.vp))
+        errordlg('Dimension of P-wave and S-wave velocity models are not the same!', 'Model Error');
+        return;
+    end
+    if (any(size(vs) ~= size(data.vp)))
+        errordlg('Dimension of P-wave and S-wave velocity models are not the same!', 'Model Error');
+        return;
+    end
+end
+
 loadSFlag = true;
+
+%% load velocity model
+loadVModel(vs, handles);
 
 %% update status
 str_status = get(handles.edit_status, 'String');
@@ -281,14 +325,32 @@ set(handles.btn_shot, 'Enable', 'off');
 %% share variables among callback functions
 data = guidata(hObject);
 data.stopFlag = false;
-data.loadPFlag = false;
-data.loadSFlag = false;
+if (isfield(data, 'loadPFlag'))
+    data.loadPFlag = false;
+end
+if (isfield(data, 'loadSFlag'))
+    data.loadSFlag = false;
+end
 guidata(hObject, data);
 
 %% load parameter
 data = guidata(hObject);
-vp = data.vp;
-dim = length(size(vp));
+if (isfield(data, 'vp'))
+    vp = data.vp;
+    if (isfield(data, 'vs'))
+        vs = data.vs;
+        % TODO: assign forward elastic wave propagation function handle
+        
+    else
+        % TODO: assign forward acoustic wave propagation function handle
+        
+    end
+else % i.e., isfield(data, 'vs') == true
+    % only S-wave velocity model has been loaded, treat it as P-wave
+    % velocity model
+    vp = data.vs;
+end
+dim = ndims(vp);
 [nz, nx, ~] = size(vp);
 dx = str2double(get(handles.edit_dx, 'String'));
 dz = str2double(get(handles.edit_dz, 'String'));
@@ -384,15 +446,15 @@ for ixs = 1:nShots
             return;
         end
         
-        % stop plotting when stop button has been pushed
         data = guidata(hObject);
+        % stop plotting when stop button has been pushed
         if (data.stopFlag)
             return;
         end
-        
         % stop plotting when another new velocity model has been loaded
-        data = guidata(hObject);
-        if (data.loadPFlag || data.loadSFlag)
+        if ( (~isfield(data, 'loadSFlag') && data.loadPFlag) ...
+                || (~isfield(data, 'loadPFlag') && data.loadSFlag) ...
+                || (isfield(data, 'loadPFlag') && isfield(data, 'loadSFlag') && (data.loadPFlag || data.loadSFlag)) )
             return;
         end
         
@@ -491,8 +553,17 @@ function edit_dx_Callback(hObject, eventdata, handles)
 %        str2double(get(hObject,'String')) returns contents of edit_dx as a double
 
 data = guidata(hObject);
-vp = data.vp;
-dim = length(size(vp));
+if (isfield(data, 'vp'))
+    vp = data.vp;
+    if (isfield(data, 'vs'))
+        vs = data.vs;
+    end
+else % i.e., isfield(data, 'vs') == true
+    % only S-wave velocity model has been loaded, treat it as P-wave
+    % velocity model
+    vp = data.vs;
+end
+dim = ndims(vp);
 vpmin = min(vp(:));
 vpmax = max(vp(:));
 
@@ -538,7 +609,16 @@ function edit_dy_Callback(hObject, eventdata, handles)
 
 % only happen in 3D case
 data = guidata(hObject);
-vp = data.vp;
+if (isfield(data, 'vp'))
+    vp = data.vp;
+    if (isfield(data, 'vs'))
+        vs = data.vs;
+    end
+else % i.e., isfield(data, 'vs') == true
+    % only S-wave velocity model has been loaded, treat it as P-wave
+    % velocity model
+    vp = data.vs;
+end
 vpmin = min(vp(:));
 vpmax = max(vp(:));
 
@@ -574,8 +654,17 @@ function edit_dz_Callback(hObject, eventdata, handles)
 %        str2double(get(hObject,'String')) returns contents of edit_dz as a double
 
 data = guidata(hObject);
-vp = data.vp;
-dim = length(size(vp));
+if (isfield(data, 'vp'))
+    vp = data.vp;
+    if (isfield(data, 'vs'))
+        vs = data.vs;
+    end
+else % i.e., isfield(data, 'vs') == true
+    % only S-wave velocity model has been loaded, treat it as P-wave
+    % velocity model
+    vp = data.vs;
+end
+dim = ndims(vp);
 vpmin = min(vp(:));
 vpmax = max(vp(:));
 
@@ -620,8 +709,17 @@ function edit_dt_Callback(hObject, eventdata, handles)
 %        str2double(get(hObject,'String')) returns contents of edit_dt as a double
 
 data = guidata(hObject);
-vp = data.vp;
-dim = length(size(vp));
+if (isfield(data, 'vp'))
+    vp = data.vp;
+    if (isfield(data, 'vs'))
+        vs = data.vs;
+    end
+else % i.e., isfield(data, 'vs') == true
+    % only S-wave velocity model has been loaded, treat it as P-wave
+    % velocity model
+    vp = data.vs;
+end
+dim = ndims(vp);
 vpmin = min(vp(:));
 vpmax = max(vp(:));
 
@@ -902,8 +1000,17 @@ function pmenu_sweepAll_Callback(hObject, eventdata, handles)
 %        contents{get(hObject,'Value')} returns selected item from pmenu_sweepAll
 
 data = guidata(hObject);
-vp = data.vp;
-dim = length(size(vp));
+if (isfield(data, 'vp'))
+    vp = data.vp;
+    if (isfield(data, 'vs'))
+        vs = data.vs;
+    end
+else % i.e., isfield(data, 'vs') == true
+    % only S-wave velocity model has been loaded, treat it as P-wave
+    % velocity model
+    vp = data.vs;
+end
+dim = ndims(vp);
 [nz, nx, ~] = size(vp);
 
 isSweepAll = get(hObject, 'Value');
@@ -955,9 +1062,17 @@ function pmenu_receiveAll_Callback(hObject, eventdata, handles)
 %        contents{get(hObject,'Value')} returns selected item from pmenu_receiveAll
 
 data = guidata(hObject);
-vp = data.vp;
-[nz, nx, ~] = size(vp);
-dim = length(size(vp));
+if (isfield(data, 'vp'))
+    vp = data.vp;
+    if (isfield(data, 'vs'))
+        vs = data.vs;
+    end
+else % i.e., isfield(data, 'vs') == true
+    % only S-wave velocity model has been loaded, treat it as P-wave
+    % velocity model
+    vp = data.vs;
+end
+dim = ndims(vp);
 
 isReceiveAll = get(hObject, 'Value');
 if (isReceiveAll == 1) % Yes
