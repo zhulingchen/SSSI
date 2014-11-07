@@ -103,11 +103,12 @@ if (~exist('velocityModel', 'var'))
     errordlg('This is not a valid velocity model!', 'File Error');
     return;
 end
+vp = velocityModel;
 loadPFlag = true;
 
-dim = length(size(velocityModel));
-vmin = min(velocityModel(:));
-vmax = max(velocityModel(:));
+dim = length(size(vp));
+vpmin = min(vp(:));
+vpmax = max(vp(:));
 
 %% prepare objects
 % enable objects
@@ -134,9 +135,9 @@ set(handles.edit_rz, 'Enable', 'off');
 %% set finite difference setting values
 dx = 10;
 dz = 10;
-dt = 0.5*(min([dx, dz])/vmax/sqrt(2));
-[nz, nx, ~] = size(velocityModel);
-nt = round((sqrt((dx*nx)^2 + (dz*nz)^2)*2/vmin/dt + 1));
+dt = 0.5*(min([dx, dz])/vpmax/sqrt(2));
+[nz, nx, ~] = size(vp);
+nt = round((sqrt((dx*nx)^2 + (dz*nz)^2)*2/vpmin/dt + 1));
 x = (1:nx) * dx;
 z = (1:nz) * dz;
 
@@ -177,9 +178,9 @@ if (dim > 2)
     
     % set finite difference setting values
     dy = 10;
-    dt = 0.5*(min([dx, dy, dz])/vmax/sqrt(3));
-    [~, ~, ny] = size(velocityModel);
-    nt = round((sqrt((dx*nx)^2 + (dy*ny)^2 + (dz*nz)^2)*2/vmin/dt + 1));
+    dt = 0.5*(min([dx, dy, dz])/vpmax/sqrt(3));
+    [~, ~, ny] = size(vp);
+    nt = round((sqrt((dx*nx)^2 + (dy*ny)^2 + (dz*nz)^2)*2/vpmin/dt + 1));
     y = (1:ny) * dy;
     
     sy = round(ny / 2);
@@ -197,12 +198,12 @@ end
 
 %% plot velocity model
 if (dim <= 2)	% 2D case
-    imagesc(x, z, velocityModel, 'Parent', handles.axes_velocityModel);
+    imagesc(x, z, vp, 'Parent', handles.axes_velocityModel);
     xlabel(handles.axes_velocityModel, 'Distance (m)'); ylabel(handles.axes_velocityModel, 'Depth (m)');
     title(handles.axes_velocityModel, 'Velocity Model');
     colormap(handles.axes_velocityModel, seismic);
 else            % 3D case
-    slice(handles.axes_velocityModel, x, y, z, permute(velocityModel, [2, 3, 1]), ...
+    slice(handles.axes_velocityModel, x, y, z, permute(vp, [2, 3, 1]), ...
         round(linspace(x(2), x(end-1), 5)), ...
         round(linspace(y(2), y(end-1), 5)), ...
         round(linspace(z(2), z(end-1), 10)));
@@ -231,7 +232,7 @@ set(handles.edit_status, 'String', str_status);
 %% share variables among callback functions
 data = guidata(hObject);
 data.loadPFlag = loadPFlag;
-data.velocityModel = velocityModel;
+data.vp = vp;
 guidata(hObject, data); % hObject can be any object contained in the figure, including push button, edit text, popup menu, etc.
 
 
@@ -251,6 +252,7 @@ if (~exist('velocityModel', 'var'))
     errordlg('This is not a valid velocity model!', 'File Error');
     return;
 end
+vs = velocityModel;
 loadSFlag = true;
 
 %% update status
@@ -261,7 +263,7 @@ set(handles.edit_status, 'String', str_status);
 %% share variables among callback functions
 data = guidata(hObject);
 data.loadSFlag = loadSFlag;
-data.velocityModel = velocityModel;
+data.vs = vs;
 guidata(hObject, data);
 
 
@@ -285,9 +287,9 @@ guidata(hObject, data);
 
 %% load parameter
 data = guidata(hObject);
-velocityModel = data.velocityModel;
-dim = length(size(velocityModel));
-[nz, nx, ~] = size(velocityModel);
+vp = data.vp;
+dim = length(size(vp));
+[nz, nx, ~] = size(vp);
 dx = str2double(get(handles.edit_dx, 'String'));
 dz = str2double(get(handles.edit_dz, 'String'));
 dt = str2double(get(handles.edit_dt, 'String'));
@@ -308,7 +310,7 @@ rz = eval(sprintf('[%s]', get(handles.edit_rz, 'String')));
 
 % 3D case
 if (dim > 2)
-    [~, ~, ny] = size(velocityModel);
+    [~, ~, ny] = size(vp);
     dy = str2double(get(handles.edit_dy, 'String'));
     y = (1:ny) * dy;
     sy = eval(sprintf('[%s]', get(handles.edit_sy, 'String')));
@@ -319,7 +321,7 @@ if (dim > 2)
 end
 
 % add region around model for applying absorbing boundary conditions
-V = extBoundary(velocityModel, nBoundary, dim);
+VP = extBoundary(vp, nBoundary, dim);
 
 for ixs = 1:nShots
     %% locating current source
@@ -327,12 +329,12 @@ for ixs = 1:nShots
     cur_sx = sMesh(ixs, 2);
     
     %% generate shot source field and shot record using FDTD
-    sourceTime = zeros([size(V), nt]);
+    sourceTime = zeros([size(VP), nt]);
     wave1dTime = ricker(f, nt, dt);
     
     if (dim <= 2)	% 2D case
         % plot velocity model and shot position
-        imagesc(x, z, velocityModel, 'Parent', handles.axes_velocityModel);
+        imagesc(x, z, vp, 'Parent', handles.axes_velocityModel);
         xlabel(handles.axes_velocityModel, 'Distance (m)'); ylabel(handles.axes_velocityModel, 'Depth (m)');
         title(handles.axes_velocityModel, 'Velocity Model');
         colormap(handles.axes_velocityModel, seismic);
@@ -342,14 +344,14 @@ for ixs = 1:nShots
         
         % shot
         sourceTime(cur_sz, cur_sx+nBoundary, :) = reshape(wave1dTime, 1, 1, nt);
-        [dataTrue, snapshotTrue] = fwdTimeCpmlFor2dAw(V, sourceTime, nDiffOrder, nBoundary, dz, dx, dt);
+        [dataTrue, snapshotTrue] = fwdTimeCpmlFor2dAw(VP, sourceTime, nDiffOrder, nBoundary, dz, dx, dt);
         
         % update status
         str_status = get(handles.edit_status, 'String');
         str_status{end+1} = sprintf('Shot at x = %dm, z = %dm', cur_sx * dx, cur_sz * dz);
         set(handles.edit_status, 'String', str_status);
     else            % 3D case
-        slice(handles.axes_velocityModel, x, y, z, permute(velocityModel, [2, 3, 1]), ...
+        slice(handles.axes_velocityModel, x, y, z, permute(vp, [2, 3, 1]), ...
             round(linspace(x(2), x(end-1), 5)), ...
             round(linspace(y(2), y(end-1), 5)), ...
             round(linspace(z(2), z(end-1), 10)));
@@ -367,7 +369,7 @@ for ixs = 1:nShots
         
         % shot
         sourceTime(cur_sz, cur_sx+nBoundary, cur_sy+nBoundary, :) = reshape(wave1dTime, 1, 1, 1, nt);
-        [dataTrue, snapshotTrue] = fwdTimeCpmlFor3dAw(V, sourceTime, nDiffOrder, nBoundary, dz, dx, dy, dt);
+        [dataTrue, snapshotTrue] = fwdTimeCpmlFor3dAw(VP, sourceTime, nDiffOrder, nBoundary, dz, dx, dy, dt);
         
         % update status
         str_status = get(handles.edit_status, 'String');
@@ -489,25 +491,25 @@ function edit_dx_Callback(hObject, eventdata, handles)
 %        str2double(get(hObject,'String')) returns contents of edit_dx as a double
 
 data = guidata(hObject);
-velocityModel = data.velocityModel;
-dim = length(size(velocityModel));
-vmin = min(velocityModel(:));
-vmax = max(velocityModel(:));
+vp = data.vp;
+dim = length(size(vp));
+vpmin = min(vp(:));
+vpmax = max(vp(:));
 
 dx = str2double(get(handles.edit_dx, 'String'));
 dz = str2double(get(handles.edit_dz, 'String'));
-dt = 0.5*(min([dx, dz])/vmax/sqrt(2));
-[nz, nx, ~] = size(velocityModel);
-nt = round((sqrt((dx*nx)^2 + (dz*nz)^2)*2/vmin/dt + 1));
+dt = 0.5*(min([dx, dz])/vpmax/sqrt(2));
+[nz, nx, ~] = size(vp);
+nt = round((sqrt((dx*nx)^2 + (dz*nz)^2)*2/vpmin/dt + 1));
 set(handles.edit_dt, 'String', num2str(dt));
 set(handles.edit_nt, 'String', num2str(nt));
 
 % 3D case
 if (dim > 2)
     dy = str2double(get(handles.edit_dy, 'String'));
-    dt = 0.5*(min([dx, dy, dz])/vmax/sqrt(3));
-    [~, ~, ny] = size(velocityModel);
-    nt = round((sqrt((dx*nx)^2 + (dy*ny)^2 + (dz*nz)^2)*2/vmin/dt + 1));
+    dt = 0.5*(min([dx, dy, dz])/vpmax/sqrt(3));
+    [~, ~, ny] = size(vp);
+    nt = round((sqrt((dx*nx)^2 + (dy*ny)^2 + (dz*nz)^2)*2/vpmin/dt + 1));
     set(handles.edit_dt, 'String', num2str(dt));
     set(handles.edit_nt, 'String', num2str(nt));
 end
@@ -536,16 +538,16 @@ function edit_dy_Callback(hObject, eventdata, handles)
 
 % only happen in 3D case
 data = guidata(hObject);
-velocityModel = data.velocityModel;
-vmin = min(velocityModel(:));
-vmax = max(velocityModel(:));
+vp = data.vp;
+vpmin = min(vp(:));
+vpmax = max(vp(:));
 
 dx = str2double(get(handles.edit_dx, 'String'));
 dy = str2double(get(handles.edit_dy, 'String'));
 dz = str2double(get(handles.edit_dz, 'String'));
-dt = 0.5*(min([dx, dy, dz])/vmax/sqrt(3));
-[nz, nx, ny] = size(velocityModel);
-nt = round((sqrt((dx*nx)^2 + (dy*ny)^2 + (dz*nz)^2)*2/vmin/dt + 1));
+dt = 0.5*(min([dx, dy, dz])/vpmax/sqrt(3));
+[nz, nx, ny] = size(vp);
+nt = round((sqrt((dx*nx)^2 + (dy*ny)^2 + (dz*nz)^2)*2/vpmin/dt + 1));
 set(handles.edit_dt, 'String', num2str(dt));
 set(handles.edit_nt, 'String', num2str(nt));
 
@@ -572,25 +574,25 @@ function edit_dz_Callback(hObject, eventdata, handles)
 %        str2double(get(hObject,'String')) returns contents of edit_dz as a double
 
 data = guidata(hObject);
-velocityModel = data.velocityModel;
-dim = length(size(velocityModel));
-vmin = min(velocityModel(:));
-vmax = max(velocityModel(:));
+vp = data.vp;
+dim = length(size(vp));
+vpmin = min(vp(:));
+vpmax = max(vp(:));
 
 dx = str2double(get(handles.edit_dx, 'String'));
 dz = str2double(get(handles.edit_dz, 'String'));
-dt = 0.5*(min([dx, dz])/vmax/sqrt(2));
-[nz, nx, ~] = size(velocityModel);
-nt = round((sqrt((dx*nx)^2 + (dz*nz)^2)*2/vmin/dt + 1));
+dt = 0.5*(min([dx, dz])/vpmax/sqrt(2));
+[nz, nx, ~] = size(vp);
+nt = round((sqrt((dx*nx)^2 + (dz*nz)^2)*2/vpmin/dt + 1));
 set(handles.edit_dt, 'String', num2str(dt));
 set(handles.edit_nt, 'String', num2str(nt));
 
 % 3D case
 if (dim > 2)
     dy = str2double(get(handles.edit_dy, 'String'));
-    dt = 0.5*(min([dx, dy, dz])/vmax/sqrt(3));
-    [~, ~, ny] = size(velocityModel);
-    nt = round((sqrt((dx*nx)^2 + (dy*ny)^2 + (dz*nz)^2)*2/vmin/dt + 1));
+    dt = 0.5*(min([dx, dy, dz])/vpmax/sqrt(3));
+    [~, ~, ny] = size(vp);
+    nt = round((sqrt((dx*nx)^2 + (dy*ny)^2 + (dz*nz)^2)*2/vpmin/dt + 1));
     set(handles.edit_dt, 'String', num2str(dt));
     set(handles.edit_nt, 'String', num2str(nt));
 end
@@ -618,24 +620,24 @@ function edit_dt_Callback(hObject, eventdata, handles)
 %        str2double(get(hObject,'String')) returns contents of edit_dt as a double
 
 data = guidata(hObject);
-velocityModel = data.velocityModel;
-dim = length(size(velocityModel));
-vmin = min(velocityModel(:));
-vmax = max(velocityModel(:));
+vp = data.vp;
+dim = length(size(vp));
+vpmin = min(vp(:));
+vpmax = max(vp(:));
 
 dx = str2double(get(handles.edit_dx, 'String'));
 dz = str2double(get(handles.edit_dz, 'String'));
 dt = str2double(get(handles.edit_dt, 'String'));
-[nz, nx, ~] = size(velocityModel);
-nt = round((sqrt((dx*nx)^2 + (dz*nz)^2)*2/vmin/dt + 1));
+[nz, nx, ~] = size(vp);
+nt = round((sqrt((dx*nx)^2 + (dz*nz)^2)*2/vpmin/dt + 1));
 set(handles.edit_nt, 'String', num2str(nt));
 
 % 3D case
 if (dim > 2)
     dy = str2double(get(handles.edit_dy, 'String'));
     dt = str2double(get(handles.edit_dt, 'String'));
-    [~, ~, ny] = size(velocityModel);
-    nt = round((sqrt((dx*nx)^2 + (dy*ny)^2 + (dz*nz)^2)*2/vmin/dt + 1));
+    [~, ~, ny] = size(vp);
+    nt = round((sqrt((dx*nx)^2 + (dy*ny)^2 + (dz*nz)^2)*2/vpmin/dt + 1));
     set(handles.edit_nt, 'String', num2str(nt));
 end
 
@@ -900,9 +902,9 @@ function pmenu_sweepAll_Callback(hObject, eventdata, handles)
 %        contents{get(hObject,'Value')} returns selected item from pmenu_sweepAll
 
 data = guidata(hObject);
-velocityModel = data.velocityModel;
-dim = length(size(velocityModel));
-[nz, nx, ~] = size(velocityModel);
+vp = data.vp;
+dim = length(size(vp));
+[nz, nx, ~] = size(vp);
 
 isSweepAll = get(hObject, 'Value');
 if (isSweepAll == 1) % Yes
@@ -918,7 +920,7 @@ end
 
 % 3D case
 if (dim > 2)
-    [~, ~, ny] = size(velocityModel);
+    [~, ~, ny] = size(vp);
     if (isSweepAll == 1) % Yes
         str_sy = sprintf('1:%d', ny);
         set(handles.edit_sy, 'String', str_sy);
@@ -953,9 +955,9 @@ function pmenu_receiveAll_Callback(hObject, eventdata, handles)
 %        contents{get(hObject,'Value')} returns selected item from pmenu_receiveAll
 
 data = guidata(hObject);
-velocityModel = data.velocityModel;
-[nz, nx, ~] = size(velocityModel);
-dim = length(size(velocityModel));
+vp = data.vp;
+[nz, nx, ~] = size(vp);
+dim = length(size(vp));
 
 isReceiveAll = get(hObject, 'Value');
 if (isReceiveAll == 1) % Yes
@@ -967,7 +969,7 @@ end
 
 % 3D case
 if (dim > 2)
-    [~, ~, ny] = size(velocityModel);
+    [~, ~, ny] = size(vp);
     if (isReceiveAll == 1) % Yes
         set(handles.edit_ry, 'Enable', 'off');
     end
