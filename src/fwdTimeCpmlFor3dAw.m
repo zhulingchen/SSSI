@@ -91,7 +91,7 @@ yP = zeros(nz, nx, ny+k);
 
 
 
-%% Forward-Time Modeling
+%% 3-D Acoustic Wave Forward-Time Modeling
 
 % finite difference coefficients
 vdtSq = (v*dt).^2;

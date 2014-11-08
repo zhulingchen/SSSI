@@ -66,7 +66,7 @@ zP = zeros(nz+k, nx);
 xP = zeros(nz, nx+k);
 
 
-%% Forward-Time Modeling
+%% 2-D Acoustic Wave Forward-Time Modeling
 
 % finite difference coefficients
 vdtSq = (v*dt).^2;

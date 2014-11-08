@@ -108,13 +108,13 @@ sourceTime(zShot/dz, xShot/dx + nBoundary, :) = reshape(wave1dTime, 1, 1, nt);
 
 %% Generate shots and save to file and video
 tic;
-[dataVxp, dataVzp, dataVxs, dataVzs, dataVxp2, dataVzp2, dataVxs2, dataVzs2] = fwdTimeSpmlFor2dEw(VP, VS, sourceTime, nDiffOrder, nBoundary, dz, dx, dt);
+[dataVzp, dataVxp, dataVzs, dataVxs] = fwdTimeSpmlFor2dEw(VP, VS, sourceTime, nDiffOrder, nBoundary, dz, dx, dt);
 timeForward = toc;
 fprintf('Generate Forward Timing Record. elapsed time = %fs\n', timeForward);
 
 
 
-%************************** Video Making **************************
+%% Video output
 filenameVideo2dEw = './videos/ElasticWave.mp4';
 if ~exist(filenameVideo2dEw, 'file')
     objVideo2dEw = VideoWriter(filenameVideo2dEw, 'MPEG-4');
@@ -122,33 +122,33 @@ if ~exist(filenameVideo2dEw, 'file')
 end
 
 for it=1:nt
-    subplot(2,3,2);
+    subplot(2, 3, 2);
     imagesc(dataVxp(1:end-nBoundary, (nBoundary+1):(100+nBoundary),it));
     xlabel('Distance (m)'); ylabel('Depth (m)');
     title(sprintf('P-wave (x-axis component), t = %.3f', t(it)));
     caxis([-0.05 0.5]);
     
-    subplot(2,3,3);
+    subplot(2, 3, 3);
     imagesc(dataVzp(1:end-nBoundary, (nBoundary+1):(100+nBoundary),it));
     xlabel('Distance (m)'); ylabel('Depth (m)');
     title(sprintf('P-wave (z-axis component), t = %.3f', t(it)));
     caxis([-0.05 0.5]);
     
     % plot shot function
-    subplot(2,3,4);
+    subplot(2, 3, 4);
     plot([1:nt], wave1dTime); hold on;
     plot(it, wave1dTime(it), 'r*'); hold off;
     xlim([1, nt]);
     xlabel('Time'); ylabel('Amplitude');
     title(sprintf('Input source waveform'));
     
-    subplot(2,3,5);
+    subplot(2, 3, 5);
     imagesc(dataVxs(1:end-nBoundary, (nBoundary+1):(100+nBoundary),it));
     xlabel('Distance (m)'); ylabel('Depth (m)');
     title(sprintf('S-wave (x-axis component), t = %.3f', t(it)));
     caxis([-0.05 0.5]);
     
-    subplot(2,3,6);
+    subplot(2, 3, 6);
     imagesc(dataVzs(1:end-nBoundary, (nBoundary+1):(100+nBoundary),it));
     xlabel('Distance (m)'); ylabel('Depth (m)');
     title(sprintf('S-wave (z-axis component), t = %.3f', t(it)));
