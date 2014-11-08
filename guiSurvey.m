@@ -336,21 +336,20 @@ guidata(hObject, data);
 
 %% load parameter
 data = guidata(hObject);
+
 if (isfield(data, 'vp'))
+    % P-wave velocity model has been loaded
     vp = data.vp;
     if (isfield(data, 'vs'))
+        % both P-wave and S-wave velocity model have been loaded
         vs = data.vs;
-        % TODO: assign forward elastic wave propagation function handle
-        
-    else
-        % TODO: assign forward acoustic wave propagation function handle
-        
     end
-else % i.e., isfield(data, 'vs') == true
-    % only S-wave velocity model has been loaded, treat it as P-wave
-    % velocity model
+else
+    % only S-wave velocity model has been loaded, treat as only P-wave
+    % velocity model has been loaded
     vp = data.vs;
 end
+
 dim = ndims(vp);
 [nz, nx, ~] = size(vp);
 dx = str2double(get(handles.edit_dx, 'String'));
@@ -359,7 +358,7 @@ dt = str2double(get(handles.edit_dt, 'String'));
 nt = str2double(get(handles.edit_nt, 'String'));
 x = (1:nx) * dx;
 z = (1:nz) * dz;
-t  = (0:nt-1).*dt;
+t = (0:nt-1) * dt;
 nBoundary = str2double(get(handles.edit_boundary, 'String'));
 nDiffOrder = get(handles.pmenu_approxOrder, 'Value');
 f = str2double(get(handles.edit_centerFreq, 'String'));
@@ -385,6 +384,10 @@ end
 
 % add region around model for applying absorbing boundary conditions
 VP = extBoundary(vp, nBoundary, dim);
+if (exist('vs', 'var'))
+    VS = extBoundary(vs, nBoundary, 2);
+end
+
 
 for ixs = 1:nShots
     %% locating current source
@@ -407,7 +410,13 @@ for ixs = 1:nShots
         
         % shot
         sourceTime(cur_sz, cur_sx+nBoundary, :) = reshape(wave1dTime, 1, 1, nt);
-        [dataTrue, snapshotTrue] = fwdTimeCpmlFor2dAw(VP, sourceTime, nDiffOrder, nBoundary, dz, dx, dt);
+        if (exist('vs', 'var'))
+            % elastic wave shot
+            [dataVzp, dataVxp, dataVzs, dataVxs] = fwdTimeSpmlFor2dEw(VP, VS, sourceTime, nDiffOrder, nBoundary, dz, dx, dt);
+        else
+            % acoustic wave shot
+            [dataTrue, snapshotTrue] = fwdTimeCpmlFor2dAw(VP, sourceTime, nDiffOrder, nBoundary, dz, dx, dt);
+        end
         
         % update status
         str_status = get(handles.edit_status, 'String');
@@ -470,17 +479,37 @@ for ixs = 1:nShots
             % source function title
             title(handles.axes_sourceTime, sprintf('Shot at x = %dm', cur_sx * dx));
             
-            % plot received data traces
-            dataDisplay = zeros(nt, nx);
-            dataDisplay(1:it, rx) = dataTrue(rx+nBoundary, 1:it).';
-            imagesc(x, t, dataDisplay, 'Parent', handles.axes_out1, [-0.1 0.1]);
-            xlabel(handles.axes_out1, 'Distance (m)'); ylabel(handles.axes_out1, 'Time (s)');
-            title(handles.axes_out1, 'Shot Record');
-            
-            % plot wave propagation snapshots
-            imagesc(x, z, snapshotTrue(1:end-nBoundary, nBoundary+1:end-nBoundary, it), 'Parent', handles.axes_out2, [-0.14 1]);
-            xlabel(handles.axes_out2, 'Distance (m)'); ylabel(handles.axes_out2, 'Depth (m)');
-            title(handles.axes_out2, sprintf('Wave Propagation t = %.3fs', t(it)));
+            if (exist('vs', 'var'))
+                % display elastic wavefields
+                imagesc(x, z, dataVxp(1:end-nBoundary, nBoundary+1:end-nBoundary, it), 'Parent', handles.axes_out1, [-0.14 1]);
+                xlabel(handles.axes_out1, 'Distance (m)'); ylabel(handles.axes_out1, 'Depth (m)');
+                title(handles.axes_out1, sprintf('P-wave (x-axis component) t = %.3fs', t(it)));
+                
+                imagesc(x, z, dataVzp(1:end-nBoundary, nBoundary+1:end-nBoundary, it), 'Parent', handles.axes_out2, [-0.14 1]);
+                xlabel(handles.axes_out2, 'Distance (m)'); ylabel(handles.axes_out2, 'Depth (m)');
+                title(handles.axes_out2, sprintf('P-wave (z-axis component) t = %.3fs', t(it)));
+                
+                imagesc(x, z, dataVxs(1:end-nBoundary, nBoundary+1:end-nBoundary, it), 'Parent', handles.axes_out3, [-0.14 1]);
+                xlabel(handles.axes_out3, 'Distance (m)'); ylabel(handles.axes_out3, 'Depth (m)');
+                title(handles.axes_out3, sprintf('S-wave (x-axis component) t = %.3fs', t(it)));
+                
+                imagesc(x, z, dataVzs(1:end-nBoundary, nBoundary+1:end-nBoundary, it), 'Parent', handles.axes_out4, [-0.14 1]);
+                xlabel(handles.axes_out4, 'Distance (m)'); ylabel(handles.axes_out4, 'Depth (m)');
+                title(handles.axes_out4, sprintf('S-wave (z-axis component) t = %.3fs', t(it)));
+            else
+                % display acoustic wavefields
+                % plot received data traces
+                dataDisplay = zeros(nt, nx);
+                dataDisplay(1:it, rx) = dataTrue(rx+nBoundary, 1:it).';
+                imagesc(x, t, dataDisplay, 'Parent', handles.axes_out1, [-0.1 0.1]);
+                xlabel(handles.axes_out1, 'Distance (m)'); ylabel(handles.axes_out1, 'Time (s)');
+                title(handles.axes_out1, 'Shot Record');
+                
+                % plot wave propagation snapshots
+                imagesc(x, z, snapshotTrue(1:end-nBoundary, nBoundary+1:end-nBoundary, it), 'Parent', handles.axes_out2, [-0.14 1]);
+                xlabel(handles.axes_out2, 'Distance (m)'); ylabel(handles.axes_out2, 'Depth (m)');
+                title(handles.axes_out2, sprintf('Wave Propagation t = %.3fs', t(it)));
+            end
         else            % 3D case
             % source function title
             title(handles.axes_sourceTime, sprintf('Shot at x = %dm, y = %dm', cur_sx * dx, cur_sy * dy));
