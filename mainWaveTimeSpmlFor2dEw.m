@@ -108,7 +108,7 @@ sourceTime(zShot/dz, xShot/dx + nBoundary, :) = reshape(wave1dTime, 1, 1, nt);
 
 %% Generate shots and save to file and video
 tic;
-[dataVxp, dataVzp, dataVxs, dataVzs] = fwdTimeSpmlFor2dEw(VP, VS, sourceTime, nDiffOrder, nBoundary, dz, dx, dt);
+[dataVxp, dataVzp, dataVxs, dataVzs, dataVxp2, dataVzp2, dataVxs2, dataVzs2] = fwdTimeSpmlFor2dEw(VP, VS, sourceTime, nDiffOrder, nBoundary, dz, dx, dt);
 timeForward = toc;
 fprintf('Generate Forward Timing Record. elapsed time = %fs\n', timeForward);
 
