@@ -4,9 +4,9 @@ function [data, snapshot] = fwdTimeCpmlFor3dAw(v, source, nDiffOrder, nBoundary,
 % finite difference in time domain with the following partial differential
 % equation (PDE)
 %
-% (1/v^2)*(d^2)u(z, x, y, t)/dt^2 + s(z, x, y, t) = zP + xP + yP Update
-% xPhi, yPhi, zPhi, xA, yA, zA, xPsi, yPsi, zPsi, xP, yP, zP and solve u(z,
-% x, y, t) with Nonsplit Convolutional-PML (CPML)
+% (1/v^2)*(d^2)u(z, x, y, t)/dt^2 + s(z, x, y, t) = zP + xP + yP
+% Update xPhi, yPhi, zPhi, xA, yA, zA, xPsi, yPsi, zPsi, xP, yP, zP and
+% solve u(z, x, y, t) with Nonsplit Convolutional-PML (CPML)
 %
 % input arguments
 % v(nz,nx,ny)           velocity model
@@ -117,22 +117,22 @@ for it = 1:nt
     
     % finite differencing after zero-padding
     
-    zPhi(izi, :, :) = zb .* zPhi(izi, :, :) + (zb - 1) .* diffOperator3d(fdm(izl+1, ixi, iyi, 2), coeff, dz, 1);
-    xPhi(:, ixi, :) = xb .* xPhi(:, ixi, :) + (xb - 1) .* diffOperator3d(fdm(izi, ixl+1, iyi, 2), coeff, dx, 2);
-    yPhi(:, :, iyi) = yb .* yPhi(:, :, iyi) + (yb - 1) .* diffOperator3d(fdm(izi, ixi, iyl+1, 2), coeff, dy, 3);
+    zPhi(izi, :, :) = zb .* zPhi(izi, :, :) + (zb - 1) .* diffOperator(fdm(izl+1, ixi, iyi, 2), coeff, dz, 1);
+    xPhi(:, ixi, :) = xb .* xPhi(:, ixi, :) + (xb - 1) .* diffOperator(fdm(izi, ixl+1, iyi, 2), coeff, dx, 2);
+    yPhi(:, :, iyi) = yb .* yPhi(:, :, iyi) + (yb - 1) .* diffOperator(fdm(izi, ixi, iyl+1, 2), coeff, dy, 3);
     
-    zA(izl, :, :) = diffOperator3d(fdm(:, ixi, iyi, 2), coeff, dz, 1) + zPhi(izl, :, :);
-    xA(:, ixl, :) = diffOperator3d(fdm(izi, :, iyi, 2), coeff, dx, 2) + xPhi(:, ixl, :);
-    yA(:, :, iyl) = diffOperator3d(fdm(izi, ixi, :, 2), coeff, dy, 3) + yPhi(:, :, iyl);
+    zA(izl, :, :) = diffOperator(fdm(:, ixi, iyi, 2), coeff, dz, 1) + zPhi(izl, :, :);
+    xA(:, ixl, :) = diffOperator(fdm(izi, :, iyi, 2), coeff, dx, 2) + xPhi(:, ixl, :);
+    yA(:, :, iyl) = diffOperator(fdm(izi, ixi, :, 2), coeff, dy, 3) + yPhi(:, :, iyl);
     
     
-    zPsi(izi, :, :) = zb .* zPsi(izi, :, :) + (zb - 1) .* diffOperator3d(zA(izl, :, :), coeff, dz, 1);
-    xPsi(:, ixi, :) = xb .* xPsi(:, ixi, :) + (xb - 1) .* diffOperator3d(xA(:, ixl, :), coeff, dx, 2);
-    yPsi(:, :, iyi) = yb .* yPsi(:, :, iyi) + (yb - 1) .* diffOperator3d(yA(:, :, iyl), coeff, dy, 3);
+    zPsi(izi, :, :) = zb .* zPsi(izi, :, :) + (zb - 1) .* diffOperator(zA(izl, :, :), coeff, dz, 1);
+    xPsi(:, ixi, :) = xb .* xPsi(:, ixi, :) + (xb - 1) .* diffOperator(xA(:, ixl, :), coeff, dx, 2);
+    yPsi(:, :, iyi) = yb .* yPsi(:, :, iyi) + (yb - 1) .* diffOperator(yA(:, :, iyl), coeff, dy, 3);
     
-    zP(izi, :, :) = diffOperator3d(zA(izl, :, :), coeff, dz, 1) + zPsi(izi, :, :);
-    xP(:, ixi, :) = diffOperator3d(xA(:, ixl, :), coeff, dx, 2) + xPsi(:, ixi, :);
-    yP(:, :, iyi) = diffOperator3d(yA(:, :, iyl), coeff, dy, 3) + yPsi(:, :, iyi);
+    zP(izi, :, :) = diffOperator(zA(izl, :, :), coeff, dz, 1) + zPsi(izi, :, :);
+    xP(:, ixi, :) = diffOperator(xA(:, ixl, :), coeff, dx, 2) + xPsi(:, ixi, :);
+    yP(:, :, iyi) = diffOperator(yA(:, :, iyl), coeff, dy, 3) + yPsi(:, :, iyi);
     
     
     fdm(izi, ixi, iyi, 3) = vdtSq .* (zP(izi, :, :) + xP(:, ixi, :)  + yP(:, :, iyi) - source(:, :, :, it)) + 2 * fdm(izi, ixi, iyi, 2) - fdm(izi, ixi, iyi, 1);

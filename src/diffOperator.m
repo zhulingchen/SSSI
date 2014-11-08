@@ -1,7 +1,8 @@
 function diffData = diffOperator(data, c, d, dim)
 % DIFFOPERATOR Performs higher-order approximation of staggered-grid finite difference
 %
-% data(n1, n2)      input data
+% data(n1, n2)      input data (2d) or
+% data(n1, n2, n3)	input data (3d) or
 % n1                number of depth samples
 % n2                number of horizontal samples
 % c                 differentiation coefficients
@@ -19,28 +20,50 @@ if nargin < 4
     dim = 1;
 end
 
-if (dim > 2)
-    error('Dimension dim cannot be larger than 2!');
-end
+Ndims = ndims(data);
 
 order = size(c, 1);
 k = 2 * order - 1;
-[n1, n2] = size(data);
-
-if (dim == 1)
-    diffData = zeros(n1-k, n2);
-else % dim == 2
-    diffData = zeros(n1, n2-k);
-end
-
-for ii = 1:order
+if (Ndims <= 2) % 2D case
+    [n1, n2] = size(data);
     if (dim == 1)
-        idx1 = ((order+1):(n1-k+order)) + (ii-1);
-        idx2 = ((order+1):(n1-k+order)) - ii;
-        diffData = diffData + c(ii) * (data(idx1, :) - data(idx2, :)) / d;
+        diffData = zeros(n1-k, n2);
+        for ii = 1:order
+            idx1 = ((order+1):(n1-k+order)) + (ii-1);
+            idx2 = ((order+1):(n1-k+order)) - ii;
+            diffData = diffData + c(ii) * (data(idx1, :) - data(idx2, :)) / d;
+        end
     else % dim == 2
-        idx1 = ((order+1):(n2-k+order)) + (ii-1);
-        idx2 = ((order+1):(n2-k+order)) - ii;
-        diffData = diffData + c(ii) * (data(:, idx1) - data(:, idx2)) / d;
+        diffData = zeros(n1, n2-k);
+        for ii = 1:order
+            idx1 = ((order+1):(n2-k+order)) + (ii-1);
+            idx2 = ((order+1):(n2-k+order)) - ii;
+            diffData = diffData + c(ii) * (data(:, idx1) - data(:, idx2)) / d;
+        end
+    end
+else           % 3D case
+    [n1, n2, n3] = size(data);
+    if (dim == 1)
+        diffData = zeros(n1-k, n2, n3);
+        for ii = 1:order
+            idx1 = ((order+1):(n1-k+order)) + (ii-1);
+            idx2 = ((order+1):(n1-k+order)) - ii;
+            diffData = diffData + c(ii) * (data(idx1, :, :) - data(idx2, :, :)) / d;
+        end
+    elseif (dim == 2)
+        diffData = zeros(n1, n2-k, n3);
+        for ii = 1:order
+            idx1 = ((order+1):(n2-k+order)) + (ii-1);
+            idx2 = ((order+1):(n2-k+order)) - ii;
+            diffData = diffData + c(ii) * (data(:, idx1, :) - data(:, idx2, :)) / d;
+        end
+    else % dim == 3
+        diffData = zeros(n1, n2, n3-k);
+        for ii = 1:order
+            idx1 = ((order+1):(n3-k+order)) + (ii-1);
+            idx2 = ((order+1):(n3-k+order)) - ii;
+            diffData = diffData + c(ii) * (data(:, :, idx1) - data(:, :, idx2)) / d;
+        end
     end
 end
+

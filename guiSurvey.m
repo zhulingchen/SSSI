@@ -86,7 +86,7 @@ varargout{1} = handles.output;
 % set up objects after loading velocity model for either P-wave or S-wave
 function loadVModel(v, handles)
 
-dim = ndims(v);
+Ndims = ndims(v);
 vmin = min(v(:));
 vmax = max(v(:));
 
@@ -151,7 +151,7 @@ set(handles.edit_ry, 'String', '');
 set(handles.edit_rz, 'String', str_rz);
 
 % 3D case
-if (dim > 2)
+if (Ndims > 2)
     % enable edit texts for y-axis
     set(handles.edit_dy, 'Enable', 'on');
     set(handles.edit_sy, 'Enable', 'on');
@@ -177,7 +177,7 @@ if (dim > 2)
 end
 
 %% plot velocity model
-if (dim <= 2)	% 2D case
+if (Ndims <= 2)	% 2D case
     imagesc(x, z, v, 'Parent', handles.axes_velocityModel);
     xlabel(handles.axes_velocityModel, 'Distance (m)'); ylabel(handles.axes_velocityModel, 'Depth (m)');
     title(handles.axes_velocityModel, 'Velocity Model');
@@ -350,7 +350,7 @@ else
     vp = data.vs;
 end
 
-dim = ndims(vp);
+Ndims = ndims(vp);
 [nz, nx, ~] = size(vp);
 dx = str2double(get(handles.edit_dx, 'String'));
 dz = str2double(get(handles.edit_dz, 'String'));
@@ -371,7 +371,7 @@ rx = eval(sprintf('[%s]', get(handles.edit_rx, 'String')));
 rz = eval(sprintf('[%s]', get(handles.edit_rz, 'String')));
 
 % 3D case
-if (dim > 2)
+if (Ndims > 2)
     [~, ~, ny] = size(vp);
     dy = str2double(get(handles.edit_dy, 'String'));
     y = (1:ny) * dy;
@@ -383,9 +383,13 @@ if (dim > 2)
 end
 
 % add region around model for applying absorbing boundary conditions
-VP = extBoundary(vp, nBoundary, dim);
+VP = extBoundary(vp, nBoundary, Ndims);
 if (exist('vs', 'var'))
-    VS = extBoundary(vs, nBoundary, 2);
+    if (Ndims <= 2)
+        VS = extBoundary(vs, nBoundary, 2);
+    else
+        VS = extBoundary(vs, nBoundary, 3);
+    end
 end
 
 
@@ -398,7 +402,7 @@ for ixs = 1:nShots
     sourceTime = zeros([size(VP), nt]);
     wave1dTime = ricker(f, nt, dt);
     
-    if (dim <= 2)	% 2D case
+    if (Ndims <= 2)	% 2D case
         % plot velocity model and shot position
         imagesc(x, z, vp, 'Parent', handles.axes_velocityModel);
         xlabel(handles.axes_velocityModel, 'Distance (m)'); ylabel(handles.axes_velocityModel, 'Depth (m)');
@@ -475,7 +479,7 @@ for ixs = 1:nShots
         xlabel(handles.axes_sourceTime, 'Time'); ylabel(handles.axes_sourceTime, 'Amplitude');
         colormap(handles.axes_sourceTime, seismic);
         
-        if (dim <= 2)	% 2D case
+        if (Ndims <= 2)	% 2D case
             % source function title
             title(handles.axes_sourceTime, sprintf('Shot at x = %dm', cur_sx * dx));
             
@@ -593,7 +597,7 @@ else % i.e., isfield(data, 'vs') == true
     % velocity model
     vp = data.vs;
 end
-dim = ndims(vp);
+Ndims = ndims(vp);
 vpmin = min(vp(:));
 vpmax = max(vp(:));
 
@@ -606,7 +610,7 @@ set(handles.edit_dt, 'String', num2str(dt));
 set(handles.edit_nt, 'String', num2str(nt));
 
 % 3D case
-if (dim > 2)
+if (Ndims > 2)
     dy = str2double(get(handles.edit_dy, 'String'));
     dt = 0.5*(min([dx, dy, dz])/vpmax/sqrt(3));
     [~, ~, ny] = size(vp);
@@ -694,7 +698,7 @@ else % i.e., isfield(data, 'vs') == true
     % velocity model
     vp = data.vs;
 end
-dim = ndims(vp);
+Ndims = ndims(vp);
 vpmin = min(vp(:));
 vpmax = max(vp(:));
 
@@ -707,7 +711,7 @@ set(handles.edit_dt, 'String', num2str(dt));
 set(handles.edit_nt, 'String', num2str(nt));
 
 % 3D case
-if (dim > 2)
+if (Ndims > 2)
     dy = str2double(get(handles.edit_dy, 'String'));
     dt = 0.5*(min([dx, dy, dz])/vpmax/sqrt(3));
     [~, ~, ny] = size(vp);
@@ -749,7 +753,7 @@ else % i.e., isfield(data, 'vs') == true
     % velocity model
     vp = data.vs;
 end
-dim = ndims(vp);
+Ndims = ndims(vp);
 vpmin = min(vp(:));
 vpmax = max(vp(:));
 
@@ -761,7 +765,7 @@ nt = round((sqrt((dx*nx)^2 + (dz*nz)^2)*2/vpmin/dt + 1));
 set(handles.edit_nt, 'String', num2str(nt));
 
 % 3D case
-if (dim > 2)
+if (Ndims > 2)
     dy = str2double(get(handles.edit_dy, 'String'));
     dt = str2double(get(handles.edit_dt, 'String'));
     [~, ~, ny] = size(vp);
@@ -1040,7 +1044,7 @@ else % i.e., isfield(data, 'vs') == true
     % velocity model
     vp = data.vs;
 end
-dim = ndims(vp);
+Ndims = ndims(vp);
 [nz, nx, ~] = size(vp);
 
 isSweepAll = get(hObject, 'Value');
@@ -1056,7 +1060,7 @@ if (isSweepAll == 2) % No
 end
 
 % 3D case
-if (dim > 2)
+if (Ndims > 2)
     [~, ~, ny] = size(vp);
     if (isSweepAll == 1) % Yes
         str_sy = sprintf('1:%d', ny);
@@ -1102,7 +1106,7 @@ else % i.e., isfield(data, 'vs') == true
     % velocity model
     vp = data.vs;
 end
-dim = ndims(vp);
+Ndims = ndims(vp);
 
 isReceiveAll = get(hObject, 'Value');
 if (isReceiveAll == 1) % Yes
@@ -1113,7 +1117,7 @@ if (isReceiveAll == 2) % No
 end
 
 % 3D case
-if (dim > 2)
+if (Ndims > 2)
     [~, ~, ny] = size(vp);
     if (isReceiveAll == 1) % Yes
         set(handles.edit_ry, 'Enable', 'off');
