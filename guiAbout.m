@@ -22,16 +22,16 @@ function varargout = guiAbout(varargin)
 
 % Edit the above text to modify the response to help guiAbout
 
-% Last Modified by GUIDE v2.5 04-Nov-2014 00:07:26
+% Last Modified by GUIDE v2.5 09-Nov-2014 00:18:26
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
 gui_State = struct('gui_Name',       mfilename, ...
-                   'gui_Singleton',  gui_Singleton, ...
-                   'gui_OpeningFcn', @guiAbout_OpeningFcn, ...
-                   'gui_OutputFcn',  @guiAbout_OutputFcn, ...
-                   'gui_LayoutFcn',  [] , ...
-                   'gui_Callback',   []);
+    'gui_Singleton',  gui_Singleton, ...
+    'gui_OpeningFcn', @guiAbout_OpeningFcn, ...
+    'gui_OutputFcn',  @guiAbout_OutputFcn, ...
+    'gui_LayoutFcn',  [] , ...
+    'gui_Callback',   []);
 if nargin && ischar(varargin{1})
     gui_State.gui_Callback = str2func(varargin{1});
 end
@@ -64,11 +64,11 @@ imshow('logo_csip.jpg', 'Parent', handles.axes_logo1);
 imshow('logo_cegp.jpg', 'Parent', handles.axes_logo2);
 
 % UIWAIT makes guiAbout wait for user response (see UIRESUME)
-% uiwait(handles.figure1);
+% uiwait(handles.figureMain);
 
 
 % --- Outputs from this function are returned to the command line.
-function varargout = guiAbout_OutputFcn(hObject, eventdata, handles) 
+function varargout = guiAbout_OutputFcn(hObject, eventdata, handles)
 % varargout  cell array for returning output args (see VARARGOUT);
 % hObject    handle to figure
 % eventdata  reserved - to be defined in a future version of MATLAB
@@ -83,4 +83,4 @@ function btnOK_Callback(hObject, eventdata, handles)
 % hObject    handle to btnOK (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-close(handles.figure1);
+close(handles.figureMain);

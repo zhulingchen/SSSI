@@ -64,8 +64,8 @@ nt = round(sqrt((dx*nx)^2 + (dz*nz)^2)*2/vpmin/dt + 1);
 t  = (0:nt-1).*dt;
 
 % shot position
-zShot = 50 * dz;
-xShot = 20 * dx;
+zShot = 1 * dz;
+xShot = 1 * dx;
 
 hFig = figure;
 set(hFig, 'Position', [200, 200, 1000, 500]);
