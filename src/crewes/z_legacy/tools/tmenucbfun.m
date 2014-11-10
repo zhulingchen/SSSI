@@ -1,2 +1,0 @@
-function a = tmenucbfun()
-gco
