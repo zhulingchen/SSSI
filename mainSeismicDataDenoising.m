@@ -36,7 +36,8 @@ if ~isunix
     rmpath(genpath('./src/CurveLab-2.1.3/fdct3d'));
 end
 
-dataFile = './modelData/denoising/timodel_shot_data_II_shot001-320.mat';
+% dataFile = './modelData/denoising/timodel_shot_data_II_shot001-320.mat';
+dataFile = './modelData/denoising/bp_eage_shot100.mat';
 [dataFileDir, dataFileName] = fileparts(dataFile);
 load(dataFile); % shot data from Hess VTI synthetic datasets
 
@@ -199,7 +200,7 @@ fprintf('Denoised Seismic Data (Curvelet), PSNR = %.2fdB\n', psnrCleanData_curve
 %% Parameters for dictionary learning using sparse K-SVD
 gain = 1;                                   % noise gain (default value 1.15)
 trainBlockSize = 16;                        % for each dimension
-trainBlockNum = 6000;                       % number of training blocks in the training set
+trainBlockNum = 12000;                       % number of training blocks in the training set
 trainIter = 20;
 sigSpThres = sigma * trainBlockSize * gain; % pre-defined l2-norm error for BPDN
 atomSpThres = 200;                          % a self-determind value to control the sparsity of matrix A
