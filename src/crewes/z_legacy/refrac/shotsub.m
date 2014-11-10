@@ -1,0 +1,31 @@
+% Subtract traveltimes of shot i from j
+% i, j = shot numbers
+% shotcoord = shot location vector
+% fbcoord = receiver location matrix (shot, rec)
+% fbtime = fb pick matrix (shot, rec)
+% step = interpolation interval 
+function [start1, end1, tdiff1, start2, end2, tdiff2] = shotsub(i,j,shotcoord,fbcoord,fbtime,step)
+%traveltime difference between adjacent shot records;
+p1 = NaN;
+p2 = NaN;
+endx = shotcoord(j);
+startp1x=min(fbcoord(i,:));
+startp2x=min(fbcoord(j,:));
+startx = max(startp1x, startp2x);
+step=1;
+xloc=startx:step:endx;
+p1=interp1(fbcoord(i,:),fbtime(i,:),xloc,'linear');
+p2=interp1(fbcoord(j,:),fbtime(j,:),xloc,'linear');
+tdiff1=p1-p2;
+start1 = startx;
+end1 = endx;
+endp1x=max(fbcoord(i,:));
+endp2x=max(fbcoord(j,:));
+endx = min(endp1x, endp2x);
+startx = r(i);
+xloc=startx:step:endx;
+p1=interp1(fbcoord(i,:),fbtime(i,:),xloc,'linear');
+p2=interp1(fbcoord(j,:),fbtime(j,:),xloc,'linear');
+tdiff2=p2-p1;
+start2 = startx;
+end2 = endx;

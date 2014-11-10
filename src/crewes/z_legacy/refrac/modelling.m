@@ -1,0 +1,10 @@
+function [tppp, tpps, tpss, tsss]=modelling(h,vp1,vp2,vs1,vs2,offset)
+icpp=asin(vp1/vp2);
+icps=asin(vp1/vs2);
+icss=asin(vs1/vs2);
+tppp = (2*h*cos(icpp))./vp1 + offset/vp2;
+tpps = (h*cos(icpp))./vp1 + (h*cos(icps))./vs1 + offset/vp2;
+tpss = (h*cos(icps))./vp1 + (h*cos(icss))./vs1 + offset/vs2;
+tsss = (2*h*cos(icss))./vs1 + offset/vs2;
+tdp = offset/vp1;
+tds = offset/vs1;
