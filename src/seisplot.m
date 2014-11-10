@@ -1,15 +1,21 @@
 function seisplot(varargin)
 % This function plot seismic data horizontally. Note that the first
 % dimension is assumed as time dimension and the second dimension is trace
-% dimension. No input check will be given.
+% dimension. 
 
 
 if nargin < 2
     t = [];
     x = varargin{1};
+    if size(x,1) < size(x,2)
+        x  = x';
+    end
 elseif nargin < 3
     t = varargin{1};
     x = varargin{2};
+    if size(x,1) < size(x,2)
+        x  = x';
+    end
     if length(t) ~= size(x,1)
         error('Vectors must be the same lengths.');
     end
@@ -28,8 +34,6 @@ for i = 1 : N
     data = data - i;
     if isempty(t)
         plot(data,'-k');
-%         data(data < -i) = -i;
-%         patch(1:length(data),data,'k');
     else
         switch mod(i,3)
             case 0
@@ -39,7 +43,6 @@ for i = 1 : N
             case 2
                 plot(t,data,'r');
         end
-%         patch(t,data,'k');
     end
 end
 hold off
