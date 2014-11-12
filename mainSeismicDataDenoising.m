@@ -242,7 +242,6 @@ totalBlockNum = (nSamples - trainBlockSize + 1) * (nRecs - trainBlockSize + 1);
 processedBlocks = 0;
 
 for ibatch = 1:nRecs-trainBlockSize+1
-    tic;
     fprintf('Batch %d... ', ibatch);
     % the current batch of blocks
     blocks = im2colstep(noisyData(:, ibatch:ibatch+trainBlockSize-1), trainBlockSize * [1, 1], [1, 1]);
@@ -266,8 +265,7 @@ for ibatch = 1:nRecs-trainBlockSize+1
     cleanData_sparseKsvd(:,ibatch:ibatch+trainBlockSize-1) = cleanData_sparseKsvd(:,ibatch:ibatch+trainBlockSize-1) + cleanBatch;
     
     processedBlocks = processedBlocks + (nSamples - trainBlockSize + 1);
-    timePerBatch = toc;
-    fprintf('Processed %d blocks, elapsed time = %.3fs\n', processedBlocks, timePerBatch);
+    fprintf('Processed %d blocks\n', processedBlocks);
 end
 
 % average the denoised and noisy signals
