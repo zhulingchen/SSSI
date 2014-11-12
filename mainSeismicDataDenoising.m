@@ -37,7 +37,9 @@ if ~isunix
 end
 
 % dataFile = './modelData/denoising/timodel_shot_data_II_shot001-320.mat';
-dataFile = './modelData/denoising/bp_eage_shot100.mat';
+% dataFile = './modelData/denoising/bp_eage_shot675.mat';
+% dataFile = './modelData/denoising/frst_ch40hz.mat';
+dataFile = './modelData/denoising/bppublic_seg_aa_SEG_free_shots.mat';
 [dataFileDir, dataFileName] = fileparts(dataFile);
 load(dataFile); % shot data from Hess VTI synthetic datasets
 
@@ -201,7 +203,7 @@ fprintf('Denoised Seismic Data (Curvelet), PSNR = %.2fdB\n', psnrCleanData_curve
 gain = 1;                                   % noise gain (default value 1.15)
 trainBlockSize = 16;                        % for each dimension
 trainBlockNum = 12000;                       % number of training blocks in the training set
-trainIter = 20;
+trainIter = 30;
 sigSpThres = sigma * trainBlockSize * gain; % pre-defined l2-norm error for BPDN
 atomSpThres = 200;                          % a self-determind value to control the sparsity of matrix A
 
@@ -220,7 +222,7 @@ fprintf('Dictionary Learning\n');
 initDict = speye(length(vecTrainBlockCoeff), length(vecTrainBlockCoeff));
 baseSynOp = @(x) pdfb(x, str, pfilter_wavelet, dfilter_wavelet, nlevels_wavelet, trainBlockSize, trainBlockSize, 1);
 baseAnaOp = @(x) pdfb(x, str, pfilter_wavelet, dfilter_wavelet, nlevels_wavelet, trainBlockSize, trainBlockSize, 2);
-[learnedDict, Coeffs, err] = sparseKsvd(trainData, baseSynOp, baseAnaOp, ...
+[learnedDict, Coeffs, errLasso, errBpdn] = sparseKsvd(trainData, baseSynOp, baseAnaOp, ...
     initDict, trainIter, trainBlockSize, trainBlockNum, atomSpThres, sigSpThres, 'bpdn');
 
 
@@ -240,6 +242,7 @@ totalBlockNum = (nSamples - trainBlockSize + 1) * (nRecs - trainBlockSize + 1);
 processedBlocks = 0;
 
 for ibatch = 1:nRecs-trainBlockSize+1
+    tic;
     fprintf('Batch %d... ', ibatch);
     % the current batch of blocks
     blocks = im2colstep(noisyData(:, ibatch:ibatch+trainBlockSize-1), trainBlockSize * [1, 1], [1, 1]);
@@ -263,7 +266,8 @@ for ibatch = 1:nRecs-trainBlockSize+1
     cleanData_sparseKsvd(:,ibatch:ibatch+trainBlockSize-1) = cleanData_sparseKsvd(:,ibatch:ibatch+trainBlockSize-1) + cleanBatch;
     
     processedBlocks = processedBlocks + (nSamples - trainBlockSize + 1);
-    fprintf('Processed %d blocks\n', processedBlocks);
+    timePerBatch = toc;
+    fprintf('Processed %d blocks, elapsed time = %.3fs\n', processedBlocks, timePerBatch);
 end
 
 % average the denoised and noisy signals

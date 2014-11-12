@@ -1,4 +1,4 @@
-function [A, X, err] = sparseKsvd(Y, baseSynOp, baseAnaOp, A0, trainIter, blkSize, blkNum, atomSpThres, sigSpThres, option)
+function [A, X, errLasso, errBpdn] = sparseKsvd(Y, baseSynOp, baseAnaOp, A0, trainIter, blkSize, blkNum, atomSpThres, sigSpThres, option)
 % SPARSEKSVD Sparse K-SVD dictionary training
 %  SPARSEKSVD runs the sparse K-SVD dictionary training algorithm on the
 %  specified set of training signals Y based on a known structured
@@ -50,8 +50,8 @@ A = A0;
 X = zeros(coefLen, blkNum);
 
 hFigTrainedDict = figure;
-errBpdn = zeros(trainIter, 1);
 errLasso = zeros(trainIter, 1);
+errBpdn = zeros(trainIter, 1);
 
 %% main loop for dictionary learning
 for iter = 1:trainIter
@@ -75,11 +75,6 @@ for iter = 1:trainIter
         end
         % X(:, iblk) = OMP({@(x) baseSynOp(A*x), @(x) A'*baseAnaOp(x)}, Y(:, iblk), sigSpThres);
     end
-    
-    % calculate residue error
-    errLasso(iter) = norm(Y - PhiSyn * A * X, 'fro');
-    errBpdn(iter) = sum(abs(X(:)));
-    fprintf('Lasso error |Y - B*A*X|_2 = %f, BPDN error |X|_1 = %f\n', errLasso(iter), errBpdn(iter));
     
     %% dictionary learning and updating
     unusedSig = 1:blkNum;  % track the signals that were used to replace "dead" atoms.
@@ -171,17 +166,22 @@ for iter = 1:trainIter
         end
     end
     
+    %% calculate residue error
+    errLasso(iter) = norm(Y - PhiSyn * A * X, 'fro');
+    errBpdn(iter) = sum(abs(X(:)));
+    fprintf('Lasso error |Y - B*A*X|_2 = %f, BPDN error |X|_1 = %f\n', errLasso(iter), errBpdn(iter));
+    
     %% show trained dictionary
     dictImg = showdict(PhiSyn * A, [1 1]*sqrt(size(PhiSyn * A, 1)), round(sqrt(size(PhiSyn * A, 2))), round(sqrt(size(PhiSyn * A, 2))), 'whitelines', 'highcontrast');
     figure(hFigTrainedDict); imshow(imresize(dictImg, 2, 'nearest')); title(sprintf('Trained Dictionary (Iteration %d)', iter));
     
 end
 
-% calculate residue error
-% err = 0;
-% for iblk = 1:blkNum
-%     err = err + norm(Y(:, iblk) - learnedOp(X(:, iblk), baseSynOp, baseAnaOp, A, 1), 2);
-% end
-err = norm(Y - PhiSyn * A * X, 'fro');
+% % calculate residue error
+% % err = 0;
+% % for iblk = 1:blkNum
+% %     err = err + norm(Y(:, iblk) - learnedOp(X(:, iblk), baseSynOp, baseAnaOp, A, 1), 2);
+% % end
+% err = norm(Y - PhiSyn * A * X, 'fro');
 
 end
