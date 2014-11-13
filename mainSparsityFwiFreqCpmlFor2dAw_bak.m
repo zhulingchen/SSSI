@@ -171,9 +171,9 @@ f = 20;
 
 
 %% Wavelet transform parameters
-nlevels_wavelet = [0, 0];            % Decomposition level, all 0 means wavelet
-pfilter_wavelet = '9/7' ;      % Pyramidal filter
-dfilter_wavelet = '9/7' ;      % Directional filter
+nlevels_wavelet = [0, 0];       % Decomposition level, all 0 means wavelet
+pfilter_wavelet = '9/7' ;       % Pyramidal filter
+dfilter_wavelet = '9/7' ;       % Directional filter
 
 
 %% Curvelet transform parameters
@@ -182,7 +182,7 @@ is_real = 1;
 
 %% Contourlet transform parameters
 nlevels = [2, 3] ;      % Decomposition level
-pfilter = 'pkva' ;      % Pyramidal filter
+pfilter = '9/7' ;      % Pyramidal filter
 dfilter = 'pkva' ;      % Directional filter
 
 
@@ -190,10 +190,8 @@ dfilter = 'pkva' ;      % Directional filter
 trainBlockSize = 16;     % for each dimension
 trainBlockNum = 1024;
 trainIter = 30;
-atomSpThres = 1e-3;
-sigSpThres = 1e-5;
-% atomSpThres = 1e6;
-% sigSpThres = 1e4;%1e5;
+sigSpThres = 10;
+atomSpThres = 200;
 
 
 %% Shot data recording at the surface
@@ -266,10 +264,11 @@ modelOld = zeros(nz, nx);
 modelNew = 1./VS(1:end-nBoundary, nBoundary+1:end-nBoundary).^2;
 % only for dictionary training purpose
 modelTrain = 1./V(1:end-nBoundary, nBoundary+1:end-nBoundary).^2;
-% modelTrain = V(1:end-nBoundary, nBoundary+1:end-nBoundary);
-% load('./modelData/barbara.mat');
-% modelTrain = 1./barbara.^4;
-% modelTrain = barbara;
+% normalization by column
+minData = min(modelTrain, [], 1);
+maxData = max(modelTrain, [], 1);
+meanData = mean(modelTrain, 1);
+modelTrain = bsxfun(@times, bsxfun(@minus, modelTrain, meanData), 1./abs(maxData - minData));
 
 % shot positions on extended velocity model
 xs = xShotGrid + nBoundary;
@@ -311,10 +310,10 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     % Decomposition by learned dictionary using sparse K-SVD
     [vecTrainBlockCoeff, stb_wavelet] = pdfb2vec(pdfbdec(zeros(trainBlockSize, trainBlockSize), pfilter_wavelet, dfilter_wavelet, nlevels_wavelet));
     initDict = speye(length(vecTrainBlockCoeff), length(vecTrainBlockCoeff));
-    [learnedDict, Coeffs, err] = sparseKsvd(modelTrain, ...
+    [learnedDict, Coeffs, errLasso, errBpdn] = sparseKsvd(modelTrain, ...
         @(x) pdfb(x, stb_wavelet, pfilter_wavelet, dfilter_wavelet, nlevels_wavelet, trainBlockSize, trainBlockSize, 1), ...
         @(x) pdfb(x, stb_wavelet, pfilter_wavelet, dfilter_wavelet, nlevels_wavelet, trainBlockSize, trainBlockSize, 2), ...
-        initDict, trainIter, trainBlockSize, trainBlockNum, atomSpThres, sigSpThres, 'lasso');
+        initDict, trainIter, trainBlockSize, trainBlockNum, atomSpThres, sigSpThres, struct('verbosity', 0, 'method', 'lasso'));
     
     
     %     %% debug begin

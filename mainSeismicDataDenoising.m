@@ -27,6 +27,13 @@ clear;
 clc;
 
 
+%% Start a pool of Matlab workers
+numCores = feature('numcores');
+if isempty(gcp('nocreate')) % checking to see if my pool is already open
+    myPool = parpool(numCores);
+end
+
+
 %% Data source
 addpath(genpath('./modelData'));
 addpath(genpath('./src'));
@@ -36,6 +43,7 @@ if ~isunix
     rmpath(genpath('./src/CurveLab-2.1.3/fdct3d'));
 end
 
+% dataFile = './modelData/denoising/barbara.mat';
 % dataFile = './modelData/denoising/timodel_shot_data_II_shot001-320.mat';
 % dataFile = './modelData/denoising/bp_eage_shot675.mat';
 % dataFile = './modelData/denoising/frst_ch40hz.mat';
@@ -49,8 +57,7 @@ load(dataFile); % shot data from Hess VTI synthetic datasets
 
 nBoundary = 20;
 % dataTrue = dataTrue(nBoundary+1:end-nBoundary,:)';
-dataTrue = dataTrue(1:8*floor(size(dataTrue, 1)/8), 1:8*floor(size(dataTrue, 2)/8));
-% dataTrue = dataTrue(1:8*floor(size(dataTrue, 1)/8), 1:128);
+dataTrue = dataTrue(1:16*floor(size(dataTrue, 1)/16), 1:16*floor(size(dataTrue, 2)/16));
 [nSamples, nRecs] = size(dataTrue);
 
 
@@ -203,9 +210,9 @@ fprintf('Denoised Seismic Data (Curvelet), PSNR = %.2fdB\n', psnrCleanData_curve
 gain = 1;                                   % noise gain (default value 1.15)
 trainBlockSize = 16;                        % for each dimension
 trainBlockNum = 12000;                       % number of training blocks in the training set
-trainIter = 30;
+trainIter = 20;
 sigSpThres = sigma * trainBlockSize * gain; % pre-defined l2-norm error for BPDN
-atomSpThres = 200;                          % a self-determind value to control the sparsity of matrix A
+atomSpThres = 500;                          % a self-determind value to control the sparsity of matrix A
 
 
 %% Base dictionary setting
@@ -223,7 +230,7 @@ initDict = speye(length(vecTrainBlockCoeff), length(vecTrainBlockCoeff));
 baseSynOp = @(x) pdfb(x, str, pfilter_wavelet, dfilter_wavelet, nlevels_wavelet, trainBlockSize, trainBlockSize, 1);
 baseAnaOp = @(x) pdfb(x, str, pfilter_wavelet, dfilter_wavelet, nlevels_wavelet, trainBlockSize, trainBlockSize, 2);
 [learnedDict, Coeffs, errLasso, errBpdn] = sparseKsvd(trainData, baseSynOp, baseAnaOp, ...
-    initDict, trainIter, trainBlockSize, trainBlockNum, atomSpThres, sigSpThres, 'bpdn');
+    initDict, trainIter, trainBlockSize, trainBlockNum, atomSpThres, sigSpThres, struct('verbosity', 0, 'method', 'bpdn'));
 
 
 %% show trained dictionary
@@ -251,7 +258,7 @@ for ibatch = 1:nRecs-trainBlockSize+1
     
     cleanBlocks = zeros(size(blocks));
     blockCoeff = zeros(length(vecTrainBlockCoeff), nSamples - trainBlockSize + 1);
-    for iblk = 1:nSamples - trainBlockSize + 1
+    parfor iblk = 1:nSamples - trainBlockSize + 1
         opts = spgSetParms('verbosity', 0, 'optTol', 1e-6);
         blockCoeff(:, iblk) = spg_bpdn(@(x, mode) learnedOp(x, baseSynOp, baseAnaOp, learnedDict, mode), blocks(:, iblk), sigSpThres, opts);
         % blockCoeff(:, iblk) = OMP({@(x) baseSynOp(learnedDict*x), @(x) learnedDict'*baseAnaOp(x)}, blocks(:, iblk), sigSpThres);
@@ -282,3 +289,6 @@ saveas(hFigCleanedDataSparseKsvd, fullfile(dataFileDir, [dataFileName, '_cleanDa
 fprintf('------------------------------------------------------------\n');
 fprintf('Denoised Seismic Data, PSNR = %.2fdB\n', psnrCleanData_sparseKsvd);
 
+
+%% Terminate the pool of Matlab workers
+delete(gcp('nocreate'));
