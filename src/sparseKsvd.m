@@ -21,8 +21,8 @@ function [A, X, errLasso, errBpdn] = sparseKsvd(Y, baseSynOp, baseAnaOp, A0, tra
 % Center for Signal and Information Processing, Center for Energy & Geo Processing
 % Georgia Institute of Technology
 
-SPGOPTTOL_SIG = 1e-6;
-SPGOPTTOL_ATOM = 1e-6;
+SPGOPTTOL_SIG = 1e-4;
+SPGOPTTOL_ATOM = 1e-4;
 MUTCOH_THRES = 0.99;
 USE_THRES = 4; % the atom must be used by this number of blocks so as to be kept
 VAL_THRES = 1e-8;

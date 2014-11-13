@@ -173,7 +173,7 @@ f = 20;
 %% Wavelet transform parameters
 nlevels_wavelet = [0, 0];       % Decomposition level, all 0 means wavelet
 pfilter_wavelet = '9/7' ;       % Pyramidal filter
-dfilter_wavelet = '9/7' ;       % Directional filter
+dfilter_wavelet = 'pkva' ;       % Directional filter
 
 
 %% Curvelet transform parameters
@@ -189,9 +189,9 @@ dfilter = 'pkva' ;      % Directional filter
 %% Parameters for dictionary learning using sparse K-SVD
 trainBlockSize = 16;     % for each dimension
 trainBlockNum = 1024;
-trainIter = 30;
+trainIter = 20;
 sigSpThres = 10;
-atomSpThres = 200;
+atomSpThres = 100;
 
 
 %% Shot data recording at the surface
