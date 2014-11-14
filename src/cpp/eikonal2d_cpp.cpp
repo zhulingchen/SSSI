@@ -1,6 +1,6 @@
-// eikonal2d_c.c
+// eikonal2d_cpp.cpp
 // Solution of eikonal equation in 2D rectangular domain for a single source
-// at (sz,sx), written in C for .mex
+// at (sz,sx), written in C++ for .mex
 //
 // V                 velocity model
 // dx                grid spacing, assume dx=dy
@@ -17,6 +17,7 @@
 // Reference: H. Zhao, A fast sweeping method for Eikonal equations,
 // Mathematics of computation, 74(250), pp. 603-627, 2004
 
+#include <algorithm>
 #include <math.h>
 #include <stdio.h>
 #include "mex.h"
@@ -25,6 +26,8 @@
 // function T = eikonal2d(V, dx, sz, sx, iMax)
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
+    using namespace std;
+    
     const int MAX_VELOCITY = 65535;
     
     // input
@@ -36,7 +39,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     
     mwSize nz = mxGetM(prhs[0]);
     mwSize nx = mxGetN(prhs[0]);
-    mexPrintf("dx = %d, sz = %d, sx = %d, iMax = %d, nz = %d, nx = %d\n", dx, sz, sx, iMax, nz, nx);
+    //mexPrintf("dx = %d, sz = %d, sx = %d, iMax = %d, nz = %d, nx = %d\n", dx, sz, sx, iMax, nz, nx);
     
     mxArray *m_Slow = mxCreateDoubleMatrix(nz, nx, mxREAL);
     mxArray *m_TOld = mxCreateDoubleMatrix(nz, nx, mxREAL);
@@ -60,6 +63,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     }
     p_TOld[(sz-1) + (sx-1)*nz] = 0;
     
+    
     double a, b, TT;
     
     for (int iter = 0; iter < iMax; iter++)
@@ -77,7 +81,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                     a = p_TOld[(nz-2) + j*nz];
                 else
                     // a=min(Told(i-1,j),Told(i+1,j));
-                    a = fmin(p_TOld[(i-1) + j*nz], p_TOld[(i+1) + j*nz]);
+                    a = min(p_TOld[(i-1) + j*nz], p_TOld[(i+1) + j*nz]);
                 
                 if (j == 0)
                     // b=Told(i,2);
@@ -87,7 +91,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                     b = p_TOld[i + (nx-2)*nz];
                 else
                     // b=min(Told(i,j-1),Told(i,j+1));
-                    b = fmin(p_TOld[i + (j-1)*nz], p_TOld[i + (j+1)*nz]);
+                    b = min(p_TOld[i + (j-1)*nz], p_TOld[i + (j+1)*nz]);
                 
                 // if (fabs(a-b)<Slow(i,j)*dx)
                 // ATTENTION: use fabs for floating point values
@@ -96,10 +100,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                     TT = 0.5 * (a + b + sqrt( (2 * p_Slow[i+j*nz] * p_Slow[i+j*nz] * dx * dx) - (a-b)*(a-b) ));
                 else
                     // TT=min(a,b)+Slow(i,j)*dx;
-                    TT = fmin(a, b) + (p_Slow[i+j*nz] * dx);
+                    TT = min(a, b) + (p_Slow[i+j*nz] * dx);
                 
                 // Tnew(i,j) = min(Told(i,j),TT);
-                p_TNew[i+j*nz] = fmin(p_TOld[i+j*nz], TT);
+                p_TNew[i+j*nz] = min(p_TOld[i+j*nz], TT);
             }
         }
         
@@ -124,7 +128,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                     a = p_TOld[(nz-2) + j*nz];
                 else
                     // a=min(Told(i-1,j),Told(i+1,j));
-                    a = fmin(p_TOld[(i-1) + j*nz], p_TOld[(i+1) + j*nz]);
+                    a = min(p_TOld[(i-1) + j*nz], p_TOld[(i+1) + j*nz]);
                 
                 if (j == 0)
                     // b=Told(i,2);
@@ -134,7 +138,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                     b = p_TOld[i + (nx-2)*nz];
                 else
                     // b=min(Told(i,j-1),Told(i,j+1));
-                    b = fmin(p_TOld[i + (j-1)*nz], p_TOld[i + (j+1)*nz]);
+                    b = min(p_TOld[i + (j-1)*nz], p_TOld[i + (j+1)*nz]);
                 
                 // if (fabs(a-b)<Slow(i,j)*dx)
                 // ATTENTION: use fabs for floating point values
@@ -143,10 +147,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                     TT = 0.5 * (a + b + sqrt( (2 * p_Slow[i+j*nz] * p_Slow[i+j*nz] * dx * dx) - (a-b)*(a-b) ));
                 else
                     // TT=min(a,b)+Slow(i,j)*dx;
-                    TT = fmin(a, b) + (p_Slow[i+j*nz] * dx);
+                    TT = min(a, b) + (p_Slow[i+j*nz] * dx);
                 
                 // Tnew(i,j) = min(Told(i,j),TT);
-                p_TNew[i+j*nz] = fmin(p_TOld[i+j*nz], TT);
+                p_TNew[i+j*nz] = min(p_TOld[i+j*nz], TT);
             }
         }
         
@@ -171,7 +175,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                     a = p_TOld[(nz-2) + j*nz];
                 else
                     // a=min(Told(i-1,j),Told(i+1,j));
-                    a = fmin(p_TOld[(i-1) + j*nz], p_TOld[(i+1) + j*nz]);
+                    a = min(p_TOld[(i-1) + j*nz], p_TOld[(i+1) + j*nz]);
                 
                 if (j == 0)
                     // b=Told(i,2);
@@ -181,7 +185,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                     b = p_TOld[i + (nx-2)*nz];
                 else
                     // b=min(Told(i,j-1),Told(i,j+1));
-                    b = fmin(p_TOld[i + (j-1)*nz], p_TOld[i + (j+1)*nz]);
+                    b = min(p_TOld[i + (j-1)*nz], p_TOld[i + (j+1)*nz]);
                 
                 // if (fabs(a-b)<Slow(i,j)*dx)
                 // ATTENTION: use fabs for floating point values
@@ -190,10 +194,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                     TT = 0.5 * (a + b + sqrt( (2 * p_Slow[i+j*nz] * p_Slow[i+j*nz] * dx * dx) - (a-b)*(a-b) ));
                 else
                     // TT=min(a,b)+Slow(i,j)*dx;
-                    TT = fmin(a, b) + (p_Slow[i+j*nz] * dx);
+                    TT = min(a, b) + (p_Slow[i+j*nz] * dx);
                 
                 // Tnew(i,j) = min(Told(i,j),TT);
-                p_TNew[i+j*nz] = fmin(p_TOld[i+j*nz], TT);
+                p_TNew[i+j*nz] = min(p_TOld[i+j*nz], TT);
             }
         }
         
@@ -218,7 +222,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                     a = p_TOld[(nz-2) + j*nz];
                 else
                     // a=min(Told(i-1,j),Told(i+1,j));
-                    a = fmin(p_TOld[(i-1) + j*nz], p_TOld[(i+1) + j*nz]);
+                    a = min(p_TOld[(i-1) + j*nz], p_TOld[(i+1) + j*nz]);
                 
                 if (j == 0)
                     // b=Told(i,2);
@@ -228,7 +232,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                     b = p_TOld[i + (nx-2)*nz];
                 else
                     // b=min(Told(i,j-1),Told(i,j+1));
-                    b = fmin(p_TOld[i + (j-1)*nz], p_TOld[i + (j+1)*nz]);
+                    b = min(p_TOld[i + (j-1)*nz], p_TOld[i + (j+1)*nz]);
                 
                 // if (fabs(a-b)<Slow(i,j)*dx)
                 // ATTENTION: use fabs for floating point values
@@ -237,10 +241,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                     TT = 0.5 * (a + b + sqrt( (2 * p_Slow[i+j*nz] * p_Slow[i+j*nz] * dx * dx) - (a-b)*(a-b) ));
                 else
                     // TT=min(a,b)+Slow(i,j)*dx;
-                    TT = fmin(a, b) + (p_Slow[i+j*nz] * dx);
+                    TT = min(a, b) + (p_Slow[i+j*nz] * dx);
                 
                 // Tnew(i,j) = min(Told(i,j),TT);
-                p_TNew[i+j*nz] = fmin(p_TOld[i+j*nz], TT);
+                p_TNew[i+j*nz] = min(p_TOld[i+j*nz], TT);
             }
         }
         
@@ -250,8 +254,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         for (int j = 0; j < nx; j++)
             for (int i = 0; i < nz; i++)
                 p_TOld[i+j*nz] = p_TNew[i+j*nz];
-        
-        
         
     }
     
