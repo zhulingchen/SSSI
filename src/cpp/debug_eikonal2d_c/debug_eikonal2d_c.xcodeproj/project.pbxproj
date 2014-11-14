@@ -6,10 +6,15 @@
 	objectVersion = 46;
 	objects = {
 
+/* Begin PBXFileReference section */
+		706BF8D01A154AE1009314E1 /* eikonal2d_c.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = eikonal2d_c.c; path = ../eikonal2d_c.c; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
 /* Begin PBXGroup section */
 		706BF8C91A154AB5009314E1 = {
 			isa = PBXGroup;
 			children = (
+				706BF8D01A154AE1009314E1 /* eikonal2d_c.c */,
 			);
 			sourceTree = "<group>";
 		};
