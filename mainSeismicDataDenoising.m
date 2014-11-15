@@ -27,13 +27,6 @@ clear;
 clc;
 
 
-%% Start a pool of Matlab workers
-numCores = feature('numcores');
-if isempty(gcp('nocreate')) % checking to see if my pool is already open
-    myPool = parpool(numCores);
-end
-
-
 %% Data source
 addpath(genpath('./modelData'));
 addpath(genpath('./src'));
@@ -43,11 +36,15 @@ if ~isunix
     rmpath(genpath('./src/CurveLab-2.1.3/fdct3d'));
 end
 
-% dataFile = './modelData/denoising/barbara.mat';
-% dataFile = './modelData/denoising/timodel_shot_data_II_shot001-320.mat';
-% dataFile = './modelData/denoising/bp_eage_shot675.mat';
-% dataFile = './modelData/denoising/frst_ch40hz.mat';
-dataFile = './modelData/denoising/bppublic_seg_aa_SEG_free_shots.mat';
+% dataFile = './modelData/denoising/barbara.mat'; % 512 * 512
+% dataFile = './modelData/denoising/timodel_shot_data_II_shot001-320.mat'; % 1332 * 656
+% dataFile = './modelData/denoising/frst_ch40hz.mat'; % 400 * 400
+% dataFile = './modelData/denoising/bp_eage_shot675.mat'; % 2001 * 1201
+dataFile = './modelData/denoising/bp_eage_shot701.mat'; % 2001 * 1201
+% dataFile = './modelData/denoising/bppublic_seg_aa_SEG_free_shots.mat'; % 626 * 176
+% dataFile = './modelData/denoising/bppublic_2_5d_shots.mat'; % 384 * 252
+% dataFile = './modelData/denoising/Overthrust_Sam_int_shots.mat'; % 513 * 301
+% dataFile = './modelData/denoising/viking_seismic.mat'; % 1500 * 120
 [dataFileDir, dataFileName] = fileparts(dataFile);
 load(dataFile); % shot data from Hess VTI synthetic datasets
 
@@ -209,7 +206,7 @@ fprintf('Denoised Seismic Data (Curvelet), PSNR = %.2fdB\n', psnrCleanData_curve
 %% Parameters for dictionary learning using sparse K-SVD
 gain = 1;                                   % noise gain (default value 1.15)
 trainBlockSize = 16;                        % for each dimension
-trainBlockNum = 12000;                       % number of training blocks in the training set
+trainBlockNum = 20000;                       % number of training blocks in the training set
 trainIter = 20;
 sigSpThres = sigma * trainBlockSize * gain; % pre-defined l2-norm error for BPDN
 atomSpThres = 500;                          % a self-determind value to control the sparsity of matrix A
@@ -238,6 +235,13 @@ baseAnaOp = @(x) pdfb(x, str, pfilter_wavelet, dfilter_wavelet, nlevels_wavelet,
 dictImg = showdict(PhiSyn * learnedDict, [1 1]*sqrt(size(PhiSyn * learnedDict, 1)), round(sqrt(size(PhiSyn * learnedDict, 2))), round(sqrt(size(PhiSyn * learnedDict, 2))), 'whitelines', 'highcontrast');
 hFigLearnedDict = figure; imshow(imresize(dictImg, 2, 'nearest')); title(sprintf('Trained Dictionary (%d iterations)', trainIter));
 saveas(hFigLearnedDict, fullfile(dataFileDir, [dataFileName, '_learnedDict']), 'fig');
+
+
+%% Start a pool of Matlab workers
+numCores = feature('numcores');
+if isempty(gcp('nocreate')) % checking to see if my pool is already open
+    myPool = parpool(numCores);
+end
 
 
 %% Denoising
