@@ -1,4 +1,4 @@
-function y = fdct(x, s, is_real, nz, nx, mode)
+function y = fdct(x, s, is_real, nbscales, nbangles_coarse, nz, nx, mode)
 % FDCT Can be used as a function handle to run Curvelet / inverse
 % Curvelet transforms
 %
@@ -32,11 +32,19 @@ function y = fdct(x, s, is_real, nz, nx, mode)
 
 if (mode == 1) % inverse Curvelet transform
     x = vec2curvelet(x, s);
-    y = real(ifdct_wrapping(x, is_real));
+    if ~isunix
+        y = real(ifdct_wrapping(x, is_real));
+    else
+        y = real(ifdct_wrapping(x, is_real, nbscales, nbangles_coarse));
+    end
     y = y(:);
 elseif (mode == 2) % Curvelet transform
     x = reshape(x, nz, nx);
-    y = fdct_wrapping(x, is_real);
+    if ~isunix
+        y = fdct_wrapping(x, is_real, 2, nbscales, nbangles_coarse);
+    else
+        y = fdct_wrapping(x, is_real, nbscales, nbangles_coarse);
+    end
     y = curvelet2vec(y);
 else
     error('Wrong mode!');
