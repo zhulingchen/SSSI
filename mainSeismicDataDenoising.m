@@ -209,7 +209,7 @@ trainBlockSize = 16;                        % for each dimension
 trainBlockNum = 5000;                       % number of training blocks in the training set
 trainIter = 20;
 sigSpThres = sigma * trainBlockSize * gain; % pre-defined l2-norm error for BPDN
-atomSpThres = 500;                          % a self-determind value to control the sparsity of matrix A
+atomSpThres = 20;                          % a self-determind value to control the sparsity of matrix A
 
 
 %% Base dictionary setting
@@ -219,28 +219,28 @@ dfilter_wavelet_train = 'pkva' ;      % Directional filter
 
 is_real_train = 1;
 nbscales_train = 3;
-nbangles_coarse_train = 8;
+nbangles_coarse_train = 16;
 
 
 %% Dictionary learning using sparse K-SVD
 fprintf('------------------------------------------------------------\n');
 fprintf('Dictionary Learning\n');
 
-% % wavelets for base dictionary
-% [vecTrainBlockCoeff, str] = pdfb2vec(pdfbdec(zeros(trainBlockSize, trainBlockSize), pfilter_wavelet_train, dfilter_wavelet_train, nlevels_wavelet_train));
-% initDict = speye(length(vecTrainBlockCoeff), length(vecTrainBlockCoeff));
-% baseSynOp = @(x) pdfb(x, str, pfilter_wavelet_train, dfilter_wavelet_train, nlevels_wavelet_train, trainBlockSize, trainBlockSize, 1);
-% baseAnaOp = @(x) pdfb(x, str, pfilter_wavelet_train, dfilter_wavelet_train, nlevels_wavelet_train, trainBlockSize, trainBlockSize, 2);
+% wavelets for base dictionary
+[vecTrainBlockCoeff, str] = pdfb2vec(pdfbdec(zeros(trainBlockSize, trainBlockSize), pfilter_wavelet_train, dfilter_wavelet_train, nlevels_wavelet_train));
+initDict = speye(length(vecTrainBlockCoeff), length(vecTrainBlockCoeff));
+baseSynOp = @(x) pdfb(x, str, pfilter_wavelet_train, dfilter_wavelet_train, nlevels_wavelet_train, trainBlockSize, trainBlockSize, 1);
+baseAnaOp = @(x) pdfb(x, str, pfilter_wavelet_train, dfilter_wavelet_train, nlevels_wavelet_train, trainBlockSize, trainBlockSize, 2);
 
-% curvelets for base dictionary
-if ~isunix
-    [vecTrainBlockCoeff, str] = curvelet2vec(fdct_wrapping(zeros(trainBlockSize, trainBlockSize), is_real_train, 2, nbscales_train, nbangles_coarse_train));
-else
-    [vecTrainBlockCoeff, str] = curvelet2vec(fdct_wrapping(zeros(trainBlockSize, trainBlockSize), is_real_train, nbscales_train, nbangles_coarse_train));
-end
-initDict = eye(length(vecTrainBlockCoeff), length(vecTrainBlockCoeff));
-baseSynOp = @(x) fdct(x, str, is_real_train, nbscales_train, nbangles_coarse_train, trainBlockSize, trainBlockSize, 1);
-baseAnaOp = @(x) fdct(x, str, is_real_train, nbscales_train, nbangles_coarse_train, trainBlockSize, trainBlockSize, 2);
+% % curvelets for base dictionary
+% if ~isunix
+%     [vecTrainBlockCoeff, str] = curvelet2vec(fdct_wrapping(zeros(trainBlockSize, trainBlockSize), is_real_train, 2, nbscales_train, nbangles_coarse_train));
+% else
+%     [vecTrainBlockCoeff, str] = curvelet2vec(fdct_wrapping(zeros(trainBlockSize, trainBlockSize), is_real_train, nbscales_train, nbangles_coarse_train));
+% end
+% initDict = eye(length(vecTrainBlockCoeff), length(vecTrainBlockCoeff));
+% baseSynOp = @(x) fdct(x, str, is_real_train, nbscales_train, nbangles_coarse_train, trainBlockSize, trainBlockSize, 1);
+% baseAnaOp = @(x) fdct(x, str, is_real_train, nbscales_train, nbangles_coarse_train, trainBlockSize, trainBlockSize, 2);
 
 [learnedDict, Coeffs, errLasso, errBpdn] = sparseKsvd(trainData, baseSynOp, baseAnaOp, ...
     initDict, trainIter, trainBlockSize, trainBlockNum, atomSpThres, sigSpThres, struct('verbosity', 0, 'method', 'bpdn'));
