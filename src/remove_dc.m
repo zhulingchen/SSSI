@@ -22,7 +22,7 @@ if (columns)
     dc = mean(x);
     y = addtocols(x,-dc);
 else
-    if (ndims(x)==2)  % temporary, will remove in future
+    if (ismatrix(x))  % temporary, will remove in future
         warning('Treating 2D matrix X as a single signal and not each column individually');
     end
     dc = mean(x(:));

@@ -1,6 +1,7 @@
 /**************************************************************************
  *
- * File name: im2colstep.c
+ * File name: im2colstep_mex.c
+ *
  *
  * Ron Rubinstein
  * Computer Science Department
@@ -18,9 +19,9 @@
 
 /* Input Arguments */
 
-#define	X_IN	 prhs[0]
-#define SZ_IN  prhs[1]
-#define S_IN   prhs[2]
+#define	X_IN	prhs[0]
+#define SZ_IN	prhs[1]
+#define S_IN	prhs[2]
 
 
 /* Output Arguments */

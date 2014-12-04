@@ -7,7 +7,7 @@ function cnt = countcover(sz,blocksize,stepsize)
 %  COUNTCOVER returns a matrix the same size as the signal, containing in
 %  each entry the number of blocks covering that sample.
 %
-%  See also IM2COLSTEP, COL2IMSTEP, IM2COL.
+%  See also IM2COLSTEP, COL2IMSTEP
 
 
 %  Ron Rubinstein

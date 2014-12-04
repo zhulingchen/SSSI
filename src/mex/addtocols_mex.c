@@ -1,6 +1,7 @@
 /**************************************************************************
  *
- * File name: addtocols.c
+ * File name: addtocols_mex.c
+ *
  *
  * Ron Rubinstein
  * Computer Science Department
@@ -17,8 +18,8 @@
 
 /* Input Arguments */
 
-#define	X_IN	prhs[0]
-#define V_IN  prhs[1]
+#define	X_IN    prhs[0]
+#define V_IN    prhs[1]
 
 
 /* Output Arguments */
