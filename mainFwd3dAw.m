@@ -62,7 +62,7 @@ dt = 0.5*(min([dx, dy, dz])/vmax/sqrt(3));
 
 % determine time samples nt from wave travelime to depth and back to
 % surface
-nt = round((sqrt((dx*nx)^2 + (dy*ny)^2 + (dz*nz)^2)*2/vmin/dt + 1) / 4);
+nt = round(sqrt((dx*nx)^2 + (dy*ny)^2 + (dz*nz)^2)*2/vmin/dt + 1);
 t  = (0:nt-1).*dt;
 
 % add region around model for applying absorbing boundary conditions
