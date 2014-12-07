@@ -1,8 +1,8 @@
 /* ======================================================================
  *
- * diffOperator_mex.c
+ * finiteDifference.c
  *
- * Performs higher-order approximation of staggered-grid finite difference
+ * Collects all functions used for finite difference method
  *
  * This C source file is free for use in academic research.
  * All rights reserved.
@@ -15,49 +15,84 @@
  ====================================================================== */
 
 #include "mex.h"
+#include <string.h>
+#include <math.h>
 
-// input arguments
-#define DATA_IN     prhs[0]
-#define COEFF_IN    prhs[1]
-#define DIST_IN     prhs[2]
-#define DIM_IN      prhs[3]
 
-// output arguments
-#define DIFF_OUT    plhs[0]
-
-// the gateway routine
-void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
+/* ====================================================================== */
+mxArray* dCoef(int order, const char* type)
 {
-    double *pData, *pCoeff, dist, *pDiffData;
-    int dim, l, n1, n2, n3;
-    mwSize ndims, order;
-    const mwSize *pDims;
+    int i, j;
+    mxArray *A, *b;
+    double *pA, *pb;
+    mxArray *lhs_mldivide[1], *rhs_mldivide[2];
     
-    int iOrder, i, j, k, idx1, idx2;
+    A = mxCreateDoubleMatrix(order, order, mxREAL);
+    b = mxCreateDoubleMatrix(order, 1, mxREAL);
+    pA = mxGetPr(A);
+    pb = mxGetPr(b);
     
-    if (nrhs < 3)
+    if (!strcmp(type, "r"))
     {
-        mexErrMsgTxt("Input data, finite difference coefficients and distance per sample should be all provided!");
+        pb[0] = 1.0/2.0;
+        for (j = 0; j < order; j++)
+        {
+            for (i = 0; i < order; i++)
+            {
+                pA[j * order + i] = pow(j+1, 2*(i+1)-1);
+            }
+        }
     }
-    // ATTENTION: mxGetPr might just produce a 1D array that is linearized according to Matlab convention (column order)
-    pData = mxGetPr(DATA_IN);
-    pCoeff = mxGetPr(COEFF_IN);
-    dist = *mxGetPr(DIST_IN);
-    
-    if (nrhs < 4)
+    else if (!strcmp(type, "s"))
     {
-        dim = 1;
+        pb[0] = 1;
+        for (j = 0; j < order; j++)
+        {
+            for (i = 0; i < order; i++)
+            {
+                pA[j * order + i] = pow(2*(j+1)-1, 2*(i+1)-1);
+            }
+        }
     }
     else
     {
-        dim = *mxGetPr(DIM_IN);
+        mexErrMsgTxt("Type must be \'s\' or \'r\'!");
     }
     
-    ndims = mxGetNumberOfDimensions(DATA_IN);
-    order = mxGetNumberOfElements(COEFF_IN);
+    // c = A \ b;
+    rhs_mldivide[0] = A;
+    rhs_mldivide[1] = b;
+    mexCallMATLAB(1, lhs_mldivide, 2, rhs_mldivide, "mldivide");
+    // ATTENTION: Don't forget to free dynamic memory allocated by MXCREATE* functions (except for output arrays), otherwise memory leak will occur
+    mxDestroyArray(A);
+    mxDestroyArray(b);
+    
+    return lhs_mldivide[0];
+}
+
+
+/* ====================================================================== */
+mxArray* diffOperator(const mxArray *data, const mxArray *coeff, double dist, int dim)
+{
+    double *pData, *pCoeff, *pDiffData;
+    int l, n1, n2, n3;
+    mwSize ndims, order;
+    const mwSize *pDims;
+    int iOrder, i, j, k, idx1, idx2;
+    
+    pData = mxGetPr(data);
+    pCoeff = mxGetPr(coeff);
+    
+    mxArray* diffData;
+    
+    if (dim < 1)
+        dim = 1;
+    
+    ndims = mxGetNumberOfDimensions(data);
+    order = mxGetNumberOfElements(coeff);
     l = 2 * order - 1;
     
-    pDims = mxGetDimensions(DATA_IN);
+    pDims = mxGetDimensions(data);
     
     if (ndims <= 2)     // 2-D case
     {
@@ -65,8 +100,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         n2 = pDims[1];
         if (dim == 1)
         {
-            DIFF_OUT = mxCreateDoubleMatrix(n1-l, n2, mxREAL);
-            pDiffData = mxGetPr(DIFF_OUT);
+            diffData = mxCreateDoubleMatrix(n1-l, n2, mxREAL);
+            pDiffData = mxGetPr(diffData);
             for (iOrder = 0; iOrder < order; iOrder++)
             {
                 //idx1 = ((order+1):(n1-l+order)) + (ii-1);
@@ -88,8 +123,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         }
         else    // dim == 2
         {
-            DIFF_OUT = mxCreateDoubleMatrix(n1, n2-l, mxREAL);
-            pDiffData = mxGetPr(DIFF_OUT);
+            diffData = mxCreateDoubleMatrix(n1, n2-l, mxREAL);
+            pDiffData = mxGetPr(diffData);
             for (iOrder = 0; iOrder < order; iOrder++)
             {
                 //idx1 = ((order+1):(n2-l+order)) + (ii-1);
@@ -118,8 +153,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         if (dim == 1)
         {
             mwSize pDimsNew[3] = {n1-l, n2, n3};
-            DIFF_OUT = mxCreateNumericArray(ndims, pDimsNew, mxDOUBLE_CLASS, mxREAL);
-            pDiffData = mxGetPr(DIFF_OUT);
+            diffData = mxCreateNumericArray(ndims, pDimsNew, mxDOUBLE_CLASS, mxREAL);
+            pDiffData = mxGetPr(diffData);
             for (iOrder = 0; iOrder < order; iOrder++)
             {
                 //idx1 = ((order+1):(n1-l+order)) + (ii-1);
@@ -145,8 +180,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         else if (dim == 2)
         {
             mwSize pDimsNew[3] = {n1, n2-l, n3};
-            DIFF_OUT = mxCreateNumericArray(ndims, pDimsNew, mxDOUBLE_CLASS, mxREAL);
-            pDiffData = mxGetPr(DIFF_OUT);
+            diffData = mxCreateNumericArray(ndims, pDimsNew, mxDOUBLE_CLASS, mxREAL);
+            pDiffData = mxGetPr(diffData);
             for (iOrder = 0; iOrder < order; iOrder++)
             {
                 //idx1 = ((order+1):(n2-l+order)) + (ii-1);
@@ -172,8 +207,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         else    // dim == 3
         {
             mwSize pDimsNew[3] = {n1, n2, n3-l};
-            DIFF_OUT = mxCreateNumericArray(ndims, pDimsNew, mxDOUBLE_CLASS, mxREAL);
-            pDiffData = mxGetPr(DIFF_OUT);
+            diffData = mxCreateNumericArray(ndims, pDimsNew, mxDOUBLE_CLASS, mxREAL);
+            pDiffData = mxGetPr(diffData);
             for (iOrder = 0; iOrder < order; iOrder++)
             {
                 //idx1 = ((order+1):(n3-l+order)) + (ii-1);
@@ -197,4 +232,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
             }
         }
     }
+    
+    return diffData;
 }

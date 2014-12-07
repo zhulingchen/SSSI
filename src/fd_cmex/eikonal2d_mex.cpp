@@ -259,7 +259,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     
     // output
     plhs[0] = m_TNew;
-    return;
     
+    // ATTENTION: Don't forget to free dynamic memory allocated by MXCREATE* functions (except for output arrays), otherwise memory leak will occur
+    mxDestroyArray(m_Slow);
+    mxDestroyArray(m_TOld);
 }
 
