@@ -17,7 +17,15 @@ mxArray* dCoef(int order, const char* type);
  ====================================================================== */
 mxArray* diffOperator(const mxArray *data, const mxArray *coeff, double dist, int dim);
 
-
+/* ======================================================================
+ *
+ * diffOperator
+ * DAMPPML Generate the model for damping parameter
+ * u = x or z, representing the distance between current position (in PML)
+ * and PML inner boundary
+ *
+ ====================================================================== */
+mxArray* dampPml(const mxArray *u, const mxArray *v, double L);
 
 
 #endif

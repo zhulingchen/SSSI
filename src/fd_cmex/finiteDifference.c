@@ -15,6 +15,7 @@
  ====================================================================== */
 
 #include "mex.h"
+#include "matrix.h"
 #include <string.h>
 #include <math.h>
 
@@ -22,10 +23,13 @@
 /* ====================================================================== */
 mxArray* dCoef(int order, const char* type)
 {
+    // begin of declaration
     int i, j;
+    
     mxArray *A, *b;
     double *pA, *pb;
     mxArray *lhs_mldivide[1], *rhs_mldivide[2];
+    // end of declaration
     
     A = mxCreateDoubleMatrix(order, order, mxREAL);
     b = mxCreateDoubleMatrix(order, 1, mxREAL);
@@ -67,6 +71,7 @@ mxArray* dCoef(int order, const char* type)
     mxDestroyArray(A);
     mxDestroyArray(b);
     
+    
     return lhs_mldivide[0];
 }
 
@@ -74,16 +79,20 @@ mxArray* dCoef(int order, const char* type)
 /* ====================================================================== */
 mxArray* diffOperator(const mxArray *data, const mxArray *coeff, double dist, int dim)
 {
-    double *pData, *pCoeff, *pDiffData;
-    int l, n1, n2, n3;
+    // begin of declaration
+    double *pData, *pCoeff;
+    
+    mxArray *diffData;
+    double *pDiffData;
+    
+    int l, iOrder, i, j, k, idx1, idx2;
+    const mwSize *pDimsData;
     mwSize ndims, order;
-    const mwSize *pDims;
-    int iOrder, i, j, k, idx1, idx2;
+    mwSize n1, n2, n3;
+    // end of declaration
     
     pData = mxGetPr(data);
     pCoeff = mxGetPr(coeff);
-    
-    mxArray* diffData;
     
     if (dim < 1)
         dim = 1;
@@ -92,12 +101,12 @@ mxArray* diffOperator(const mxArray *data, const mxArray *coeff, double dist, in
     order = mxGetNumberOfElements(coeff);
     l = 2 * order - 1;
     
-    pDims = mxGetDimensions(data);
+    pDimsData = mxGetDimensions(data);
     
     if (ndims <= 2)     // 2-D case
     {
-        n1 = pDims[0];
-        n2 = pDims[1];
+        n1 = pDimsData[0];
+        n2 = pDimsData[1];
         if (dim == 1)
         {
             diffData = mxCreateDoubleMatrix(n1-l, n2, mxREAL);
@@ -147,13 +156,13 @@ mxArray* diffOperator(const mxArray *data, const mxArray *coeff, double dist, in
     }
     else                // 3-D case
     {
-        n1 = pDims[0];
-        n2 = pDims[1];
-        n3 = pDims[2];
+        n1 = pDimsData[0];
+        n2 = pDimsData[1];
+        n3 = pDimsData[2];
         if (dim == 1)
         {
-            mwSize pDimsNew[3] = {n1-l, n2, n3};
-            diffData = mxCreateNumericArray(ndims, pDimsNew, mxDOUBLE_CLASS, mxREAL);
+            mwSize pDimsDiffData[3] = {n1-l, n2, n3};
+            diffData = mxCreateNumericArray(ndims, pDimsDiffData, mxDOUBLE_CLASS, mxREAL);
             pDiffData = mxGetPr(diffData);
             for (iOrder = 0; iOrder < order; iOrder++)
             {
@@ -179,8 +188,8 @@ mxArray* diffOperator(const mxArray *data, const mxArray *coeff, double dist, in
         }
         else if (dim == 2)
         {
-            mwSize pDimsNew[3] = {n1, n2-l, n3};
-            diffData = mxCreateNumericArray(ndims, pDimsNew, mxDOUBLE_CLASS, mxREAL);
+            mwSize pDimsDiffData[3] = {n1, n2-l, n3};
+            diffData = mxCreateNumericArray(ndims, pDimsDiffData, mxDOUBLE_CLASS, mxREAL);
             pDiffData = mxGetPr(diffData);
             for (iOrder = 0; iOrder < order; iOrder++)
             {
@@ -206,8 +215,8 @@ mxArray* diffOperator(const mxArray *data, const mxArray *coeff, double dist, in
         }
         else    // dim == 3
         {
-            mwSize pDimsNew[3] = {n1, n2, n3-l};
-            diffData = mxCreateNumericArray(ndims, pDimsNew, mxDOUBLE_CLASS, mxREAL);
+            mwSize pDimsDiffData[3] = {n1, n2, n3-l};
+            diffData = mxCreateNumericArray(ndims, pDimsDiffData, mxDOUBLE_CLASS, mxREAL);
             pDiffData = mxGetPr(diffData);
             for (iOrder = 0; iOrder < order; iOrder++)
             {
@@ -234,4 +243,47 @@ mxArray* diffOperator(const mxArray *data, const mxArray *coeff, double dist, in
     }
     
     return diffData;
+}
+
+
+/* ====================================================================== */
+mxArray* dampPml(const mxArray *u, const mxArray *v, double L)
+{
+    // begin of declaration
+    double *pu, *pv;
+    
+    mxArray *d0, *d;
+    double *pd0, *pd;
+    
+    int i, j;
+    mwSize m, n;
+    // end of declaration
+    
+    const double R = 1e-6;
+    const double logR = log(R);
+    
+    pu = mxGetPr(u);
+    pv = mxGetPr(v);
+    m = mxGetM(u);
+    n = mxGetN(u);
+    mxAssert(m == mxGetM(v), "Rows of u and v should be the same!");
+    mxAssert(n == mxGetN(v), "Columns of u and v should be the same!");
+    
+    //d0 = -(3 * v)/(2 * L) * log(R);
+    d0 = mxCreateDoubleMatrix(m, n, mxREAL);
+    pd0 = mxGetPr(d0);
+    for (j = 0; j < n; j++)
+        for (i = 0; i < m; i++)
+            pd0[j * m + i] = -(3.0 * pv[j * m + i])/(2 * L) * logR;
+    
+    //d = d0 .* (u / L).^2;
+    d = mxCreateDoubleMatrix(m, n, mxREAL);
+    pd = mxGetPr(d);
+    for (j = 0; j < n; j++)
+        for (i = 0; i < m; i++)
+            pd[j * m + i] = pd0[j * m + i] * (pu[j * m + i] / L) * (pu[j * m + i] / L);
+    
+    mxDestroyArray(d0);
+    
+    return d;
 }
