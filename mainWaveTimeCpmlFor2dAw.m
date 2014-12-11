@@ -39,8 +39,8 @@ addpath(genpath('./src'));
 
 
 %% Read in velocity model data and plot it
-load('./modelData/velocityModel.mat'); % velocityModel
-% load('./modelData/marmousiModelData/velocityModelMarmousi.mat');
+% load('./modelData/velocityModel.mat'); % velocityModel
+load('./modelData/marmousiModelData/velocityModelMarmousi.mat');
 [nz, nx] = size(velocityModel);
 
 dx = 10;
@@ -136,10 +136,14 @@ if ~exist(filenameVideo, 'file')
 end
 
 % generate shot record
+profile -memory on;
+setpref('profiler', 'showJitLines', true);
 tic;
 [dataTrue, snapshotTrue] = fwdTimeCpmlFor2dAw(V, sourceTime, nDiffOrder, nBoundary, dz, dx, dt);
 dataTrue(setdiff(1:nx, xRecGrid)+nBoundary, :) = 0;
 timeForward = toc;
+profile off;
+profile viewer;
 fprintf('Generate Forward Timing Record. elapsed time = %fs\n', timeForward);
 
 filenameDataTrue = sprintf('./modelData/dataTrue.mat');
