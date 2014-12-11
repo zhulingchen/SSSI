@@ -40,6 +40,7 @@ addpath(genpath('./src'));
 
 %% Read in velocity model data and plot it
 load('./modelData/velocityModel.mat'); % velocityModel
+% load('./modelData/marmousiModelData/velocityModelMarmousi.mat');
 [nz, nx] = size(velocityModel);
 
 dx = 10;

@@ -300,6 +300,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
             for (i = 0; i < nz; i++)
                 pxP[j * nz + i] = pxA_diffOut[(j - l) * nz + i] + pxPsi[j * nz + i];
         
+        /* ======================================================================
+         * One-step finite difference calculation
+         * ====================================================================== */
         // fdm(izi, ixi, 3) = vdtSq .* (zP(izi, :) + xP(:, ixi) - source(:, :, it)) + 2 * fdm(izi, ixi, 2) - fdm(izi, ixi, 1);
         for (j = l; j < nx + l; j++)
             for (i = l; i < nz + l; i++)
@@ -331,7 +334,13 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
             for (i = 0; i < nz; i++)
                 pSnapshot[t * (nz * nx) + j * nz + i] = pCurFdm[(j + l) * (nz+2*l) + (i + l)];
         
-        
+        // ATTENTION: Don't forget to free dynamic memory allocated by MXCREATE* functions (except for output arrays), otherwise memory leak will occur
+        mxDestroyArray(curFdm_diffOut_zPhi);
+        mxDestroyArray(curFdm_diffOut_xPhi);
+        mxDestroyArray(curFdm_diffOut_zA);
+        mxDestroyArray(curFdm_diffOut_xA);
+        mxDestroyArray(zA_diffOut);
+        mxDestroyArray(xA_diffOut);
     }
     
     // test begin
@@ -366,15 +375,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     mxDestroyArray(zP);
     mxDestroyArray(xP);
     mxDestroyArray(curFdm_diffIn_zPhi);
-    mxDestroyArray(curFdm_diffOut_zPhi);
     mxDestroyArray(curFdm_diffIn_xPhi);
-    mxDestroyArray(curFdm_diffOut_xPhi);
     mxDestroyArray(curFdm_diffIn_zA);
-    mxDestroyArray(curFdm_diffOut_zA);
     mxDestroyArray(curFdm_diffIn_xA);
-    mxDestroyArray(curFdm_diffOut_xA);
     mxDestroyArray(zA_diffIn);
-    mxDestroyArray(zA_diffOut);
     mxDestroyArray(xA_diffIn);
-    mxDestroyArray(xA_diffOut);
 }
