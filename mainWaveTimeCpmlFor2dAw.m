@@ -85,7 +85,7 @@ V = extBoundary(velocityModel, nBoundary, 2);
 
 
 % number of approximation order for differentiator operator
-nDiffOrder = 2;
+nDiffOrder = 3;
 
 % Define frequency parameter for ricker wavelet
 f = 20;

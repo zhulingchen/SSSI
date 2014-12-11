@@ -12,6 +12,8 @@ function diffData = diffOperator(data, c, d, dim)
 % This matlab source file is free for use in academic research.
 % All rights reserved.
 %
+% It is a Matlab interface of its background C/Mex function to replace its
+% Matlab function.
 % Written by Lingchen Zhu (zhulingchen@gmail.com)
 % Center for Signal and Information Processing, Center for Energy & Geo Processing
 % Georgia Institute of Technology
