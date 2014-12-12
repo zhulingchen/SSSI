@@ -207,7 +207,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         for (i = 0; i < nz; i++)
             pVdtSq[j * nz + i] = (pVelocityModel[j * nz + i] * dt) * (pVelocityModel[j * nz + i] * dt);
     
-    //nt = 20; // test
     curFdm_diffIn_zPhi = mxCreateDoubleMatrix(nz+l, nx, mxREAL);
     pCurFdm_diffIn_zPhi = mxGetPr(curFdm_diffIn_zPhi);
     curFdm_diffIn_xPhi = mxCreateDoubleMatrix(nz, nx+l, mxREAL);
@@ -220,6 +219,11 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     pzA_diffIn = mxGetPr(zA_diffIn);
     xA_diffIn = mxCreateDoubleMatrix(nz, nx+l, mxREAL);
     pxA_diffIn = mxGetPr(xA_diffIn);
+    
+    // izi = l:(nz+l-1); // len: nz
+    // ixi = l:(nx+l-1); // len: nx
+    // izl = (diffOrder-1):(nz+2*l-diffOrder-1); // len: nz+l
+    // ixl = (diffOrder-1):(nx+2*l-diffOrder-1); // len: nx+l
     for (t = 0; t < nt; t++)
     {
         // zPhi(izi, :) = zb .* zPhi(izi, :) + (zb - 1) .* diffOperator(fdm(izl+1, ixi, 2), coeff, dz, 1);
@@ -317,16 +321,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         // fdm(:, :, 2) = fdm(:, :, 3);
         memcpy(pCurFdm, pNewFdm, sizeof(double) * (nz+2*l) * (nx+2*l));
         
-        // izi = l:(nz+l-1); // len: nz
-        // ixi = l:(nx+l-1); // len: nx
-        // izl = (diffOrder-1):(nz+2*l-diffOrder-1); // len: nz+l
-        // ixl = (diffOrder-1):(nx+2*l-diffOrder-1); // len: nx+l
-        
         // update data
         // data(:, it) = fdm(l, ixi, 2);
         for (i = 0; i < nx; i++)
             pData[t * nx + i] = pCurFdm[(i + l) * (nz+2*l) + l];
-        
         
         // update snapshot
         // snapshot(:, :, it) = fdm(izi, ixi, 2);
