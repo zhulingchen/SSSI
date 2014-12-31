@@ -33,8 +33,22 @@ if ( dim < 2 || dim > 3 )
 end
 
 atomLen = blkSize * blkSize;
-coefLen = length(baseAnaOp(zeros(atomLen, 1)));
-[PhiSyn, PhiAna] = operator2matrix(baseSynOp, baseAnaOp, atomLen); % transform base transform algorithm operator into dictionary (otherwise might be too slow)
+
+if (xor(isa(baseSynOp, 'function_handle'), isa(baseAnaOp, 'function_handle')))
+    error('Synthesis Operator and Analysis Operator must be both function handles or both not.');
+end
+
+if (isa(baseSynOp, 'function_handle') && isa(baseAnaOp, 'function_handle'))
+    coefLen = length(baseAnaOp(zeros(atomLen, 1)));
+    [PhiSyn, PhiAna] = operator2matrix(baseSynOp, baseAnaOp, atomLen); % transform base transform algorithm operator into dictionary (otherwise might be too slow)
+else
+    coefLen = length(baseAnaOp * zeros(atomLen, 1));
+    PhiSyn = baseSynOp;
+    PhiAna = baseAnaOp;
+    baseSynOp = @(x) (PhiSyn * x);
+    baseAnaOp = @(x) (PhiAna * x);
+end
+
 
 %% create block training data
 % size: blkSize * blkSize

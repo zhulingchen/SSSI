@@ -80,10 +80,10 @@ trainData = noisyData;
 
 
 %% Plot figures
-hFigDataTrue = figure; imshow(dataTrue);
+hFigDataTrue = figure; imagesc(dataTrue); colormap(gray); axis off; truesize;
 title('Original Seismic Data');
 
-hFigNoisyData = figure; imshow(noisyData);
+hFigNoisyData = figure; imagesc(noisyData); colormap(gray); axis off; truesize;
 psnrNoisyData = 20*log10(sqrt(numel(noisyData)) / norm(dataTrue(:) - noisyData(:), 2));
 title(sprintf('Noisy Seismic Data, PSNR = %.2fdB', psnrNoisyData));
 saveas(hFigNoisyData, fullfile(dataFileDir, [dataFileName, '_noisyData']), 'fig');
@@ -107,7 +107,7 @@ cleanData_wavelet = pdfbrec(vec2pdfb(vecWaveletCoeff, str), pfilter_wavelet, dfi
 save(fullfile(dataFileDir, [dataFileName, '_cleanData_wavelet.mat']), 'cleanData_wavelet', '-v7.3');
 
 % Plot figures and PSNR output
-hFigCleanedDataWavelet = figure; imshow(cleanData_wavelet);
+hFigCleanedDataWavelet = figure; imagesc(cleanData_wavelet); colormap(gray); axis off; truesize;
 psnrCleanData_wavelet = 20*log10(sqrt(numel(cleanData_wavelet)) / norm(dataTrue(:) - cleanData_wavelet(:), 2));
 title(sprintf('Denoised Seismic Data (Wavelet), PSNR = %.2fdB', psnrCleanData_wavelet));
 saveas(hFigCleanedDataWavelet, fullfile(dataFileDir, [dataFileName, '_cleanData_wavelet']), 'fig');
@@ -138,7 +138,7 @@ cleanData_contourlet = pdfbrec(vec2pdfb(vecContourletCoeff, str), pfilter_contou
 save(fullfile(dataFileDir, [dataFileName, '_cleanData_contourlet.mat']), 'cleanData_contourlet', '-v7.3');
 
 % Plot figures and PSNR output
-hFigCleanedDataContourlet = figure; imshow(cleanData_contourlet);
+hFigCleanedDataContourlet = figure; imagesc(cleanData_contourlet); colormap(gray); axis off; truesize;
 psnrCleanData_contourlet = 20*log10(sqrt(numel(cleanData_contourlet)) / norm(dataTrue(:) - cleanData_contourlet(:), 2));
 title(sprintf('Denoised Seismic Data (Contourlet), PSNR = %.2fdB', psnrCleanData_contourlet));
 saveas(hFigCleanedDataContourlet, fullfile(dataFileDir, [dataFileName, '_cleanData_contourlet']), 'fig');
@@ -195,7 +195,7 @@ end
 save(fullfile(dataFileDir, [dataFileName, '_cleanData_curvelet.mat']), 'cleanData_curvelet', '-v7.3');
 
 % Plot figures and PSNR output
-hFigCleanedDataCurvelet = figure; imshow(cleanData_curvelet);
+hFigCleanedDataCurvelet = figure; imagesc(cleanData_curvelet); colormap(gray); axis off; truesize;
 psnrCleanData_curvelet = 20*log10(sqrt(numel(cleanData_curvelet)) / norm(dataTrue(:) - cleanData_curvelet(:), 2));
 title(sprintf('Denoised Seismic Data (Curvelet), PSNR = %.2fdB', psnrCleanData_curvelet));
 saveas(hFigCleanedDataCurvelet, fullfile(dataFileDir, [dataFileName, '_cleanData_curvelet']), 'fig');
@@ -242,12 +242,21 @@ baseAnaOp = @(x) pdfb(x, str, pfilter_wavelet_train, dfilter_wavelet_train, nlev
 % baseSynOp = @(x) fdct(x, str, is_real_train, nbscales_train, nbangles_coarse_train, trainBlockSize, trainBlockSize, 1);
 % baseAnaOp = @(x) fdct(x, str, is_real_train, nbscales_train, nbangles_coarse_train, trainBlockSize, trainBlockSize, 2);
 
+% % wavelet transform of train data
+% dataTrue_coeff = pdfbdec(dataTrue, pfilter_wavelet_train, dfilter_wavelet_train, nlevels_wavelet_train);
+
+
 [learnedDict, Coeffs, errLasso, errBpdn] = sparseKsvd(trainData, baseSynOp, baseAnaOp, ...
     initDict, trainIter, trainBlockSize, trainBlockNum, atomSpThres, sigSpThres, struct('verbosity', 0, 'method', 'bpdn'));
 
 
 %% show trained dictionary
-[PhiSyn, PhiAna] = operator2matrix(baseSynOp, baseAnaOp, trainBlockSize * trainBlockSize);
+if (isa(baseSynOp, 'function_handle') && isa(baseAnaOp, 'function_handle'))
+    [PhiSyn, PhiAna] = operator2matrix(baseSynOp, baseAnaOp, trainBlockSize * trainBlockSize);
+else
+    PhiSyn = baseSynOp;
+    PhiAna = baseAnaOp;
+end
 dictImg = showdict(PhiSyn * learnedDict, [1 1]*sqrt(size(PhiSyn * learnedDict, 1)), round(sqrt(size(PhiSyn * learnedDict, 2))), round(sqrt(size(PhiSyn * learnedDict, 2))), 'whitelines', 'highcontrast');
 hFigLearnedDict = figure; imshow(imresize(dictImg, 2, 'nearest')); title(sprintf('Trained Dictionary (%d iterations)', trainIter));
 saveas(hFigLearnedDict, fullfile(dataFileDir, [dataFileName, '_learnedDict']), 'fig');
@@ -302,7 +311,7 @@ save(fullfile(dataFileDir, [dataFileName, '_cleanData_sparseKsvd.mat']), 'cleanD
 
 
 %% Plot figures and PSNR output
-hFigCleanedDataSparseKsvd = figure; imshow(cleanData_sparseKsvd);
+hFigCleanedDataSparseKsvd = figure; imagesc(cleanData_sparseKsvd); colormap(gray); axis off; truesize;
 psnrCleanData_sparseKsvd = 20*log10(sqrt(numel(cleanData_sparseKsvd)) / norm(dataTrue(:) - cleanData_sparseKsvd(:), 2));
 title(sprintf('Denoised Seismic Data, PSNR = %.2fdB', psnrCleanData_sparseKsvd));
 saveas(hFigCleanedDataSparseKsvd, fullfile(dataFileDir, [dataFileName, '_cleanData_sparseKsvd']), 'fig');
