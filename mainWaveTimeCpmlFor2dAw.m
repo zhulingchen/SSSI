@@ -39,8 +39,8 @@ addpath(genpath('./src'));
 
 
 %% Read in velocity model data and plot it
-% load('./modelData/velocityModel.mat'); % velocityModel
-load('./modelData/marmousiModelData/velocityModelMarmousi.mat');
+load('./modelData/velocityModel.mat'); % velocityModel
+% load('./modelData/marmousiModelData/velocityModelMarmousi.mat');
 [nz, nx] = size(velocityModel);
 
 dx = 10;
@@ -135,7 +135,7 @@ if ~exist(filenameVideo, 'file')
     open(objVideoModelShots);
 end
 
-% generate shot record
+% generate shot record -- forward propagation
 profile -memory on;
 setpref('profiler', 'showJitLines', true);
 tic;
@@ -222,9 +222,14 @@ for ixr = 1:nRecs
     noisyDataTrue(xRecGrid(ixr)+nBoundary,:) = awgn(dataTrue(xRecGrid(ixr)+nBoundary,:), 10, 'measured');
 end
 
+% reverse propagation
+profile -memory on;
+setpref('profiler', 'showJitLines', true);
 tic;
 [~, rtmsnapshot] = rvsTimeCpmlFor2dAw(V, noisyDataTrue, nDiffOrder, nBoundary, dz, dx, dt);
 timeRT = toc;
+profile off;
+profile viewer;
 fprintf('Generate Reverse Time Record, elapsed time = %fs\n', timeRT);
 
 filenameRTMSnapshot = sprintf('./modelData/rtmsnapshot.mat');
