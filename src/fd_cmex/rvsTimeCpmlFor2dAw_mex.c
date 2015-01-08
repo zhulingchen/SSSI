@@ -20,7 +20,7 @@
 #include <math.h>
 #include <string.h>
 
-// input arguments
+/* input arguments */
 #define VM_IN           prhs[0]
 #define DATA_IN         prhs[1]
 #define DIFFORDER_IN	prhs[2]
@@ -29,15 +29,15 @@
 #define DX_IN           prhs[5]
 #define DT_IN           prhs[6]
 
-// output arguments
+/* output arguments */
 #define MODEL_OUT        plhs[0]
 #define SNAPSHOT_OUT    plhs[1]
-//#define TEST_OUT        plhs[2] // out argument for test
+/*#define TEST_OUT        plhs[2]*/ /* out argument for test */
 
-// the gateway routine
+/* the gateway routine */
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
-    // begin of declaration
+    /* begin of declaration */
     double *pVelocityModel, *pDataIn, *pModelOut, *pSnapshot;
     double dz, dx, dt;
     int diffOrder, boundary;
@@ -73,12 +73,12 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     mxArray *zA_diffIn, *zA_diffOut, *xA_diffIn, *xA_diffOut;
     double *pzA_diffIn, *pzA_diffOut, *pxA_diffIn, *pxA_diffOut;
     
-    // end of declaration
+    /* end of declaration */
     
     if (nrhs < 7)
         mexErrMsgTxt("All 7 input arguments shall be provided!");
     
-    // ATTENTION: mxGetPr might just produce a 1D array that is linearized according to Matlab convention (column order)
+    /* ATTENTION: mxGetPr might just produce a 1D array that is linearized according to Matlab convention (column order) */
     pVelocityModel = mxGetPr(VM_IN);
     pDataIn = mxGetPr(DATA_IN);
     diffOrder = *mxGetPr(DIFFORDER_IN);
@@ -95,7 +95,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     /*mexPrintf("pVelocityModel[1] = %f, pDataIn[1] = %f, diffOrder = %d, boundary = %d, dz = %f, dx = %f, dt = %f\nnz = %d, nx = %d, nt = %d\n",
             pVelocityModel[1], pDataIn[1], diffOrder, boundary, dz, dx, dt, nz, nx, nt);*/
     
-    // initialize storage    
+    /* initialize storage */
     pDimsSnapshot[0] = nz;
     pDimsSnapshot[1] = nx;
     pDimsSnapshot[2] = nt;
@@ -106,7 +106,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     pCoeff = mxGetPr(coeff);
     l = 2 * diffOrder - 1;
     
-    // damp profile of x-axis
+    /* damp profile of x-axis */
     uDampLeft = mxCreateDoubleMatrix(nz, boundary, mxREAL);
     puDampLeft = mxGetPr(uDampLeft);
     for (j = 0; j < boundary; j++)
@@ -140,7 +140,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         for (i = 0; i < nz; i++)
             pxb[j * nz + i] = exp(-pxDamp[j * nz + i] * dt);
     
-    // damp profile of z-axis
+    /* damp profile of z-axis */
     uDampDown = mxCreateDoubleMatrix(boundary, nx, mxREAL);
     puDampDown = mxGetPr(uDampDown);
     for (j = 0; j < nx; j++)
@@ -169,8 +169,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     /* ======================================================================
      * 2-D Acoustic Wave Forward-Time Modeling
      * ====================================================================== */
-    // additional arrays for storage intermediate results
-    // rtm(:, :, 1) - oldRtm; rtm(:, :, 2) - curRtm; rtm(:, :, 3) - newRtm
+    /* additional arrays for storage intermediate results */
+    /* rtm(:, :, 1) - oldRtm; rtm(:, :, 2) - curRtm; rtm(:, :, 3) - newRtm */
     oldRtm = mxCreateDoubleMatrix(nz+2*l, nx+2*l, mxREAL);
     pOldRtm = mxGetPr(oldRtm);
     curRtm = mxCreateDoubleMatrix(nz+2*l, nx+2*l, mxREAL);
@@ -214,20 +214,22 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     xA_diffIn = mxCreateDoubleMatrix(nz, nx+l, mxREAL);
     pxA_diffIn = mxGetPr(xA_diffIn);
     
-    // izi = l:(nz+l-1); // len: nz
-    // ixi = l:(nx+l-1); // len: nx
-    // izl = (diffOrder-1):(nz+2*l-diffOrder-1); // len: nz+l
-    // ixl = (diffOrder-1):(nx+2*l-diffOrder-1); // len: nx+l
-    for (t = nt-1; t >= 0; t--)     // reverse propagation
+    /*
+     * izi = l:(nz+l-1); len: nz
+     * ixi = l:(nx+l-1); len: nx
+     * izl = (diffOrder-1):(nz+2*l-diffOrder-1); len: nz+l
+     * ixl = (diffOrder-1):(nx+2*l-diffOrder-1); len: nx+l
+     */
+    for (t = nt-1; t >= 0; t--)     /* reverse propagation */
     {
-        //source = zeros(nz, nx);
-        //source(1, :) = data(:, it).';
+        /*source = zeros(nz, nx);*/
+        /*source(1, :) = data(:, it).';*/
         source = mxCreateDoubleMatrix(nz, nx, mxREAL);
         pSource = mxGetPr(source);
         for (j = 0; j < nx; j++)
             pSource[j * nz] = pDataIn[t * nx + j];
         
-        // zPhi(izi, :) = zb .* zPhi(izi, :) + (zb - 1) .* diffOperator(rtm(izl+1, ixi, 2), coeff, dz, 1);
+        /* zPhi(izi, :) = zb .* zPhi(izi, :) + (zb - 1) .* diffOperator(rtm(izl+1, ixi, 2), coeff, dz, 1); */
         for (j = l; j < nx+l; j++)
             for (i = diffOrder; i < nz+2*l-diffOrder+1; i++)
                 pCurRtm_diffIn_zPhi[(j - l) * (nz+l) + (i-diffOrder)] = pCurRtm[j * (nz+2*l) + i];
@@ -239,7 +241,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                 pzPhi[j * (nz+2*l) + i] = pzb[j * nz + (i - l)] * pzPhi[j * (nz+2*l) + i] +
                         (pzb[j * nz + (i - l)] - 1) * pCurRtm_diffOut_zPhi[j * nz + (i - l)];
         
-        // xPhi(:, ixi) = xb .* xPhi(:, ixi) + (xb - 1) .* diffOperator(rtm(izi, ixl+1, 2), coeff, dx, 2);
+        /* xPhi(:, ixi) = xb .* xPhi(:, ixi) + (xb - 1) .* diffOperator(rtm(izi, ixl+1, 2), coeff, dx, 2); */
         for (j = diffOrder; j < nx+2*l-diffOrder+1; j++)
             for (i = l; i < nz+l; i++)
                 pCurRtm_diffIn_xPhi[(j-diffOrder) * nz + (i - l)] = pCurRtm[j * (nz+2*l) + i];
@@ -251,7 +253,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                 pxPhi[j * nz + i] = pxb[(j - l) * nz + i] * pxPhi[j * nz + i] +
                         (pxb[(j - l) * nz + i] - 1) * pCurRtm_diffOut_xPhi[(j - l) * nz + i];
         
-        // zA(izl, :) = diffOperator(rtm(:, ixi, 2), coeff, dz, 1) + zPhi(izl, :);
+        /* zA(izl, :) = diffOperator(rtm(:, ixi, 2), coeff, dz, 1) + zPhi(izl, :); */
         memcpy(pCurRtm_diffIn_zA, pCurRtm + l * (nz+2*l), sizeof(double) * nx * (nz+2*l));
         curRtm_diffOut_zA = diffOperator(curRtm_diffIn_zA, coeff, dz, 1);
         pCurRtm_diffOut_zA = mxGetPr(curRtm_diffOut_zA);
@@ -260,7 +262,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
             for (i = diffOrder - 1; i < nz+2*l-diffOrder; i++)
                 pzA[j * (nz+2*l) + i] = pCurRtm_diffOut_zA[j * (nz+l) + (i - (diffOrder - 1))] + pzPhi[j * (nz+2*l) + i];
         
-        // xA(:, ixl) = diffOperator(rtm(izi, :, 2), coeff, dx, 2) + xPhi(:, ixl);
+        /* xA(:, ixl) = diffOperator(rtm(izi, :, 2), coeff, dx, 2) + xPhi(:, ixl); */
         for (j = 0; j < nx+2*l; j++)
             for (i = l; i < nz+l; i++)
                 pCurRtm_diffIn_xA[j * nz + (i - l)] = pCurRtm[j * (nz+2*l) + i];
@@ -271,7 +273,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
             for (i = 0; i < nz; i++)
                 pxA[j * nz + i] = pCurRtm_diffOut_xA[(j - (diffOrder - 1)) * nz + i] + pxPhi[j * nz + i];
         
-        // zPsi(izi, :) = zb .* zPsi(izi, :) + (zb - 1) .* diffOperator(zA(izl, :), coeff, dz, 1);
+        /* zPsi(izi, :) = zb .* zPsi(izi, :) + (zb - 1) .* diffOperator(zA(izl, :), coeff, dz, 1); */
         for (j = 0; j < nx; j++)
             for (i = diffOrder - 1; i < nz+2*l-diffOrder; i++)
                 pzA_diffIn[j * (nz+l) + (i - (diffOrder - 1))] = pzA[j * (nz+2*l) + i];
@@ -283,7 +285,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                 pzPsi[j * (nz+l) + i] = pzb[j * nz + (i - l)] * pzPsi[j * (nz+l) + i] +
                         (pzb[j * nz + (i - l)] - 1) * pzA_diffOut[j * nz + (i - l)];
         
-        // xPsi(:, ixi) = xb .* xPsi(:, ixi) + (xb - 1) .* diffOperator(xA(:, ixl), coeff, dx, 2);
+        /* xPsi(:, ixi) = xb .* xPsi(:, ixi) + (xb - 1) .* diffOperator(xA(:, ixl), coeff, dx, 2); */
         for (j = diffOrder - 1; j < nx+2*l-diffOrder; j++)
             for (i = 0; i < nz; i++)
                 pxA_diffIn[(j - (diffOrder - 1)) * nz + i] = pxA[j * nz + i];
@@ -295,12 +297,12 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                 pxPsi[j * nz + i] = pxb[(j - l) * nz + i] * pxPsi[j * nz + i] +
                         (pxb[(j - l) * nz + i] - 1) * pxA_diffOut[(j - l) * nz + i];
         
-        // zP(izi, :) = diffOperator(zA(izl, :), coeff, dz, 1) + zPsi(izi, :);
+        /* zP(izi, :) = diffOperator(zA(izl, :), coeff, dz, 1) + zPsi(izi, :); */
         for (j = 0; j < nx; j++)
             for (i = l; i < nz + l; i++)
                 pzP[j * (nz+l) + i] = pzA_diffOut[j * nz + (i - l)] + pzPsi[j * (nz+l) + i];
         
-        // xP(:, ixi) = diffOperator(xA(:, ixl), coeff, dx, 2) + xPsi(:, ixi);
+        /* xP(:, ixi) = diffOperator(xA(:, ixl), coeff, dx, 2) + xPsi(:, ixi); */
         for (j = l; j < nx + l; j++)
             for (i = 0; i < nz; i++)
                 pxP[j * nz + i] = pxA_diffOut[(j - l) * nz + i] + pxPsi[j * nz + i];
@@ -308,27 +310,27 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         /* ======================================================================
          * One-step finite difference calculation
          * ====================================================================== */
-        // rtm(izi, ixi, 3) = vdtSq .* (zP(izi, :) + xP(:, ixi) - source) + 2 * rtm(izi, ixi, 2) - rtm(izi, ixi, 1);
+        /* rtm(izi, ixi, 3) = vdtSq .* (zP(izi, :) + xP(:, ixi) - source) + 2 * rtm(izi, ixi, 2) - rtm(izi, ixi, 1); */
         for (j = l; j < nx + l; j++)
             for (i = l; i < nz + l; i++)
                 pNewRtm[j * (nz+2*l) + i] = pVdtSq[(j - l) * nz + (i - l)] *
                         ( pzP[(j - l) * (nz+l) + i] + pxP[j * nz + (i - l)] - pSource[(j - l) * nz + (i - l)] ) +
                         2 * pCurRtm[j * (nz+2*l) + i] - pOldRtm[j * (nz+2*l) + i];
         
-        // update finite difference matrices
-        // rtm(:, :, 1) = rtm(:, :, 2);
+        /* update finite difference matrices */
+        /* rtm(:, :, 1) = rtm(:, :, 2); */
         memcpy(pOldRtm, pCurRtm, sizeof(double) * (nz+2*l) * (nx+2*l));
         
-        // rtm(:, :, 2) = rtm(:, :, 3);
+        /* rtm(:, :, 2) = rtm(:, :, 3); */
         memcpy(pCurRtm, pNewRtm, sizeof(double) * (nz+2*l) * (nx+2*l));
         
-        // update snapshot
-        // snapshot(:, :, it) = rtm(izi, ixi, 2);
+        /* update snapshot */
+        /* snapshot(:, :, it) = rtm(izi, ixi, 2); */
         for (j = 0; j < nx; j++)
             for (i = 0; i < nz; i++)
                 pSnapshot[t * (nz * nx) + j * nz + i] = pCurRtm[(j + l) * (nz+2*l) + (i + l)];
         
-        // ATTENTION: Don't forget to free dynamic memory allocated by MXCREATE* functions (except for output arrays), otherwise memory leak will occur
+        /* ATTENTION: Don't forget to free dynamic memory allocated by MXCREATE* functions (except for output arrays), otherwise memory leak will occur */
         mxDestroyArray(source);
         mxDestroyArray(curRtm_diffOut_zPhi);
         mxDestroyArray(curRtm_diffOut_xPhi);
@@ -338,17 +340,17 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         mxDestroyArray(xA_diffOut);
     }
     
-    // write out final wavefield
-    // model = rtm(:, :, 1);
+    /* write out final wavefield */
+    /* model = rtm(:, :, 1); */
     MODEL_OUT = mxCreateDoubleMatrix(nz+2*l, nx+2*l, mxREAL);
     pModelOut = mxGetPr(MODEL_OUT);
     memcpy(pModelOut, pOldRtm, sizeof(double) * (nz+2*l) * (nx+2*l));
     
-    // test begin
-    // TEST_OUT = source;
-    // test end
+    /* test begin */
+    /* TEST_OUT = source; */
+    /* test end */
     
-    // ATTENTION: Don't forget to free dynamic memory allocated by MXCREATE* functions (except for output arrays), otherwise memory leak will occur
+    /* ATTENTION: Don't forget to free dynamic memory allocated by MXCREATE* functions (except for output arrays), otherwise memory leak will occur */
     mxDestroyArray(coeff);
     mxDestroyArray(oldRtm);
     mxDestroyArray(curRtm);

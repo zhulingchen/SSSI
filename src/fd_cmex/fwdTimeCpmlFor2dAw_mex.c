@@ -20,7 +20,7 @@
 #include <math.h>
 #include <string.h>
 
-// input arguments
+/* input arguments */
 #define VM_IN           prhs[0]
 #define SOURCE_IN       prhs[1]
 #define DIFFORDER_IN	prhs[2]
@@ -28,23 +28,23 @@
 #define DZ_IN           prhs[4]
 #define DX_IN           prhs[5]
 #define DT_IN           prhs[6]
-//#define TEST_IN         prhs[7] // in argument for test
+/*#define TEST_IN         prhs[7]*/ /* in argument for test */
 
-// output arguments
+/* output arguments */
 #define DATA_OUT        plhs[0]
 #define SNAPSHOT_OUT    plhs[1]
-//#define TEST_OUT        plhs[2] // out argument for test
+/*#define TEST_OUT        plhs[2]*/ /* out argument for test */
 
-// the gateway routine
+/* the gateway routine */
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
-    // begin of declaration
+    /* begin of declaration */
     double *pVelocityModel, *pSource, *pData, *pSnapshot;
     double dz, dx, dt;
     int diffOrder, boundary;
     
-    // test
-    //double *pTestIn;
+    /* test */
+    /*double *pTestIn;*/
     
     int l, i, j, t;
     mwSize nz, nx, nt;
@@ -74,15 +74,15 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     
     mxArray *zA_diffIn, *zA_diffOut, *xA_diffIn, *xA_diffOut;
     double *pzA_diffIn, *pzA_diffOut, *pxA_diffIn, *pxA_diffOut;
-    // end of declaration
+    /* end of declaration */
     
-    // test
-    //pTestIn = mxGetPr(TEST_IN);
+    /* test */
+    /*pTestIn = mxGetPr(TEST_IN);*/
     
     if (nrhs < 7)
         mexErrMsgTxt("All 7 input arguments shall be provided!");
     
-    // ATTENTION: mxGetPr might just produce a 1D array that is linearized according to Matlab convention (column order)
+    /* ATTENTION: mxGetPr might just produce a 1D array that is linearized according to Matlab convention (column order) */
     pVelocityModel = mxGetPr(VM_IN);
     pSource = mxGetPr(SOURCE_IN);
     diffOrder = *mxGetPr(DIFFORDER_IN);
@@ -98,7 +98,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     mxAssert(nz == mxGetM(VM_IN), "Velocity model and source grids should have the same z-axis grids!");
     mxAssert(nx == mxGetN(VM_IN), "Velocity model and source grids should have the same x-axis grids!");
     
-    // initialize storage
+    /* initialize storage */
     DATA_OUT = mxCreateDoubleMatrix(nx, nt, mxREAL);
     pData = mxGetPr(DATA_OUT);
     
@@ -112,7 +112,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     pCoeff = mxGetPr(coeff);
     l = 2 * diffOrder - 1;
     
-    // damp profile of x-axis
+    /* damp profile of x-axis */
     uDampLeft = mxCreateDoubleMatrix(nz, boundary, mxREAL);
     puDampLeft = mxGetPr(uDampLeft);
     for (j = 0; j < boundary; j++)
@@ -146,7 +146,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         for (i = 0; i < nz; i++)
             pxb[j * nz + i] = exp(-pxDamp[j * nz + i] * dt);
     
-    // damp profile of z-axis
+    /* damp profile of z-axis */
     uDampDown = mxCreateDoubleMatrix(boundary, nx, mxREAL);
     puDampDown = mxGetPr(uDampDown);
     for (j = 0; j < nx; j++)
@@ -175,8 +175,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     /* ======================================================================
      * 2-D Acoustic Wave Forward-Time Modeling
      * ====================================================================== */
-    // additional arrays for storage intermediate results
-    // fdm(:, :, 1) - oldFdm; fdm(:, :, 2) - curFdm; fdm(:, :, 3) - newFdm
+    /* additional arrays for storage intermediate results */
+    /* fdm(:, :, 1) - oldFdm; fdm(:, :, 2) - curFdm; fdm(:, :, 3) - newFdm */
     oldFdm = mxCreateDoubleMatrix(nz+2*l, nx+2*l, mxREAL);
     pOldFdm = mxGetPr(oldFdm);
     curFdm = mxCreateDoubleMatrix(nz+2*l, nx+2*l, mxREAL);
@@ -220,13 +220,15 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     xA_diffIn = mxCreateDoubleMatrix(nz, nx+l, mxREAL);
     pxA_diffIn = mxGetPr(xA_diffIn);
     
-    // izi = l:(nz+l-1); // len: nz
-    // ixi = l:(nx+l-1); // len: nx
-    // izl = (diffOrder-1):(nz+2*l-diffOrder-1); // len: nz+l
-    // ixl = (diffOrder-1):(nx+2*l-diffOrder-1); // len: nx+l
+    /*
+     * izi = l:(nz+l-1); len: nz
+     * ixi = l:(nx+l-1); len: nx
+     * izl = (diffOrder-1):(nz+2*l-diffOrder-1); len: nz+l
+     * ixl = (diffOrder-1):(nx+2*l-diffOrder-1); len: nx+l
+     */
     for (t = 0; t < nt; t++)
     {
-        // zPhi(izi, :) = zb .* zPhi(izi, :) + (zb - 1) .* diffOperator(fdm(izl+1, ixi, 2), coeff, dz, 1);
+        /* zPhi(izi, :) = zb .* zPhi(izi, :) + (zb - 1) .* diffOperator(fdm(izl+1, ixi, 2), coeff, dz, 1); */
         for (j = l; j < nx+l; j++)
             for (i = diffOrder; i < nz+2*l-diffOrder+1; i++)
                 pCurFdm_diffIn_zPhi[(j - l) * (nz+l) + (i-diffOrder)] = pCurFdm[j * (nz+2*l) + i];
@@ -238,7 +240,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                 pzPhi[j * (nz+2*l) + i] = pzb[j * nz + (i - l)] * pzPhi[j * (nz+2*l) + i] +
                         (pzb[j * nz + (i - l)] - 1) * pCurFdm_diffOut_zPhi[j * nz + (i - l)];
         
-        // xPhi(:, ixi) = xb .* xPhi(:, ixi) + (xb - 1) .* diffOperator(fdm(izi, ixl+1, 2), coeff, dx, 2);
+        /* xPhi(:, ixi) = xb .* xPhi(:, ixi) + (xb - 1) .* diffOperator(fdm(izi, ixl+1, 2), coeff, dx, 2); */
         for (j = diffOrder; j < nx+2*l-diffOrder+1; j++)
             for (i = l; i < nz+l; i++)
                 pCurFdm_diffIn_xPhi[(j-diffOrder) * nz + (i - l)] = pCurFdm[j * (nz+2*l) + i];
@@ -250,7 +252,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                 pxPhi[j * nz + i] = pxb[(j - l) * nz + i] * pxPhi[j * nz + i] +
                         (pxb[(j - l) * nz + i] - 1) * pCurFdm_diffOut_xPhi[(j - l) * nz + i];
         
-        // zA(izl, :) = diffOperator(fdm(:, ixi, 2), coeff, dz, 1) + zPhi(izl, :);
+        /* zA(izl, :) = diffOperator(fdm(:, ixi, 2), coeff, dz, 1) + zPhi(izl, :); */
         memcpy(pCurFdm_diffIn_zA, pCurFdm + l * (nz+2*l), sizeof(double) * nx * (nz+2*l));
         curFdm_diffOut_zA = diffOperator(curFdm_diffIn_zA, coeff, dz, 1);
         pCurFdm_diffOut_zA = mxGetPr(curFdm_diffOut_zA);
@@ -259,7 +261,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
             for (i = diffOrder - 1; i < nz+2*l-diffOrder; i++)
                 pzA[j * (nz+2*l) + i] = pCurFdm_diffOut_zA[j * (nz+l) + (i - (diffOrder - 1))] + pzPhi[j * (nz+2*l) + i];
         
-        // xA(:, ixl) = diffOperator(fdm(izi, :, 2), coeff, dx, 2) + xPhi(:, ixl);
+        /* xA(:, ixl) = diffOperator(fdm(izi, :, 2), coeff, dx, 2) + xPhi(:, ixl); */
         for (j = 0; j < nx+2*l; j++)
             for (i = l; i < nz+l; i++)
                 pCurFdm_diffIn_xA[j * nz + (i - l)] = pCurFdm[j * (nz+2*l) + i];
@@ -270,7 +272,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
             for (i = 0; i < nz; i++)
                 pxA[j * nz + i] = pCurFdm_diffOut_xA[(j - (diffOrder - 1)) * nz + i] + pxPhi[j * nz + i];
         
-        // zPsi(izi, :) = zb .* zPsi(izi, :) + (zb - 1) .* diffOperator(zA(izl, :), coeff, dz, 1);
+        /* zPsi(izi, :) = zb .* zPsi(izi, :) + (zb - 1) .* diffOperator(zA(izl, :), coeff, dz, 1); */
         for (j = 0; j < nx; j++)
             for (i = diffOrder - 1; i < nz+2*l-diffOrder; i++)
                 pzA_diffIn[j * (nz+l) + (i - (diffOrder - 1))] = pzA[j * (nz+2*l) + i];
@@ -282,7 +284,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                 pzPsi[j * (nz+l) + i] = pzb[j * nz + (i - l)] * pzPsi[j * (nz+l) + i] +
                         (pzb[j * nz + (i - l)] - 1) * pzA_diffOut[j * nz + (i - l)];
         
-        // xPsi(:, ixi) = xb .* xPsi(:, ixi) + (xb - 1) .* diffOperator(xA(:, ixl), coeff, dx, 2);
+        /* xPsi(:, ixi) = xb .* xPsi(:, ixi) + (xb - 1) .* diffOperator(xA(:, ixl), coeff, dx, 2); */
         for (j = diffOrder - 1; j < nx+2*l-diffOrder; j++)
             for (i = 0; i < nz; i++)
                 pxA_diffIn[(j - (diffOrder - 1)) * nz + i] = pxA[j * nz + i];
@@ -294,12 +296,12 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                 pxPsi[j * nz + i] = pxb[(j - l) * nz + i] * pxPsi[j * nz + i] +
                         (pxb[(j - l) * nz + i] - 1) * pxA_diffOut[(j - l) * nz + i];
         
-        // zP(izi, :) = diffOperator(zA(izl, :), coeff, dz, 1) + zPsi(izi, :);
+        /* zP(izi, :) = diffOperator(zA(izl, :), coeff, dz, 1) + zPsi(izi, :); */
         for (j = 0; j < nx; j++)
             for (i = l; i < nz + l; i++)
                 pzP[j * (nz+l) + i] = pzA_diffOut[j * nz + (i - l)] + pzPsi[j * (nz+l) + i];
         
-        // xP(:, ixi) = diffOperator(xA(:, ixl), coeff, dx, 2) + xPsi(:, ixi);
+        /* xP(:, ixi) = diffOperator(xA(:, ixl), coeff, dx, 2) + xPsi(:, ixi); */
         for (j = l; j < nx + l; j++)
             for (i = 0; i < nz; i++)
                 pxP[j * nz + i] = pxA_diffOut[(j - l) * nz + i] + pxPsi[j * nz + i];
@@ -307,32 +309,32 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         /* ======================================================================
          * One-step finite difference calculation
          * ====================================================================== */
-        // fdm(izi, ixi, 3) = vdtSq .* (zP(izi, :) + xP(:, ixi) - source(:, :, it)) + 2 * fdm(izi, ixi, 2) - fdm(izi, ixi, 1);
+        /* fdm(izi, ixi, 3) = vdtSq .* (zP(izi, :) + xP(:, ixi) - source(:, :, it)) + 2 * fdm(izi, ixi, 2) - fdm(izi, ixi, 1); */
         for (j = l; j < nx + l; j++)
             for (i = l; i < nz + l; i++)
                 pNewFdm[j * (nz+2*l) + i] = pVdtSq[(j - l) * nz + (i - l)] *
                         ( pzP[(j - l) * (nz+l) + i] + pxP[j * nz + (i - l)] - pSource[t * (nz * nx) + (j - l) * nz + (i - l)] ) +
                         2 * pCurFdm[j * (nz+2*l) + i] - pOldFdm[j * (nz+2*l) + i];
         
-        // update finite difference matrices
-        // fdm(:, :, 1) = fdm(:, :, 2);
+        /* update finite difference matrices */
+        /* fdm(:, :, 1) = fdm(:, :, 2); */
         memcpy(pOldFdm, pCurFdm, sizeof(double) * (nz+2*l) * (nx+2*l));
         
-        // fdm(:, :, 2) = fdm(:, :, 3);
+        /* fdm(:, :, 2) = fdm(:, :, 3); */
         memcpy(pCurFdm, pNewFdm, sizeof(double) * (nz+2*l) * (nx+2*l));
         
-        // update data
-        // data(:, it) = fdm(l, ixi, 2);
+        /* update data */
+        /* data(:, it) = fdm(l, ixi, 2); */
         for (i = 0; i < nx; i++)
             pData[t * nx + i] = pCurFdm[(i + l) * (nz+2*l) + l];
         
-        // update snapshot
-        // snapshot(:, :, it) = fdm(izi, ixi, 2);
+        /* update snapshot */
+        /* snapshot(:, :, it) = fdm(izi, ixi, 2); */
         for (j = 0; j < nx; j++)
             for (i = 0; i < nz; i++)
                 pSnapshot[t * (nz * nx) + j * nz + i] = pCurFdm[(j + l) * (nz+2*l) + (i + l)];
         
-        // ATTENTION: Don't forget to free dynamic memory allocated by MXCREATE* functions (except for output arrays), otherwise memory leak will occur
+        /* ATTENTION: Don't forget to free dynamic memory allocated by MXCREATE* functions (except for output arrays), otherwise memory leak will occur */
         mxDestroyArray(curFdm_diffOut_zPhi);
         mxDestroyArray(curFdm_diffOut_xPhi);
         mxDestroyArray(curFdm_diffOut_zA);
@@ -341,11 +343,11 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         mxDestroyArray(xA_diffOut);
     }
     
-    // test begin
-    //TEST_OUT = curFdm;
-    // test end
+    /* test begin */
+    /*TEST_OUT = curFdm;*/
+    /* test end */
     
-    // ATTENTION: Don't forget to free dynamic memory allocated by MXCREATE* functions (except for output arrays), otherwise memory leak will occur
+    /* ATTENTION: Don't forget to free dynamic memory allocated by MXCREATE* functions (except for output arrays), otherwise memory leak will occur */
     mxDestroyArray(coeff);
     mxDestroyArray(oldFdm);
     mxDestroyArray(curFdm);
