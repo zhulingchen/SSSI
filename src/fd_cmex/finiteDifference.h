@@ -7,7 +7,7 @@
  * Calculates the coefficients used for finite difference method
  *
  ====================================================================== */
-mxArray* dCoef(int order, const char* type);
+double* dCoef(int order, const char* type);
 
 /* ======================================================================
  *
@@ -15,7 +15,7 @@ mxArray* dCoef(int order, const char* type);
  * Performs higher-order approximation of staggered-grid finite difference
  *
  ====================================================================== */
-mxArray* diffOperator(const mxArray *data, const mxArray *coeff, double dist, int dim);
+double* diffOperator(const double *pData, int ndims, const mwSize *pDimsData, const double *pCoeff, int order, double dist, int dim);
 
 /* ======================================================================
  *
@@ -25,7 +25,7 @@ mxArray* diffOperator(const mxArray *data, const mxArray *coeff, double dist, in
  * and PML inner boundary
  *
  ====================================================================== */
-mxArray* dampPml(const mxArray *u, const mxArray *v, double L);
+double* dampPml(const double *pu, const double *pv, int m, int n, double L);
 
 
 #endif

@@ -21,20 +21,17 @@
 
 
 /* ====================================================================== */
-mxArray* dCoef(int order, const char* type)
+double* dCoef(int order, const char* type)
 {
-    /* begin of declaration */
-    int i, j;
-    
-    mxArray *A, *b;
-    double *pA, *pb;
+    /* begin of declaration */    
+    double *pA, *pb, *pCoeff;
     mxArray *lhs_mldivide[1], *rhs_mldivide[2];
+    
+    int i, j;
     /* end of declaration */
     
-    A = mxCreateDoubleMatrix(order, order, mxREAL);
-    b = mxCreateDoubleMatrix(order, 1, mxREAL);
-    pA = mxGetPr(A);
-    pb = mxGetPr(b);
+    pA = (double*)mxCalloc(order * order, sizeof(double));
+    pb = (double*)mxCalloc(order, sizeof(double));
     
     if (!strcmp(type, "r"))
     {
@@ -64,44 +61,42 @@ mxArray* dCoef(int order, const char* type)
     }
     
     /* c = A \ b; */
-    rhs_mldivide[0] = A;
-    rhs_mldivide[1] = b;
+    /* Point mxArray to dynamicData */
+    mxSetData(rhs_mldivide[0], pA);
+    mxSetM(rhs_mldivide[0], order);
+    mxSetN(rhs_mldivide[0], order);
+    
+    mxSetData(rhs_mldivide[1], pb);
+    mxSetM(rhs_mldivide[1], order);
+    mxSetN(rhs_mldivide[1], 1);
+    
     mexCallMATLAB(1, lhs_mldivide, 2, rhs_mldivide, "mldivide");
-    /* ATTENTION: Don't forget to free dynamic memory allocated by MXCREATE* functions (except for output arrays), otherwise memory leak will occur */
-    mxDestroyArray(A);
-    mxDestroyArray(b);
     
+    /* ATTENTION: Don't forget to free dynamic memory allocated by the mxCalloc function (except for output arrays), otherwise memory leak will occur */
+    mxFree(pA);
+    mxFree(pb);
     
-    return lhs_mldivide[0];
+    /* get data for output from mxArray */
+    pCoeff = (double*)mxGetData(lhs_mldivide[0]);
+    return pCoeff;
 }
 
 
 /* ====================================================================== */
-mxArray* diffOperator(const mxArray *data, const mxArray *coeff, double dist, int dim)
+double* diffOperator(const double *pData, int ndims, const mwSize *pDimsData, const double *pCoeff, int order, double dist, int dim)
 {
     /* begin of declaration */
-    double *pData, *pCoeff;
-    
-    mxArray *diffData;
     double *pDiffData;
     
     int l, iOrder, i, j, k, idx1, idx2;
-    const mwSize *pDimsData;
-    mwSize ndims, order;
+
     mwSize n1, n2, n3;
     /* end of declaration */
-    
-    pData = mxGetPr(data);
-    pCoeff = mxGetPr(coeff);
     
     if (dim < 1)
         dim = 1;
     
-    ndims = mxGetNumberOfDimensions(data);
-    order = mxGetNumberOfElements(coeff);
     l = 2 * order - 1;
-    
-    pDimsData = mxGetDimensions(data);
     
     if (ndims <= 2)     /* 2-D case */
     {
@@ -109,8 +104,7 @@ mxArray* diffOperator(const mxArray *data, const mxArray *coeff, double dist, in
         n2 = pDimsData[1];
         if (dim == 1)
         {
-            diffData = mxCreateDoubleMatrix(n1-l, n2, mxREAL);
-            pDiffData = mxGetPr(diffData);
+            pDiffData = (double*)mxCalloc((n1-l) * n2, sizeof(double));
             for (iOrder = 0; iOrder < order; iOrder++)
             {
                 /*
@@ -134,8 +128,7 @@ mxArray* diffOperator(const mxArray *data, const mxArray *coeff, double dist, in
         }
         else    /* dim == 2 */
         {
-            diffData = mxCreateDoubleMatrix(n1, n2-l, mxREAL);
-            pDiffData = mxGetPr(diffData);
+            pDiffData = (double*)mxCalloc(n1 * (n2-l), sizeof(double));
             for (iOrder = 0; iOrder < order; iOrder++)
             {
                 /*
@@ -165,9 +158,7 @@ mxArray* diffOperator(const mxArray *data, const mxArray *coeff, double dist, in
         n3 = pDimsData[2];
         if (dim == 1)
         {
-            mwSize pDimsDiffData[3] = {n1-l, n2, n3};
-            diffData = mxCreateNumericArray(ndims, pDimsDiffData, mxDOUBLE_CLASS, mxREAL);
-            pDiffData = mxGetPr(diffData);
+            pDiffData = (double*)mxCalloc((n1-l) * n2 * n3, sizeof(double));
             for (iOrder = 0; iOrder < order; iOrder++)
             {
                 /*
@@ -194,9 +185,7 @@ mxArray* diffOperator(const mxArray *data, const mxArray *coeff, double dist, in
         }
         else if (dim == 2)
         {
-            mwSize pDimsDiffData[3] = {n1, n2-l, n3};
-            diffData = mxCreateNumericArray(ndims, pDimsDiffData, mxDOUBLE_CLASS, mxREAL);
-            pDiffData = mxGetPr(diffData);
+            pDiffData = (double*)mxCalloc(n1 * (n2-l) * n3, sizeof(double));
             for (iOrder = 0; iOrder < order; iOrder++)
             {
                 /*
@@ -223,9 +212,7 @@ mxArray* diffOperator(const mxArray *data, const mxArray *coeff, double dist, in
         }
         else    /* dim == 3 */
         {
-            mwSize pDimsDiffData[3] = {n1, n2, n3-l};
-            diffData = mxCreateNumericArray(ndims, pDimsDiffData, mxDOUBLE_CLASS, mxREAL);
-            pDiffData = mxGetPr(diffData);
+            pDiffData = (double*)mxCalloc(n1 * n2 * (n3-l), sizeof(double));
             for (iOrder = 0; iOrder < order; iOrder++)
             {
                 /*
@@ -252,48 +239,36 @@ mxArray* diffOperator(const mxArray *data, const mxArray *coeff, double dist, in
         }
     }
     
-    return diffData;
+    return pDiffData;
 }
 
 
 /* ====================================================================== */
-mxArray* dampPml(const mxArray *u, const mxArray *v, double L)
+double* dampPml(const double *pu, const double *pv, mwSize m, mwSize n, double L)
 {
     /* begin of declaration */
-    double *pu, *pv;
-    
-    mxArray *d0, *d;
     double *pd0, *pd;
     
     int i, j;
-    mwSize m, n;
     /* end of declaration */
     
     const double R = 1e-6;
     const double logR = log(R);
     
-    pu = mxGetPr(u);
-    pv = mxGetPr(v);
-    m = mxGetM(u);
-    n = mxGetN(u);
-    mxAssert(m == mxGetM(v), "Rows of u and v should be the same!");
-    mxAssert(n == mxGetN(v), "Columns of u and v should be the same!");
-    
     /* d0 = -(3 * v)/(2 * L) * log(R); */
-    d0 = mxCreateDoubleMatrix(m, n, mxREAL);
-    pd0 = mxGetPr(d0);
+    pd0 = (double*)mxCalloc(m * n, sizeof(double));
     for (j = 0; j < n; j++)
         for (i = 0; i < m; i++)
             pd0[j * m + i] = -(3.0 * pv[j * m + i])/(2 * L) * logR;
     
     /* d = d0 .* (u / L).^2; */
-    d = mxCreateDoubleMatrix(m, n, mxREAL);
-    pd = mxGetPr(d);
+    pd = (double*)mxCalloc(m * n, sizeof(double));
     for (j = 0; j < n; j++)
         for (i = 0; i < m; i++)
             pd[j * m + i] = pd0[j * m + i] * (pu[j * m + i] / L) * (pu[j * m + i] / L);
     
-    mxDestroyArray(d0);
+    /* ATTENTION: Don't forget to free dynamic memory allocated by the mxCalloc function (except for output arrays), otherwise memory leak will occur */
+    mxFree(pd0);
     
-    return d;
+    return pd;
 }
