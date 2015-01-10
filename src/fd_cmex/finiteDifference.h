@@ -15,7 +15,10 @@ double* dCoef(int order, const char* type);
  * Performs higher-order approximation of staggered-grid finite difference
  *
  ====================================================================== */
-double* diffOperator(const double *pData, int ndims, const mwSize *pDimsData, const double *pCoeff, int order, double dist, int dim);
+/* 2-D case */
+double* diffOperator2d(const double *pData, mwSize m, mwSize n, const double *pCoeff, int order, double dist, int dim);
+/* 3-D case */
+double* diffOperator3d(const double *pData, mwSize n1, mwSize n2, mwSize n3, const double *pCoeff, int order, double dist, int dim);
 
 /* ======================================================================
  *
