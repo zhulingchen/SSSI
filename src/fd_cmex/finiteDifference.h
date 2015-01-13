@@ -22,7 +22,7 @@ double* diffOperator3d(const double *pData, mwSize n1, mwSize n2, mwSize n3, con
 
 /* ======================================================================
  *
- * diffOperator
+ * dampPml
  * DAMPPML Generate the model for damping parameter
  * u = x or z, representing the distance between current position (in PML)
  * and PML inner boundary
