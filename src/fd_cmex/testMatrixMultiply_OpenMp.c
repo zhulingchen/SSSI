@@ -7,7 +7,7 @@
 #define B_IN    prhs[1] /* (P * N) */
 #define C_OUT   plhs[0] /* (M * N) */
 
-void mexFunction(int nlhs,mxArray* plhs[], int nrhs, const mxArray* prhs[])
+void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
     double *pA, *pB, *pC;
     int i, j, k;
@@ -23,10 +23,12 @@ void mexFunction(int nlhs,mxArray* plhs[], int nrhs, const mxArray* prhs[])
     C_OUT = mxCreateDoubleMatrix(M, N, mxREAL);
     pC = mxGetPr(C_OUT);
     
-#pragma omp parallel for shared (pA, pB, pC) private(i, j, k) schedule(static)
-//#pragma omp for schedule(static)
+#pragma omp parallel private(i, j, k)
+    {
+#pragma omp for schedule(dynamic)
         for (i = 0; i < M; i++)
             for (j = 0; j < N; j++)
                 for (k = 0; k < P; k++)
                     pC[j * M + i] += pA[k * M + i] * pB[j * P + k];
+    }
 }

@@ -6,7 +6,7 @@
 #define B_IN    prhs[1] /* (P * N) */
 #define C_OUT   plhs[0] /* (M * N) */
 
-void mexFunction(int nlhs,mxArray* plhs[], int nrhs, const mxArray* prhs[])
+void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
     double *pA, *pB, *pC;
     int i, j, k;

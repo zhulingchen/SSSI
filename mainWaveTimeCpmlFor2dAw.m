@@ -41,6 +41,7 @@ addpath(genpath('./src'));
 %% Read in velocity model data and plot it
 load('./modelData/velocityModel.mat'); % velocityModel
 % load('./modelData/marmousiModelData/velocityModelMarmousi.mat');
+% velocityModel = [2e3 * ones(50, 150); 3e3 * ones(50, 150)];
 [nz, nx] = size(velocityModel);
 
 dx = 10;

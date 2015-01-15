@@ -12,7 +12,9 @@ endif
 
 # Compiler Flags
 #MEX_FLAG = CFLAGS="\$CFLAGS -std=c99"
-MEX_FLAG = COPTIMFLAGS="-O3" CXXOPTIMFLAGS="-O3" LDOPTIMFLAGS="-O3"
+#-Ofast is available only after gcc4.6
+MEX_FLAG = COPTIMFLAGS="-O3" CXXOPTIMFLAGS="-O3"
+
 
 # Files need to be compiled
 #FD_SRC = fwdTimeCpmlFor2dAw_mex.c rvsTimeCpmlFor2dAw_mex.c
