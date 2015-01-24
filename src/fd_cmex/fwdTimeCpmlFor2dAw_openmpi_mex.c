@@ -49,8 +49,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     double dz, dx, dt;
     int diffOrder, boundary;
     
-    int l, i, j, t;
-    mwSize nz, nz_vm, nx, nx_vm, nt;
+    int l, irank, i, j, t;
+    mwSize nz, nx, nt;
     const mwSize *pDimsSource;
     mwSize pDimsSnapshot[3] = {0};
     
@@ -65,13 +65,21 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     
     /* MPI-related variables */
     int numProcesses, taskId, errorCode;
-    int msgType;
+    int avg_nx, rem_nx, block_nx, offset_block_nx, recvcount_block_nx;
+    int *sendcounts_block_nx, *displs_block_nx, *sendcounts_band_nx, *displs_band_nx;
+    MPI_Datatype type_ztPlane, type_ztPlane_resized, type_ztxBlock, type_ztxBlock_resized;
     MPI_Status status;
+    
+    /* local variables */
+    double *pVelocityModel_local, *pSource_local;
     /* end of declaration */
     
     if (nrhs < 7)
         mexErrMsgTxt("All 7 input arguments shall be provided!");
     
+    /* load velocity model and source field */
+    pVelocityModel = mxGetPr(VM_IN);
+    pSource = mxGetPr(SOURCE_IN);
     diffOrder = *mxGetPr(DIFFORDER_IN);
     boundary = *mxGetPr(BOUNDARY_IN);
     dz = *mxGetPr(DZ_IN);
@@ -80,9 +88,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     
     pDimsSource = mxGetDimensions(SOURCE_IN);
     nz = pDimsSource[0];
-    nz_vm = nz - boundary;
     nx = pDimsSource[1];
-    nx_vm = nx - 2 * boundary;
     nt = pDimsSource[2];
     mxAssert(nz == mxGetM(VM_IN), "Velocity model and source grids should have the same z-axis grids!");
     mxAssert(nx == mxGetN(VM_IN), "Velocity model and source grids should have the same x-axis grids!");
@@ -98,45 +104,122 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         MPI_Abort(MPI_COMM_WORLD, errorCode);
     }
     /* find out number of processes */
-    MPI_Comm_size(MPI_COMM_WORLD, &numProcesses);
+    errorCode = MPI_Comm_size(MPI_COMM_WORLD, &numProcesses);
     /* find out process rank  */
     MPI_Comm_rank(MPI_COMM_WORLD, &taskId);
-    /* wait for the root processor to do the I/O */
-    MPI_Barrier(MPI_COMM_WORLD);
     
-    // test begin
-    mexPrintf("worker %d: diffOrder = %d, boundary = %d\ndz = %f, dx = %f, dt = %f\nnz = %d, nx = %d, nt = %d\n", taskId, diffOrder, boundary,
-            dz, dx, dt, nz, nx, nt);
-    for (i = 0; i < diffOrder; i++)
-        mexPrintf("pCoeff[%d] = %f\t", i, pCoeff[i]);
-    mexPrintf("\n");
-    // test end
-    
-    /* master */
-    if (taskId == MASTER)
+    if (numProcesses > nx)
     {
-        /* load velocity model and source field */
-        pVelocityModel = mxGetPr(VM_IN);
-        pSource = mxGetPr(SOURCE_IN);
-        
-        /* initialize storage */
-        DATA_OUT = mxCreateDoubleMatrix(nx, nt, mxREAL);
-        pData = mxGetPr(DATA_OUT);
-        
-        pDimsSnapshot[0] = nz;
-        pDimsSnapshot[1] = nx;
-        pDimsSnapshot[2] = nt;
-        SNAPSHOT_OUT = mxCreateNumericArray(3, pDimsSnapshot, mxDOUBLE_CLASS, mxREAL);
-        pSnapshot = mxGetPr(SNAPSHOT_OUT);
+        mexPrintf("MPI System: Too much MPI tasks, terminating...\n");
+        MPI_Abort(MPI_COMM_WORLD, errorCode);
     }
     
+    /* set up send counts and displacements for MPI_Scatterv */
+    avg_nx = nx / numProcesses;
+    rem_nx = nx % numProcesses;
+    offset_block_nx = 0;
+    sendcounts_block_nx = (int*)mxCalloc(numProcesses, sizeof(int));
+    displs_block_nx = (int*)mxCalloc(numProcesses, sizeof(int));
+    sendcounts_band_nx = (int*)mxCalloc(numProcesses, sizeof(int));
+    displs_band_nx = (int*)mxCalloc(numProcesses, sizeof(int));
+    for (irank = 0; irank < numProcesses; irank++)
+    {
+        block_nx = (irank < rem_nx) ? (avg_nx + 1) : (avg_nx);
+        /* number of ZT-planes processed by each task */
+        sendcounts_block_nx[irank] = block_nx;
+        /* number of Z-bands processed by each task */
+        sendcounts_band_nx[irank] = nz * block_nx;
+        /* displacements (relative to sendbuf) from which to take the outgoing elements to each process */
+        displs_block_nx[irank] = offset_block_nx;
+        displs_band_nx[irank] = nz * offset_block_nx;
+        offset_block_nx += sendcounts_block_nx[irank];
+    }
+    recvcount_block_nx = sendcounts_block_nx[taskId];
+    
+    /* create a strided vector datatype for send */
+    if (taskId == MASTER)
+    {
+        // send datatype
+        MPI_Type_vector(nt, nz, nz*nx, MPI_DOUBLE, &type_ztPlane);
+        MPI_Type_commit(&type_ztPlane);
+        MPI_Type_create_resized(type_ztPlane, 0, nz * sizeof(double), &type_ztPlane_resized);
+        MPI_Type_commit(&type_ztPlane_resized);
+    }
+    
+    /* create a strided vector datatype for receive */
+    MPI_Type_vector(nt, nz, nz*recvcount_block_nx, MPI_DOUBLE, &type_ztxBlock);
+    MPI_Type_commit(&type_ztxBlock);
+    MPI_Type_create_resized(type_ztxBlock, 0, nz * sizeof(double), &type_ztxBlock_resized);
+    MPI_Type_commit(&type_ztxBlock_resized);
+    
+    /* scatter velocity model */
+    pVelocityModel_local = (double*)mxCalloc(nz * recvcount_block_nx, sizeof(double));
+    MPI_Scatterv(pVelocityModel, sendcounts_band_nx, displs_band_nx, MPI_DOUBLE,
+            pVelocityModel_local, nz * recvcount_block_nx, MPI_DOUBLE, MASTER, MPI_COMM_WORLD);
+    mexPrintf("\nMPI_Scatterv for velocity model Done!\n");
+    mexPrintf("worker %d: pVelocityModel_local[%d] = %f, pVelocityModel_local[%d] = %f, pVelocityModel_local[%d] = %f\n",
+            taskId, 0, pVelocityModel_local[0], nz, pVelocityModel_local[nz], nz * recvcount_block_nx - 1, pVelocityModel_local[nz * recvcount_block_nx - 1]);
+    
+    /* scatter source field */
+    pSource_local = (double*)mxCalloc(nz * recvcount_block_nx * nt, sizeof(double));
+    MPI_Scatterv(pSource, sendcounts_block_nx, displs_block_nx, type_ztPlane_resized,
+            pSource_local, recvcount_block_nx, type_ztxBlock_resized, MASTER, MPI_COMM_WORLD);
+    mexPrintf("\nMPI_Scatterv for source field Done!\n");
+    mexPrintf("worker %d: pSource_local[%d] = %f, pSource_local[%d] = %f, pSource_local[%d] = %f, pSource_local[%d] = %f, pSource_local[%d] = %f\n",
+            taskId, 0, pSource_local[0], 1, pSource_local[1],
+            nz * recvcount_block_nx - 1, pSource_local[nz * recvcount_block_nx - 1], nz * recvcount_block_nx, pSource_local[nz * recvcount_block_nx],
+            nz * recvcount_block_nx * nt - 1, pSource_local[nz * recvcount_block_nx * nt - 1]);
+    
+    
+    /* x-axis damp profile for first (master) and last process */
+    if (taskId == MASTER || taskId == numProcesses - 1)
+    {
+        
+    }
+    
+    
+    
+
+    if (taskId == MASTER)
+    {
+        MPI_Type_free(&type_ztPlane);
+        MPI_Type_free(&type_ztPlane_resized);
+    }
+    
+    MPI_Type_free(&type_ztxBlock);
+    MPI_Type_free(&type_ztxBlock_resized);
+    mxFree(sendcounts_block_nx);
+    mxFree(displs_block_nx);
+    mxFree(sendcounts_band_nx);
+    mxFree(displs_band_nx);
+    mxFree(pVelocityModel_local);
+    mxFree(pSource_local);
     
     /* shut down MPI */
     MPI_Finalize();
     
-    
-    
-    
+    /* output */
+    DATA_OUT = mxCreateNumericMatrix(0, 0, mxDOUBLE_CLASS, mxREAL);
+    SNAPSHOT_OUT = mxCreateNumericMatrix(0, 0, mxDOUBLE_CLASS, mxREAL);
+    if (taskId == MASTER)
+    {
+        /* initialize output storage */
+        //DATA_OUT = mxCreateDoubleMatrix(nx, nt, mxREAL);
+        //pData = mxGetPr(DATA_OUT);
+        pData = (double*)mxCalloc(nx * nt, sizeof(double));
+        mxSetPr(DATA_OUT, pData);
+        mxSetM(DATA_OUT, nx);
+        mxSetN(DATA_OUT, nt);
+        
+        pSnapshot = (double*)mxCalloc(nz * nx * nt, sizeof(double));
+        pDimsSnapshot[0] = nz;
+        pDimsSnapshot[1] = nx;
+        pDimsSnapshot[2] = nt;
+        //SNAPSHOT_OUT = mxCreateNumericArray(3, pDimsSnapshot, mxDOUBLE_CLASS, mxREAL);
+        //pSnapshot = mxGetPr(SNAPSHOT_OUT);
+        mxSetPr(SNAPSHOT_OUT, pSnapshot);
+        mxSetDimensions(SNAPSHOT_OUT, pDimsSnapshot, 3);
+    }
     TASKID_OUT = mxCreateNumericMatrix(1, 1, mxUINT8_CLASS, mxREAL);
     *((int*)mxGetData(TASKID_OUT)) = taskId;
 }

@@ -116,7 +116,7 @@ fprintf('Denoised Seismic Data (Wavelet), PSNR = %.2fdB\n', psnrCleanData_wavele
 
 
 %% Reference: denoising using Contourlet
-nlevels_contourlet = [0, 3, 4];     % Decomposition level, all 0 means wavelet
+nlevels_contourlet = [2, 3, 4];     % Decomposition level, all 0 means wavelet
 pfilter_contourlet = '9/7';         % Pyramidal filter
 dfilter_contourlet = 'pkva';        % Directional filter
 [vecContourletCoeff, str] = pdfb2vec(pdfbdec(noisyData, pfilter_contourlet, dfilter_contourlet, nlevels_contourlet));
@@ -151,7 +151,7 @@ fprintf('Denoised Seismic Data (Contourlet), PSNR = %.2fdB\n', psnrCleanData_con
 % and ifdct_usfft. respectively
 is_real = 1;
 nbscales = 4;
-nbangles_coarse = 8;
+nbangles_coarse = 16;
 
 if ~isunix
     coeffCurvelet = fdct_wrapping(noisyData, is_real, 2, nbscales, nbangles_coarse);
@@ -232,15 +232,15 @@ initDict = speye(length(vecTrainBlockCoeff), length(vecTrainBlockCoeff));
 baseSynOp = @(x) pdfb(x, str, pfilter_wavelet_train, dfilter_wavelet_train, nlevels_wavelet_train, trainBlockSize, trainBlockSize, 1);
 baseAnaOp = @(x) pdfb(x, str, pfilter_wavelet_train, dfilter_wavelet_train, nlevels_wavelet_train, trainBlockSize, trainBlockSize, 2);
 
-% % curvelets for base dictionary
-% if ~isunix
-%     [vecTrainBlockCoeff, str] = curvelet2vec(fdct_wrapping(zeros(trainBlockSize, trainBlockSize), is_real_train, 2, nbscales_train, nbangles_coarse_train));
-% else
-%     [vecTrainBlockCoeff, str] = curvelet2vec(fdct_wrapping(zeros(trainBlockSize, trainBlockSize), is_real_train, nbscales_train, nbangles_coarse_train));
-% end
-% initDict = eye(length(vecTrainBlockCoeff), length(vecTrainBlockCoeff));
-% baseSynOp = @(x) fdct(x, str, is_real_train, nbscales_train, nbangles_coarse_train, trainBlockSize, trainBlockSize, 1);
-% baseAnaOp = @(x) fdct(x, str, is_real_train, nbscales_train, nbangles_coarse_train, trainBlockSize, trainBlockSize, 2);
+% curvelets for base dictionary
+if ~isunix
+    [vecTrainBlockCoeff, str] = curvelet2vec(fdct_wrapping(zeros(trainBlockSize, trainBlockSize), is_real_train, 2, nbscales_train, nbangles_coarse_train));
+else
+    [vecTrainBlockCoeff, str] = curvelet2vec(fdct_wrapping(zeros(trainBlockSize, trainBlockSize), is_real_train, nbscales_train, nbangles_coarse_train));
+end
+initDict = eye(length(vecTrainBlockCoeff), length(vecTrainBlockCoeff));
+baseSynOp = @(x) fdct(x, str, is_real_train, nbscales_train, nbangles_coarse_train, trainBlockSize, trainBlockSize, 1);
+baseAnaOp = @(x) fdct(x, str, is_real_train, nbscales_train, nbangles_coarse_train, trainBlockSize, trainBlockSize, 2);
 
 % % wavelet transform of train data
 % dataTrue_coeff = pdfbdec(dataTrue, pfilter_wavelet_train, dfilter_wavelet_train, nlevels_wavelet_train);

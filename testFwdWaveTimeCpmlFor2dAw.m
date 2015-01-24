@@ -42,9 +42,9 @@ f = 20;
 
 %% Generate shot signals
 % shot position
-zShotGrid = 60;
+zShotGrid = 1;
 zShot = zShotGrid * dz;
-xShotGrid = 50;
+xShotGrid = 51;
 xShot = xShotGrid * dx;
 
 % generate shot source field
@@ -55,7 +55,11 @@ wave1dTime = ricker(f, nt, dt);
 sourceTime(zShotGrid, xShotGrid+nBoundary, :) = reshape(wave1dTime, 1, 1, nt);
 
 %% Generate the shot record
-tic; [dataTrue, snapshotTrue] = fwdTimeCpmlFor2dAw(V, sourceTime, nDiffOrder, nBoundary, dz, dx, dt); toc;
+% test begin
+V = reshape(1:numel(V), size(V));
+sourceTime = reshape(1:prod([size(V), nt]), [size(V), nt]);
+% test end
+%tic; [dataTrue, snapshotTrue] = fwdTimeCpmlFor2dAw(V, sourceTime, nDiffOrder, nBoundary, dz, dx, dt); toc;
 tic; [dataTrue_mpi, snapshotTrue_mpi, taskId] = fwdTimeCpmlFor2dAw_openmpi_mex(V, sourceTime, nDiffOrder, nBoundary, dz, dx, dt); toc;
 display(taskId);
 display(size(dataTrue_mpi));
