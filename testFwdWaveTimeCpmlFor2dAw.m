@@ -56,10 +56,10 @@ sourceTime(zShotGrid, xShotGrid+nBoundary, :) = reshape(wave1dTime, 1, 1, nt);
 
 %% Generate the shot record
 % test begin
-V = reshape(1:numel(V), size(V));
-sourceTime = reshape(1:prod([size(V), nt]), [size(V), nt]);
+% V = reshape(1:numel(V), size(V));
+% sourceTime = reshape(1:prod([size(V), nt]), [size(V), nt]);
 % test end
-%tic; [dataTrue, snapshotTrue] = fwdTimeCpmlFor2dAw(V, sourceTime, nDiffOrder, nBoundary, dz, dx, dt); toc;
+tic; [dataTrue, snapshotTrue] = fwdTimeCpmlFor2dAw(V, sourceTime, nDiffOrder, nBoundary, dz, dx, dt); toc;
 tic; [dataTrue_mpi, snapshotTrue_mpi, taskId] = fwdTimeCpmlFor2dAw_openmpi_mex(V, sourceTime, nDiffOrder, nBoundary, dz, dx, dt); toc;
 display(taskId);
 display(size(dataTrue_mpi));

@@ -44,7 +44,7 @@
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
     /* begin of declaration */
-    /* data variables */
+    /* global variables */
     double *pVelocityModel, *pSource, *pData, *pSnapshot;
     double dz, dx, dt;
     int diffOrder, boundary;
@@ -54,14 +54,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     const mwSize *pDimsSource;
     mwSize pDimsSnapshot[3] = {0};
     
-    double *pCoeff, *pOldFdm, *pCurFdm, *pNewFdm;
-    double *puDampLeft, *pvDampLeft, *puDampRight, *pvDampRight, *puDampDown, *pvDampDown;
-    double *pxDampLeft, *pxDampRight, *pxDamp, *pxb, *pzDampDown, *pzDamp, *pzb;
-    double *pVdtSq;
-    double *pzPhi, *pxPhi, *pzA, *pxA, *pzPsi, *pxPsi, *pzP, *pxP;
-    double *pCurFdm_diffIn_zPhi, *pCurFdm_diffOut_zPhi, *pCurFdm_diffIn_xPhi, *pCurFdm_diffOut_xPhi;
-    double *pCurFdm_diffIn_zA, *pCurFdm_diffOut_zA, *pCurFdm_diffIn_xA, *pCurFdm_diffOut_xA;
-    double *pzA_diffIn, *pzA_diffOut, *pxA_diffIn, *pxA_diffOut;
+    double *pCoeff;
     
     /* MPI-related variables */
     int numProcesses, taskId, errorCode;
@@ -72,6 +65,14 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     
     /* local variables */
     double *pVelocityModel_local, *pSource_local;
+    double *pOldFdm_local, *pCurFdm_local, *pNewFdm_local;
+    double *puDampLeft_local, *pvDampLeft_local, *puDampRight_local, *pvDampRight_local, *puDampDown_local, *pvDampDown_local;
+    double *pxDampLeft_local, *pxDampRight_local, *pxDamp_local, *pxb_local, *pzDampDown_local, *pzDamp_local, *pzb_local;
+    double *pVdtSq_local;
+    double *pCurFdm_diffIn_zPhi, *pCurFdm_diffOut_zPhi, *pCurFdm_diffIn_xPhi, *pCurFdm_diffOut_xPhi;
+    double *pCurFdm_diffIn_zA, *pCurFdm_diffOut_zA, *pCurFdm_diffIn_xA, *pCurFdm_diffOut_xA;
+    double *pzA_diffIn, *pzA_diffOut, *pxA_diffIn, *pxA_diffOut;
+    double *pzPhi, *pxPhi, *pzA, *pxA, *pzPsi, *pxPsi, *pzP, *pxP;
     /* end of declaration */
     
     if (nrhs < 7)
@@ -156,7 +157,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     pVelocityModel_local = (double*)mxCalloc(nz * recvcount_block_nx, sizeof(double));
     MPI_Scatterv(pVelocityModel, sendcounts_band_nx, displs_band_nx, MPI_DOUBLE,
             pVelocityModel_local, nz * recvcount_block_nx, MPI_DOUBLE, MASTER, MPI_COMM_WORLD);
-    mexPrintf("\nMPI_Scatterv for velocity model Done!\n");
+    mexPrintf("\nMPI_Scatterv for velocity model Done!\nsendcounts_block_nx[%d] = %d, displs_block_nx[%d] = %d\n",
+            taskId, sendcounts_block_nx[taskId], taskId, displs_block_nx[taskId]);
     mexPrintf("worker %d: pVelocityModel_local[%d] = %f, pVelocityModel_local[%d] = %f, pVelocityModel_local[%d] = %f\n",
             taskId, 0, pVelocityModel_local[0], nz, pVelocityModel_local[nz], nz * recvcount_block_nx - 1, pVelocityModel_local[nz * recvcount_block_nx - 1]);
     
@@ -171,8 +173,33 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
             nz * recvcount_block_nx * nt - 1, pSource_local[nz * recvcount_block_nx * nt - 1]);
     
     
-    /* x-axis damp profile for first (master) and last process */
-    if (taskId == MASTER || taskId == numProcesses - 1)
+    /* x-axis damp profile (left), for those tasks whose grids are in the left artificial boundary */
+    if (displs_block_nx[taskId] < boundary || displs_block_nx[taskId] + sendcounts_block_nx[taskId] >= nx-boundary)
+    {
+        if (displs_block_nx[taskId] + sendcounts_block_nx[taskId] < boundary || displs_block_nx[taskId] >= nx-boundary)
+        {
+            /* all grids in the region are in the artificial boundary */
+            
+        }
+        else
+        {
+            /* some grids are in the artificial boundary, and some are not */
+            
+        }
+    }
+    /* x-axis damp profile (right), for those tasks whose grids are in the right artificial boundary */
+    else if (displs_block_nx[taskId] + sendcounts_block_nx[taskId] >= nx-boundary)
+    {
+        if (displs_block_nx[taskId] >= nx-boundary)
+        {
+            
+        }
+        else
+        {
+            
+        }
+    }
+    else
     {
         
     }
@@ -222,4 +249,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     }
     TASKID_OUT = mxCreateNumericMatrix(1, 1, mxUINT8_CLASS, mxREAL);
     *((int*)mxGetData(TASKID_OUT)) = taskId;
+    
+    
+    /* free dynamic array*/
+    mxFree(pCoeff);
 }

@@ -232,15 +232,15 @@ initDict = speye(length(vecTrainBlockCoeff), length(vecTrainBlockCoeff));
 baseSynOp = @(x) pdfb(x, str, pfilter_wavelet_train, dfilter_wavelet_train, nlevels_wavelet_train, trainBlockSize, trainBlockSize, 1);
 baseAnaOp = @(x) pdfb(x, str, pfilter_wavelet_train, dfilter_wavelet_train, nlevels_wavelet_train, trainBlockSize, trainBlockSize, 2);
 
-% curvelets for base dictionary
-if ~isunix
-    [vecTrainBlockCoeff, str] = curvelet2vec(fdct_wrapping(zeros(trainBlockSize, trainBlockSize), is_real_train, 2, nbscales_train, nbangles_coarse_train));
-else
-    [vecTrainBlockCoeff, str] = curvelet2vec(fdct_wrapping(zeros(trainBlockSize, trainBlockSize), is_real_train, nbscales_train, nbangles_coarse_train));
-end
-initDict = eye(length(vecTrainBlockCoeff), length(vecTrainBlockCoeff));
-baseSynOp = @(x) fdct(x, str, is_real_train, nbscales_train, nbangles_coarse_train, trainBlockSize, trainBlockSize, 1);
-baseAnaOp = @(x) fdct(x, str, is_real_train, nbscales_train, nbangles_coarse_train, trainBlockSize, trainBlockSize, 2);
+% % curvelets for base dictionary
+% if ~isunix
+%     [vecTrainBlockCoeff, str] = curvelet2vec(fdct_wrapping(zeros(trainBlockSize, trainBlockSize), is_real_train, 2, nbscales_train, nbangles_coarse_train));
+% else
+%     [vecTrainBlockCoeff, str] = curvelet2vec(fdct_wrapping(zeros(trainBlockSize, trainBlockSize), is_real_train, nbscales_train, nbangles_coarse_train));
+% end
+% initDict = eye(length(vecTrainBlockCoeff), length(vecTrainBlockCoeff));
+% baseSynOp = @(x) fdct(x, str, is_real_train, nbscales_train, nbangles_coarse_train, trainBlockSize, trainBlockSize, 1);
+% baseAnaOp = @(x) fdct(x, str, is_real_train, nbscales_train, nbangles_coarse_train, trainBlockSize, trainBlockSize, 2);
 
 % % wavelet transform of train data
 % dataTrue_coeff = pdfbdec(dataTrue, pfilter_wavelet_train, dfilter_wavelet_train, nlevels_wavelet_train);
@@ -257,6 +257,15 @@ else
     PhiSyn = baseSynOp;
     PhiAna = baseAnaOp;
 end
+% show atoms of base dictionary
+PhiSynImg = showdict(PhiSyn, [1 1]*sqrt(size(PhiSyn, 1)), round(sqrt(size(PhiSyn, 2))), round(sqrt(size(PhiSyn, 2))), 'whitelines', 'highcontrast');
+hFigPhiSyn = figure; imshow(imresize(PhiSynImg, 2, 'nearest')); title('Daubechies 9/7 wavelets');
+saveas(hFigPhiSyn, fullfile(dataFileDir, [dataFileName, '_db97_wavelet']), 'fig');
+% show atoms A
+AImg = showdict(full(learnedDict), [1 1]*sqrt(size(learnedDict, 1)), round(sqrt(size(learnedDict, 2))), round(sqrt(size(learnedDict, 2))), 'whitelines', 'highcontrast');
+hFigA = figure; imshow(imresize(AImg, 2, 'nearest')); title(sprintf('Atoms in Matrix A (%d iterations)', trainIter));
+saveas(hFigA, fullfile(dataFileDir, [dataFileName, '_A']), 'fig');
+% show atoms of overall learned dictionary
 dictImg = showdict(PhiSyn * learnedDict, [1 1]*sqrt(size(PhiSyn * learnedDict, 1)), round(sqrt(size(PhiSyn * learnedDict, 2))), round(sqrt(size(PhiSyn * learnedDict, 2))), 'whitelines', 'highcontrast');
 hFigLearnedDict = figure; imshow(imresize(dictImg, 2, 'nearest')); title(sprintf('Trained Dictionary (%d iterations)', trainIter));
 saveas(hFigLearnedDict, fullfile(dataFileDir, [dataFileName, '_learnedDict']), 'fig');
