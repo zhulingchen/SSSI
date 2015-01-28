@@ -59,6 +59,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     /* MPI-related variables */
     int numProcesses, taskId, errorCode;
     int avg_nx, rem_nx, block_nx, offset_block_nx, recvcount_block_nx;
+    int block_nx_dampPml;
     int *sendcounts_block_nx, *displs_block_nx, *sendcounts_band_nx, *displs_band_nx;
     MPI_Datatype type_ztPlane, type_ztPlane_resized, type_ztxBlock, type_ztxBlock_resized;
     MPI_Status status;
@@ -157,64 +158,199 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     pVelocityModel_local = (double*)mxCalloc(nz * recvcount_block_nx, sizeof(double));
     MPI_Scatterv(pVelocityModel, sendcounts_band_nx, displs_band_nx, MPI_DOUBLE,
             pVelocityModel_local, nz * recvcount_block_nx, MPI_DOUBLE, MASTER, MPI_COMM_WORLD);
-    mexPrintf("\nMPI_Scatterv for velocity model Done!\nsendcounts_block_nx[%d] = %d, displs_block_nx[%d] = %d\n",
-            taskId, sendcounts_block_nx[taskId], taskId, displs_block_nx[taskId]);
-    mexPrintf("worker %d: pVelocityModel_local[%d] = %f, pVelocityModel_local[%d] = %f, pVelocityModel_local[%d] = %f\n",
-            taskId, 0, pVelocityModel_local[0], nz, pVelocityModel_local[nz], nz * recvcount_block_nx - 1, pVelocityModel_local[nz * recvcount_block_nx - 1]);
+//     // test begin
+//     mexPrintf("\nMPI_Scatterv for velocity model Done!\ndispls_block_nx[%d] = %d, sendcounts_block_nx[%d] = %d\n",
+//             taskId, displs_block_nx[taskId], taskId, sendcounts_block_nx[taskId]);
+//     mexPrintf("worker %d: pVelocityModel_local[%d] = %f, pVelocityModel_local[%d] = %f, pVelocityModel_local[%d] = %f\n",
+//             taskId, 0, pVelocityModel_local[0], nz, pVelocityModel_local[nz], nz * recvcount_block_nx - 1, pVelocityModel_local[nz * recvcount_block_nx - 1]);
+//     // test end
     
     /* scatter source field */
     pSource_local = (double*)mxCalloc(nz * recvcount_block_nx * nt, sizeof(double));
     MPI_Scatterv(pSource, sendcounts_block_nx, displs_block_nx, type_ztPlane_resized,
             pSource_local, recvcount_block_nx, type_ztxBlock_resized, MASTER, MPI_COMM_WORLD);
-    mexPrintf("\nMPI_Scatterv for source field Done!\n");
-    mexPrintf("worker %d: pSource_local[%d] = %f, pSource_local[%d] = %f, pSource_local[%d] = %f, pSource_local[%d] = %f, pSource_local[%d] = %f\n",
-            taskId, 0, pSource_local[0], 1, pSource_local[1],
-            nz * recvcount_block_nx - 1, pSource_local[nz * recvcount_block_nx - 1], nz * recvcount_block_nx, pSource_local[nz * recvcount_block_nx],
-            nz * recvcount_block_nx * nt - 1, pSource_local[nz * recvcount_block_nx * nt - 1]);
+//     // test begin
+//     mexPrintf("\nMPI_Scatterv for source field Done!\n");
+//     mexPrintf("worker %d: pSource_local[%d] = %f, pSource_local[%d] = %f, pSource_local[%d] = %f, pSource_local[%d] = %f, pSource_local[%d] = %f\n",
+//             taskId, 0, pSource_local[0], 1, pSource_local[1],
+//             nz * recvcount_block_nx - 1, pSource_local[nz * recvcount_block_nx - 1], nz * recvcount_block_nx, pSource_local[nz * recvcount_block_nx],
+//             nz * recvcount_block_nx * nt - 1, pSource_local[nz * recvcount_block_nx * nt - 1]);
+//     // test end
     
-    
-    /* x-axis damp profile (left), for those tasks whose grids are in the left artificial boundary */
-    if (displs_block_nx[taskId] < boundary || displs_block_nx[taskId] + sendcounts_block_nx[taskId] >= nx-boundary)
+    /* x-axis damp profile (left), for those tasks whose grids are in left artificial boundary */
+    pxDamp_local = (double*)mxCalloc(nz * sendcounts_block_nx[taskId], sizeof(double));
+    if (displs_block_nx[taskId] < boundary)
     {
-        if (displs_block_nx[taskId] + sendcounts_block_nx[taskId] < boundary || displs_block_nx[taskId] >= nx-boundary)
+        if (displs_block_nx[taskId] + sendcounts_block_nx[taskId] <= boundary)
         {
-            /* all grids in the region are in the artificial boundary */
+            // test begin
+            mexPrintf("worker: %d: all grids in the region are in left artificial boundary\n", taskId);
+            // test end
+            /* all grids in the region are in left artificial boundary */
+            block_nx_dampPml = sendcounts_block_nx[taskId];
+            puDampLeft_local = (double*)mxCalloc(nz * block_nx_dampPml, sizeof(double));
+            for (j = 0; j < block_nx_dampPml; j++)
+                for (i = 0; i < nz; i++)
+                    puDampLeft_local[j * nz + i] = (boundary - displs_block_nx[taskId] - j) * dx;
+            pvDampLeft_local = (double*)mxCalloc(nz * block_nx_dampPml, sizeof(double));
+            memcpy(pvDampLeft_local, pVelocityModel_local, sizeof(double) * nz * block_nx_dampPml);
+            pxDampLeft_local = dampPml(puDampLeft_local, pvDampLeft_local, nz, block_nx_dampPml, boundary * dx);
             
+            memcpy(pxDamp_local, pxDampLeft_local, sizeof(double) * nz * block_nx_dampPml);
+            mxFree(puDampLeft_local);
+            mxFree(pvDampLeft_local);
+            mxFree(pxDampLeft_local);
         }
         else
         {
-            /* some grids are in the artificial boundary, and some are not */
+            // test begin
+            mexPrintf("worker: %d: some grids are in left artificial boundary, and some are not\n", taskId);
+            // test end
+            /* some grids are in left artificial boundary, and some are not */
+            block_nx_dampPml = boundary - displs_block_nx[taskId];
+            puDampLeft_local = (double*)mxCalloc(nz * block_nx_dampPml, sizeof(double));
+            for (j = 0; j < block_nx_dampPml; j++)
+                for (i = 0; i < nz; i++)
+                    puDampLeft_local[j * nz + i] = (boundary - displs_block_nx[taskId] - j) * dx;
+            pvDampLeft_local = (double*)mxCalloc(nz * block_nx_dampPml, sizeof(double));
+            memcpy(pvDampLeft_local, pVelocityModel_local, sizeof(double) * nz * block_nx_dampPml);
+            pxDampLeft_local = dampPml(puDampLeft_local, pvDampLeft_local, nz, block_nx_dampPml, boundary * dx);
             
+            memcpy(pxDamp_local, pxDampLeft_local, sizeof(double) * nz * block_nx_dampPml);
+            mxFree(puDampLeft_local);
+            mxFree(pvDampLeft_local);
+            mxFree(pxDampLeft_local);
+        }
+        
+        if (displs_block_nx[taskId] + sendcounts_block_nx[taskId] > nx-boundary)
+        {
+            // test begin
+            mexPrintf("worker: %d: some grids are in left artificial boundary, and some are in right artificial boundary\n", taskId);
+            // test end
+            /* some grids are in left artificial boundary, and some are in right artificial boundary */
+            block_nx_dampPml = (displs_block_nx[taskId] + sendcounts_block_nx[taskId]) - (nx-boundary);
+            puDampRight_local = (double*)mxCalloc(nz * block_nx_dampPml, sizeof(double));
+            for (j = 0; j < block_nx_dampPml; j++)
+                for (i = 0; i < nz; i++)
+                    puDampRight_local[j * nz + i] = (j + 1) * dx;
+            pvDampRight_local = (double*)mxCalloc(nz * block_nx_dampPml, sizeof(double));
+            memcpy(pvDampRight_local, pVelocityModel_local + nz * (nx-boundary-displs_block_nx[taskId]), sizeof(double) * nz * block_nx_dampPml);
+            pxDampRight_local = dampPml(puDampRight_local, pvDampRight_local, nz, block_nx_dampPml, boundary * dx);
+            
+            memcpy(pxDamp_local + nz * (nx-boundary-displs_block_nx[taskId]), pxDampRight_local, sizeof(double) * nz * block_nx_dampPml);
+            mxFree(puDampRight_local);
+            mxFree(pvDampRight_local);
+            mxFree(pxDampRight_local);
         }
     }
-    /* x-axis damp profile (right), for those tasks whose grids are in the right artificial boundary */
-    else if (displs_block_nx[taskId] + sendcounts_block_nx[taskId] >= nx-boundary)
+    /* x-axis damp profile (right), for those tasks whose grids are in right artificial boundary */
+    else if (displs_block_nx[taskId] + sendcounts_block_nx[taskId] > nx-boundary)
     {
         if (displs_block_nx[taskId] >= nx-boundary)
         {
+            // test begin
+            mexPrintf("worker: %d: all grids in the region are in right artificial boundary\n", taskId);
+            // test end
+            /* all grids in the region are in right artificial boundary */
+            block_nx_dampPml = sendcounts_block_nx[taskId];
+            puDampRight_local = (double*)mxCalloc(nz * block_nx_dampPml, sizeof(double));
+            for (j = 0; j < block_nx_dampPml; j++)
+                for (i = 0; i < nz; i++)
+                    puDampRight_local[j * nz + i] = (displs_block_nx[taskId] - (nx-boundary) + j + 1) * dx;
+            pvDampRight_local = (double*)mxCalloc(nz * block_nx_dampPml, sizeof(double));
+            memcpy(pvDampRight_local, pVelocityModel_local, sizeof(double) * nz * block_nx_dampPml);
+            pxDampRight_local = dampPml(puDampRight_local, pvDampRight_local, nz, block_nx_dampPml, boundary * dx);
             
+            memcpy(pxDamp_local, pxDampRight_local, sizeof(double) * nz * block_nx_dampPml);
+            mxFree(puDampRight_local);
+            mxFree(pvDampRight_local);
+            mxFree(pxDampRight_local);
         }
         else
         {
+            // test begin
+            mexPrintf("worker: %d: some grids are in right artificial boundary, and some are not\n", taskId);
+            // test end
+            /* some grids are in right artificial boundary, and some are not */
+            block_nx_dampPml = (displs_block_nx[taskId] + sendcounts_block_nx[taskId]) - (nx-boundary);
+            puDampRight_local = (double*)mxCalloc(nz * block_nx_dampPml, sizeof(double));
+            for (j = 0; j < block_nx_dampPml; j++)
+                for (i = 0; i < nz; i++)
+                    puDampRight_local[j * nz + i] = (j + 1) * dx;
+            pvDampRight_local = (double*)mxCalloc(nz * block_nx_dampPml, sizeof(double));
+            memcpy(pvDampRight_local, pVelocityModel_local + nz * (nx-boundary-displs_block_nx[taskId]), sizeof(double) * nz * block_nx_dampPml);
+            pxDampRight_local = dampPml(puDampRight_local, pvDampRight_local, nz, block_nx_dampPml, boundary * dx);
             
+            memcpy(pxDamp_local + nz * (nx-boundary-displs_block_nx[taskId]), pxDampRight_local, sizeof(double) * nz * block_nx_dampPml);
+            mxFree(puDampRight_local);
+            mxFree(pvDampRight_local);
+            mxFree(pxDampRight_local);
         }
     }
     else
     {
-        
+        // test begin
+        mexPrintf("worker: %d: none grids in the region is in left/right artificial boundary\n", taskId);
+        // test end
+        /* none grids in the region is in left/right artificial boundary */
     }
+    pxb_local = (double*)mxCalloc(nz * sendcounts_block_nx[taskId], sizeof(double));
+    for (j = 0; j < sendcounts_block_nx[taskId]; j++)
+        for (i = 0; i < nz; i++)
+            pxb_local[j * nz + i] = exp(-pxDamp_local[j * nz + i] * dt);
+    mxFree(pxDamp_local);
+    
+    // test begin
+    mexPrintf("worker: %d: pxb_local[%d] = %f, pxb_local[%d] = %f,\npxb_local[%d] = %f, pxb_local[%d] = %f\npxb_local[%d] = %f\n", 
+            taskId, 0, pxb_local[0], 1, pxb_local[1], nz-1, pxb_local[nz-1], nz, pxb_local[nz], nz * sendcounts_block_nx[taskId]-1, pxb_local[nz * sendcounts_block_nx[taskId]-1]);
+    // test end
+    
+    /* z-axis damp profile */
+    puDampDown_local = (double*)mxCalloc(boundary * sendcounts_block_nx[taskId], sizeof(double));
+    for (j = 0; j < sendcounts_block_nx[taskId]; j++)
+        for(i = 0; i < boundary; i++)
+            puDampDown_local[j * boundary + i] = (i + 1) * dz;
+    pvDampDown_local = (double*)mxCalloc(boundary * sendcounts_block_nx[taskId], sizeof(double));
+    for (j = 0; j < sendcounts_block_nx[taskId]; j++)
+        for(i = 0; i < boundary; i++)
+            pvDampDown_local[j * boundary + i] = pVelocityModel_local[j * nz + (nz - boundary + i)];
+    pzDampDown_local = dampPml(puDampDown_local, pvDampDown_local, boundary, sendcounts_block_nx[taskId], boundary * dz);
+    
+    pzDamp_local = (double*)mxCalloc(nz * sendcounts_block_nx[taskId], sizeof(double));
+    for (j = 0; j < sendcounts_block_nx[taskId]; j++)
+        for (i = nz-boundary; i < nz; i++)
+            pzDamp_local[j * nz + i] = pzDampDown_local[j * boundary + i-(nz-boundary)];
+    
+    pzb_local = (double*)mxCalloc(nz * sendcounts_block_nx[taskId], sizeof(double));
+    for (j = 0; j < sendcounts_block_nx[taskId]; j++)
+        for (i = 0; i < nz; i++)
+            pzb_local[j * nz + i] = exp(-pzDamp_local[j * nz + i] * dt);
+    
+    mxFree(puDampDown_local);
+    mxFree(pvDampDown_local);
+    mxFree(pzDampDown_local);
+    mxFree(pzDamp_local);
+    
+    // test begin
+    mexPrintf("worker: %d: pzb_local[%d] = %f, pzb_local[%d] = %f,\npzb_local[%d] = %f, pzb_local[%d] = %f\npzb_local[%d] = %f\n", 
+            taskId, 0, pzb_local[0], 1, pzb_local[1], nz-1, pzb_local[nz-1], nz, pzb_local[nz], nz * sendcounts_block_nx[taskId]-1, pzb_local[nz * sendcounts_block_nx[taskId]-1]);
+    // test end
     
     
     
-
+    
+    
+    
+    
+    /* free datatype */
     if (taskId == MASTER)
     {
         MPI_Type_free(&type_ztPlane);
         MPI_Type_free(&type_ztPlane_resized);
     }
-    
     MPI_Type_free(&type_ztxBlock);
     MPI_Type_free(&type_ztxBlock_resized);
+    /* free dynamic array */
     mxFree(sendcounts_block_nx);
     mxFree(displs_block_nx);
     mxFree(sendcounts_band_nx);
@@ -251,6 +387,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     *((int*)mxGetData(TASKID_OUT)) = taskId;
     
     
-    /* free dynamic array*/
+    /* free dynamic array */
     mxFree(pCoeff);
 }

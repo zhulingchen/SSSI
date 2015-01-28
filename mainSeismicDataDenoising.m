@@ -206,10 +206,10 @@ fprintf('Denoised Seismic Data (Curvelet), PSNR = %.2fdB\n', psnrCleanData_curve
 %% Parameters for dictionary learning using sparse K-SVD
 gain = 1;                                   % noise gain (default value 1.15)
 trainBlockSize = 16;                        % for each dimension
-trainBlockNum = 5000;                       % number of training blocks in the training set
-trainIter = 20;
+trainBlockNum = 20000;                       % number of training blocks in the training set
+trainIter = 30;
 sigSpThres = sigma * trainBlockSize * gain; % pre-defined l2-norm error for BPDN
-atomSpThres = 50;                          % a self-determind value to control the sparsity of matrix A
+atomSpThres = 100;                          % a self-determind value to control the sparsity of matrix A
 
 
 %% Base dictionary setting
