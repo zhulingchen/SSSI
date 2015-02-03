@@ -85,10 +85,11 @@ title('Original Seismic Data');
 
 hFigNoisyData = figure; imagesc(noisyData); colormap(gray); axis off; truesize;
 psnrNoisyData = 20*log10(sqrt(numel(noisyData)) / norm(dataTrue(:) - noisyData(:), 2));
+ssimNoisyData = ssim(noisyData, dataTrue);
 title(sprintf('Noisy Seismic Data, PSNR = %.2fdB', psnrNoisyData));
 saveas(hFigNoisyData, fullfile(dataFileDir, [dataFileName, '_noisyData']), 'fig');
 fprintf('------------------------------------------------------------\n');
-fprintf('Noisy Seismic Data, PSNR = %.2fdB\n', psnrNoisyData);
+fprintf('Noisy Seismic Data, PSNR = %.2fdB, SSIM = %.4f\n', psnrNoisyData, ssimNoisyData);
 
 
 %% Reference: denoising using wavelet
@@ -109,10 +110,11 @@ save(fullfile(dataFileDir, [dataFileName, '_cleanData_wavelet.mat']), 'cleanData
 % Plot figures and PSNR output
 hFigCleanedDataWavelet = figure; imagesc(cleanData_wavelet); colormap(gray); axis off; truesize;
 psnrCleanData_wavelet = 20*log10(sqrt(numel(cleanData_wavelet)) / norm(dataTrue(:) - cleanData_wavelet(:), 2));
+ssimCleanData_wavelet = ssim(cleanData_wavelet, dataTrue);
 title(sprintf('Denoised Seismic Data (Wavelet), PSNR = %.2fdB', psnrCleanData_wavelet));
 saveas(hFigCleanedDataWavelet, fullfile(dataFileDir, [dataFileName, '_cleanData_wavelet']), 'fig');
 fprintf('------------------------------------------------------------\n');
-fprintf('Denoised Seismic Data (Wavelet), PSNR = %.2fdB\n', psnrCleanData_wavelet);
+fprintf('Denoised Seismic Data (Wavelet), PSNR = %.2fdB, SSIM = %.4f\n', psnrCleanData_wavelet, ssimCleanData_wavelet);
 
 
 %% Reference: denoising using Contourlet
@@ -140,10 +142,11 @@ save(fullfile(dataFileDir, [dataFileName, '_cleanData_contourlet.mat']), 'cleanD
 % Plot figures and PSNR output
 hFigCleanedDataContourlet = figure; imagesc(cleanData_contourlet); colormap(gray); axis off; truesize;
 psnrCleanData_contourlet = 20*log10(sqrt(numel(cleanData_contourlet)) / norm(dataTrue(:) - cleanData_contourlet(:), 2));
+ssimCleanData_contourlet = ssim(cleanData_contourlet, dataTrue);
 title(sprintf('Denoised Seismic Data (Contourlet), PSNR = %.2fdB', psnrCleanData_contourlet));
 saveas(hFigCleanedDataContourlet, fullfile(dataFileDir, [dataFileName, '_cleanData_contourlet']), 'fig');
 fprintf('------------------------------------------------------------\n');
-fprintf('Denoised Seismic Data (Contourlet), PSNR = %.2fdB\n', psnrCleanData_contourlet);
+fprintf('Denoised Seismic Data (Contourlet), PSNR = %.2fdB, SSIM = %.4f\n', psnrCleanData_contourlet, ssimCleanData_contourlet);
 
 
 %% Reference: denoising using Curvelet
@@ -197,19 +200,20 @@ save(fullfile(dataFileDir, [dataFileName, '_cleanData_curvelet.mat']), 'cleanDat
 % Plot figures and PSNR output
 hFigCleanedDataCurvelet = figure; imagesc(cleanData_curvelet); colormap(gray); axis off; truesize;
 psnrCleanData_curvelet = 20*log10(sqrt(numel(cleanData_curvelet)) / norm(dataTrue(:) - cleanData_curvelet(:), 2));
+ssimCleanData_curvelet = ssim(cleanData_curvelet, dataTrue);
 title(sprintf('Denoised Seismic Data (Curvelet), PSNR = %.2fdB', psnrCleanData_curvelet));
 saveas(hFigCleanedDataCurvelet, fullfile(dataFileDir, [dataFileName, '_cleanData_curvelet']), 'fig');
 fprintf('------------------------------------------------------------\n');
-fprintf('Denoised Seismic Data (Curvelet), PSNR = %.2fdB\n', psnrCleanData_curvelet);
+fprintf('Denoised Seismic Data (Curvelet), PSNR = %.2fdB, SSIM = %.4f\n', psnrCleanData_curvelet, ssimCleanData_curvelet);
 
 
 %% Parameters for dictionary learning using sparse K-SVD
 gain = 1;                                   % noise gain (default value 1.15)
 trainBlockSize = 16;                        % for each dimension
-trainBlockNum = 20000;                       % number of training blocks in the training set
-trainIter = 30;
+trainBlockNum = 5000;                       % number of training blocks in the training set
+trainIter = 20;
 sigSpThres = sigma * trainBlockSize * gain; % pre-defined l2-norm error for BPDN
-atomSpThres = 100;                          % a self-determind value to control the sparsity of matrix A
+atomSpThres = 50;                          % a self-determind value to control the sparsity of matrix A
 
 
 %% Base dictionary setting
@@ -322,10 +326,11 @@ save(fullfile(dataFileDir, [dataFileName, '_cleanData_sparseKsvd.mat']), 'cleanD
 %% Plot figures and PSNR output
 hFigCleanedDataSparseKsvd = figure; imagesc(cleanData_sparseKsvd); colormap(gray); axis off; truesize;
 psnrCleanData_sparseKsvd = 20*log10(sqrt(numel(cleanData_sparseKsvd)) / norm(dataTrue(:) - cleanData_sparseKsvd(:), 2));
+ssimCleanData_sparseKsvd = ssim(cleanData_sparseKsvd, dataTrue);
 title(sprintf('Denoised Seismic Data, PSNR = %.2fdB', psnrCleanData_sparseKsvd));
 saveas(hFigCleanedDataSparseKsvd, fullfile(dataFileDir, [dataFileName, '_cleanData_sparseKsvd']), 'fig');
 fprintf('------------------------------------------------------------\n');
-fprintf('Denoised Seismic Data, PSNR = %.2fdB\n', psnrCleanData_sparseKsvd);
+fprintf('Denoised Seismic Data, PSNR = %.2fdB, SSIM = %.4f\n', psnrCleanData_sparseKsvd, ssimCleanData_sparseKsvd);
 
 
 %% Terminate the pool of Matlab workers

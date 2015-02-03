@@ -59,11 +59,13 @@ sourceTime(zShotGrid, xShotGrid+nBoundary, :) = reshape(wave1dTime, 1, 1, nt);
 % V = reshape(1:numel(V), size(V));
 % sourceTime = reshape(1:prod([size(V), nt]), [size(V), nt]);
 % test end
-tic; [dataTrue, snapshotTrue] = fwdTimeCpmlFor2dAw(V, sourceTime, nDiffOrder, nBoundary, dz, dx, dt); toc;
-tic; [dataTrue_mpi, snapshotTrue_mpi, taskId] = fwdTimeCpmlFor2dAw_openmpi_mex(V, sourceTime, nDiffOrder, nBoundary, dz, dx, dt); toc;
-display(taskId);
-display(size(dataTrue_mpi));
-display(size(snapshotTrue_mpi));
+tic; [dataTrue, snapshotTrue, zPhi] = fwdTimeCpmlFor2dAw(V, sourceTime, nDiffOrder, nBoundary, dz, dx, dt); toc;
+tic; [dataTrue_mpi, snapshotTrue_mpi, taskId, test_out] = fwdTimeCpmlFor2dAw_openmpi_mex(V, sourceTime, nDiffOrder, nBoundary, dz, dx, dt); toc;
+if (taskId == 0)
+%     delta = sourceTime - test_out;
+    delta = zPhi - test_out;
+    fprintf('Maximum abs difference = %d\n', max(abs(delta(:))));
+end
 
 %% End Matlab process
 quit;

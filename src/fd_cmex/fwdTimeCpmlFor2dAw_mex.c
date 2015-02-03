@@ -234,9 +234,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                         (pzb[j * nz + (i - l)] - 1) * pzA_diffOut[j * nz + (i - l)];
         
         /* xPsi(:, ixi) = xb .* xPsi(:, ixi) + (xb - 1) .* diffOperator(xA(:, ixl), coeff, dx, 2); */
-        for (j = diffOrder - 1; j < nx+2*l-diffOrder; j++)
-            for (i = 0; i < nz; i++)
-                pxA_diffIn[(j - (diffOrder - 1)) * nz + i] = pxA[j * nz + i];
+        memcpy(pxA_diffIn, pxA + (diffOrder - 1) * nz, sizeof(double) * (nx+l) * nz);
         pxA_diffOut = diffOperator2d(pxA_diffIn, nz, nx+l, pCoeff, diffOrder, dx, 2);
         
         for (j = l; j < nx + l; j++)

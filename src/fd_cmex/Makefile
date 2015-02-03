@@ -11,9 +11,9 @@ ifeq ($(UNAME), Darwin)
 endif
 
 # Compiler Flags
-#MEX_FLAG = CFLAGS="\$CFLAGS -std=c99"
+#MEX_FLAG_REGULAR = CFLAGS="\$CFLAGS -std=c99"
 #-Ofast is available only after gcc4.6
-MEX_FLAG = COPTIMFLAGS="-O3" CXXOPTIMFLAGS="-O3"
+MEX_FLAG_REGULAR = COPTIMFLAGS="-O3" CXXOPTIMFLAGS="-O3"
 
 
 # Files need to be compiled
@@ -25,10 +25,11 @@ LIB = finiteDifference.o
 all: fd
 
 fd: finiteDifference.o
-	$(MEX) $(MEX_FLAG) diffOperator_mex.c
-	$(MEX) $(MEX_FLAG) fwdTimeCpmlFor2dAw_mex.c ${LIB} 
-	$(MEX) $(MEX_FLAG) rvsTimeCpmlFor2dAw_mex.c ${LIB}
+	$(MEX) $(MEX_FLAG_REGULAR) diffOperator_mex.c
+	$(MEX) $(MEX_FLAG_REGULAR) fwdTimeCpmlFor2dAw_mex.c ${LIB}
+	$(MEX) $(MEX_FLAG_REGULAR) rvsTimeCpmlFor2dAw_mex.c ${LIB}
+
 
 finiteDifference.o: finiteDifference.c finiteDifference.h
-	$(MEX) -c $(MEX_FLAG) finiteDifference.c
+	$(MEX) -c $(MEX_FLAG_REGULAR) finiteDifference.c
 
