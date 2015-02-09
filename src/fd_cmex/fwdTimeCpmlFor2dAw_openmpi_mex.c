@@ -409,35 +409,36 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
             /* transfer of ghost cell values */
             if ( taskId > 0 )
             {
-//                 MPI_Isend(pxPhi_local + nz * l, nz * l, MPI_DOUBLE,
-//                         taskId - 1, RIGHT_TO_LEFT, MPI_COMM_WORLD, &send_request);
-                MPI_Send(pxPhi_local + nz * l, nz * l, MPI_DOUBLE,
-                        taskId - 1, RIGHT_TO_LEFT, MPI_COMM_WORLD);
+                MPI_Isend(pxPhi_local + nz * l, nz * l, MPI_DOUBLE,
+                        taskId - 1, RIGHT_TO_LEFT, MPI_COMM_WORLD, &send_request);
+                MPI_Wait(&send_request, &status);
+//                 MPI_Send(pxPhi_local + nz * l, nz * l, MPI_DOUBLE,
+//                         taskId - 1, RIGHT_TO_LEFT, MPI_COMM_WORLD);
             }
             if ( taskId < numProcesses - 1 )
             {
-//                 MPI_Irecv(pxPhi_local + nz * (recvcount_block_nx+l), nz * l, MPI_DOUBLE,
-//                         taskId + 1, RIGHT_TO_LEFT, MPI_COMM_WORLD, &recv_request);
-                MPI_Recv(pxPhi_local + nz * (recvcount_block_nx+l), nz * l, MPI_DOUBLE,
-                        taskId + 1, RIGHT_TO_LEFT, MPI_COMM_WORLD, &status);
+                MPI_Irecv(pxPhi_local + nz * (recvcount_block_nx+l), nz * l, MPI_DOUBLE,
+                        taskId + 1, RIGHT_TO_LEFT, MPI_COMM_WORLD, &recv_request);
+                MPI_Wait(&recv_request, &status);
+//                 MPI_Recv(pxPhi_local + nz * (recvcount_block_nx+l), nz * l, MPI_DOUBLE,
+//                         taskId + 1, RIGHT_TO_LEFT, MPI_COMM_WORLD, &status);
             }
             if ( taskId < numProcesses - 1 )
             {
-//                 MPI_Isend(pxPhi_local + nz * recvcount_block_nx, nz * l, MPI_DOUBLE,
-//                         taskId + 1, LEFT_TO_RIGHT, MPI_COMM_WORLD, &send_request);
-                MPI_Send(pxPhi_local + nz * recvcount_block_nx, nz * l, MPI_DOUBLE,
-                        taskId + 1, LEFT_TO_RIGHT, MPI_COMM_WORLD);
+                MPI_Isend(pxPhi_local + nz * recvcount_block_nx, nz * l, MPI_DOUBLE,
+                        taskId + 1, LEFT_TO_RIGHT, MPI_COMM_WORLD, &send_request);
+                MPI_Wait(&send_request, &status);
+//                 MPI_Send(pxPhi_local + nz * recvcount_block_nx, nz * l, MPI_DOUBLE,
+//                         taskId + 1, LEFT_TO_RIGHT, MPI_COMM_WORLD);
             }
             if ( taskId > 0 )
             {
-//                 MPI_Irecv(pxPhi_local, nz * l, MPI_DOUBLE,
-//                         taskId - 1, LEFT_TO_RIGHT, MPI_COMM_WORLD, &recv_request);
-                MPI_Recv(pxPhi_local, nz * l, MPI_DOUBLE,
-                        taskId - 1, LEFT_TO_RIGHT, MPI_COMM_WORLD, &status);
+                MPI_Irecv(pxPhi_local, nz * l, MPI_DOUBLE,
+                        taskId - 1, LEFT_TO_RIGHT, MPI_COMM_WORLD, &recv_request);
+                MPI_Wait(&recv_request, &status);
+//                 MPI_Recv(pxPhi_local, nz * l, MPI_DOUBLE,
+//                         taskId - 1, LEFT_TO_RIGHT, MPI_COMM_WORLD, &status);
             }
-            /* complete a nonblocking communication */
-//             MPI_Wait(&send_request, &status);
-//             MPI_Wait(&recv_request, &status);
         }
         
         /* zA(izl, :) = diffOperator(fdm(:, ixi, 2), coeff, dz, 1) + zPhi(izl, :); */
@@ -529,59 +530,36 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
             /* transfer of ghost cell values */
             if ( taskId > 0 )
             {
-//                 MPI_Isend(pOldFdm_local + (nz+2*l) * l, (nz+2*l) * l, MPI_DOUBLE,
-//                         taskId - 1, RIGHT_TO_LEFT, MPI_COMM_WORLD, &send_request);
-//                 MPI_Isend(pCurFdm_local + (nz+2*l) * l, (nz+2*l) * l, MPI_DOUBLE,
-//                         taskId - 1, RIGHT_TO_LEFT, MPI_COMM_WORLD, &send_request);
-                MPI_Send(pCurFdm_local + (nz+2*l) * l, (nz+2*l) * l, MPI_DOUBLE,
-                        taskId - 1, RIGHT_TO_LEFT, MPI_COMM_WORLD);
-//                 MPI_Isend(pxPhi_local + nz * l, nz * l, MPI_DOUBLE,
-//                         taskId - 1, RIGHT_TO_LEFT, MPI_COMM_WORLD, &send_request);
-//                 MPI_Isend(pxA_local + nz * l, nz * l, MPI_DOUBLE,
-//                         taskId - 1, RIGHT_TO_LEFT, MPI_COMM_WORLD, &send_request);
+                MPI_Isend(pCurFdm_local + (nz+2*l) * l, (nz+2*l) * l, MPI_DOUBLE,
+                        taskId - 1, RIGHT_TO_LEFT, MPI_COMM_WORLD, &send_request);
+                MPI_Wait(&send_request, &status);
+//                 MPI_Send(pCurFdm_local + (nz+2*l) * l, (nz+2*l) * l, MPI_DOUBLE,
+//                         taskId - 1, RIGHT_TO_LEFT, MPI_COMM_WORLD);
             }
             if ( taskId < numProcesses - 1 )
             {
-//                 MPI_Irecv(pOldFdm_local + (nz+2*l) * (recvcount_block_nx+l), (nz+2*l) * l, MPI_DOUBLE,
-//                         taskId + 1, RIGHT_TO_LEFT, MPI_COMM_WORLD, &recv_request);
-//                 MPI_Irecv(pCurFdm_local + (nz+2*l) * (recvcount_block_nx+l), (nz+2*l) * l, MPI_DOUBLE,
-//                         taskId + 1, RIGHT_TO_LEFT, MPI_COMM_WORLD, &recv_request);
-                MPI_Recv(pCurFdm_local + (nz+2*l) * (recvcount_block_nx+l), (nz+2*l) * l, MPI_DOUBLE,
-                        taskId + 1, RIGHT_TO_LEFT, MPI_COMM_WORLD, &status);
-//                 MPI_Irecv(pxPhi_local + nz * (recvcount_block_nx+l), nz * l, MPI_DOUBLE,
-//                         taskId + 1, RIGHT_TO_LEFT, MPI_COMM_WORLD, &recv_request);
-//                 MPI_Irecv(pxA_local + nz * (recvcount_block_nx+l), nz * l, MPI_DOUBLE,
-//                         taskId + 1, RIGHT_TO_LEFT, MPI_COMM_WORLD, &recv_request);
+                MPI_Irecv(pCurFdm_local + (nz+2*l) * (recvcount_block_nx+l), (nz+2*l) * l, MPI_DOUBLE,
+                        taskId + 1, RIGHT_TO_LEFT, MPI_COMM_WORLD, &recv_request);
+                MPI_Wait(&recv_request, &status);
+//                 MPI_Recv(pCurFdm_local + (nz+2*l) * (recvcount_block_nx+l), (nz+2*l) * l, MPI_DOUBLE,
+//                         taskId + 1, RIGHT_TO_LEFT, MPI_COMM_WORLD, &status);
             }
             if ( taskId < numProcesses - 1 )
             {
-//                 MPI_Isend(pOldFdm_local + (nz+2*l) * recvcount_block_nx, (nz+2*l) * l, MPI_DOUBLE,
-//                         taskId + 1, LEFT_TO_RIGHT, MPI_COMM_WORLD, &send_request);
-//                 MPI_Isend(pCurFdm_local + (nz+2*l) * recvcount_block_nx, (nz+2*l) * l, MPI_DOUBLE,
-//                         taskId + 1, LEFT_TO_RIGHT, MPI_COMM_WORLD, &send_request);
-                MPI_Send(pCurFdm_local + (nz+2*l) * recvcount_block_nx, (nz+2*l) * l, MPI_DOUBLE,
-                        taskId + 1, LEFT_TO_RIGHT, MPI_COMM_WORLD);
-//                 MPI_Isend(pxPhi_local + nz * recvcount_block_nx, nz * l, MPI_DOUBLE,
-//                         taskId + 1, LEFT_TO_RIGHT, MPI_COMM_WORLD, &send_request);
-//                 MPI_Isend(pxA_local + nz * recvcount_block_nx, nz * l, MPI_DOUBLE,
-//                         taskId + 1, LEFT_TO_RIGHT, MPI_COMM_WORLD, &send_request);
+                MPI_Isend(pCurFdm_local + (nz+2*l) * recvcount_block_nx, (nz+2*l) * l, MPI_DOUBLE,
+                        taskId + 1, LEFT_TO_RIGHT, MPI_COMM_WORLD, &send_request);
+                MPI_Wait(&send_request, &status);
+//                 MPI_Send(pCurFdm_local + (nz+2*l) * recvcount_block_nx, (nz+2*l) * l, MPI_DOUBLE,
+//                         taskId + 1, LEFT_TO_RIGHT, MPI_COMM_WORLD);
             }
             if ( taskId > 0 )
             {
-//                 MPI_Irecv(pOldFdm_local, (nz+2*l) * l, MPI_DOUBLE,
-//                         taskId - 1, LEFT_TO_RIGHT, MPI_COMM_WORLD, &recv_request);
-//                 MPI_Irecv(pCurFdm_local, (nz+2*l) * l, MPI_DOUBLE,
-//                         taskId - 1, LEFT_TO_RIGHT, MPI_COMM_WORLD, &recv_request);
-                MPI_Recv(pCurFdm_local, (nz+2*l) * l, MPI_DOUBLE,
-                        taskId - 1, LEFT_TO_RIGHT, MPI_COMM_WORLD, &status);
-//                 MPI_Irecv(pxPhi_local, nz * l, MPI_DOUBLE,
-//                         taskId - 1, LEFT_TO_RIGHT, MPI_COMM_WORLD, &recv_request);
-//                 MPI_Irecv(pxA_local, nz * l, MPI_DOUBLE,
-//                         taskId - 1, LEFT_TO_RIGHT, MPI_COMM_WORLD, &recv_request);
+                MPI_Irecv(pCurFdm_local, (nz+2*l) * l, MPI_DOUBLE,
+                        taskId - 1, LEFT_TO_RIGHT, MPI_COMM_WORLD, &recv_request);
+                MPI_Wait(&recv_request, &status);
+//                 MPI_Recv(pCurFdm_local, (nz+2*l) * l, MPI_DOUBLE,
+//                         taskId - 1, LEFT_TO_RIGHT, MPI_COMM_WORLD, &status);
             }
-            /* complete a nonblocking communication */
-//             MPI_Wait(&send_request, &status);
-//             MPI_Wait(&recv_request, &status);
         }
     }
     
