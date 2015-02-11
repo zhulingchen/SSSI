@@ -24,6 +24,6 @@ end
 
 if (isunix) % Linux / MacOS
     fprintf('Compiling with OpenMPI...\n');
-    mex CC='/usr/local/bin/mpicc' LD='/usr/local/bin/mpicc' fwdTimeCpmlFor2dAw_openmpi_mex.c finiteDifference.c
+    mex CC='/usr/local/bin/mpicc' LD='/usr/local/bin/mpicc' CFLAGS='\$CFLAGS -std=c99' fwdTimeCpmlFor2dAw_openmpi_mex.c finiteDifference.c
 end
 fprintf('Compiling complete!\n');
