@@ -645,12 +645,19 @@ For reflector $\xi = (z_\xi, x_\xi, y_\xi)$ in 3-D and $\xi = (z_\xi, x_\xi)$ in
 \caption{Reflector, and travel times (adapted from \cite{Biondi:2006aa})}
 \end{figure}
   
-An example of Kirchhoff's migration for the fault model (available in the \path{modelData} folder) can 
-be found in \path{src/mainKirkCpmlFor2dAw_fault.m}, which is 
+An example of Kirchhoff's migration (see Figure \ref{fig:kirc}) for the fault model (available in the \path{modelData} folder) can 
+be found in \path{mainKircCpmlFor2dAw_fault.m}, which is 
 inherited from a existing package \cite{Kozola:2011aa}.
 The most important part of Kirchhoff's migration is the computation of travel times $t_s$ and $t_r$.   
 These can be done either with \path{src/ray2d.m} from \cite{Kozola:2011aa} or
 \path{src/eikonal2d.m} which solves the 2-D Eikonal equation using a fast sweeping method \cite{Zhao:2004aa}.
+
+\begin{figure}[htbp]\label{fig:kirc}
+\centering
+\includegraphics[width=0.9\textwidth]{Fig/kirc.eps}
+\caption{Kirkchhoff's migration result of the faults model}
+\end{figure}
+
 The Eikonal equation is of the form
 \begin{equation}
 |\nabla T(\bx)| c(\bx)= 1, ~~\bx\in \real^2
