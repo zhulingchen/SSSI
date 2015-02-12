@@ -152,7 +152,7 @@ E-mail: lczhu@gatech.edu} , \, Entao Liu\thanks{Center for Energy \& Geo Process
 
 
 \section{Requirements and License}
-The SSSI is a Matlab based package. Besides Matlab (2012a or later version recommend), you also need a C++ compiler to generate the mex function. 
+The SSSI is a Matlab based package. Besides Matlab (2012a or later version recommend), you also need a C++ compiler to generate the MEX-files. 
 SSSI is free software package: you can redistribute it and/or modify it under the terms of the GNU General Public License as
 published by the Free Software Foundation, version 2.0 of the License only. This program is distributed in the hope that 
 it will be useful, but WITHOUT ANY WARRANTY. If you find any glitches within the package, please contact the authors. 
@@ -161,11 +161,9 @@ We appreciate you contributions.
 
 
 \section{Introduction}
-The SSSI is designed to provide a package for numerical exploration geophysics. The purpose of package is more about providing a package for the interested 
-users to learn some popular algorithms and numerical schemes in exploration geophysics than the high performance of the computation as commercial software. 
-Thus, we choose the Matlab as the coding platform for its readability of the codes, ease of data visualization, etc. It is well known that nested for-loops on Matlab 
-is comparatively slow. In order to have a better efficiency, we use C to generate mex files for some frequently invoked functions.
-Currently, the major functions has been of the package are the following:
+The SSSI is designed to provide a package for numerical simulations in exploration geophysics. The purpose of package is biased on providing a package for the interested 
+users to learn some popular algorithms and numerical schemes in exploration geophysics rather than the high performance of the computation. Thus, Matlab is adopted as the coding platform for the readability of the codes, ease of data visualization, etc. It is well known that nested for-loops on Matlab is slow compared to complied languages. In order to have a better efficiency, we use C to generate MEX-files for some frequently invoked functions.
+Currently, the major functions has been of the package are as follows:
 \begin{itemize}
 \item Acoustic wave simulation for 2-D/3-D
 \item Elastic wave simulation for 2-D
@@ -174,21 +172,16 @@ Currently, the major functions has been of the package are the following:
 \item Full Waveform Inversion (FWI)
 \end{itemize}
 
-An exhaustive review of numerical simulation of wave equation and seismic imaging is out of the scope of this user guide. 
-You to quickly learn how to use SSSI and what you can do with it. We will only show and explain necessary 
-equations to keep the contents concise. Interested users are suggested to read the references therein for details.  
-
-
+With this user guide, the user may easily and quickly start using the SSSI for appropriate applications. An exhaustive review of numerical simulation of wave equation and seismic imaging is out of the scope of this user guide. Therefore, only necessary equations are showed and explained to keep the contents concise. The Interested user are referred to according references.  
 
 \section{Numerical Simulation of Acoustic Wave}
 
-
 \subsection{Acoustics wave equation}
-The seismic method is one of the basic tools in exploration geophysics. In seismic survey, man-made vibration sources (e.g. dynamite, viborseis trucks, and air gun) are fired off. Then the wave propagates through the subsurface media. The wave filed which contains direct wave, reflection, and refraction, will be recorded by array of receivers (e.g. geophones and hydrophones). In order to simulate this process with computers, it is crucial to solve the wave propagation numerically in the complex media accurately and efficiently. The real earth is an elastic media, such that the seismic waves contain both P-wave and S-wave components. For simplicity, we some times only consider the P-wave field, which is mathematically described by an acoustic wave equation. It is verified by borehole data that the media density variations are not the main source of reflected waves \cite{Hood:1981aa}. Therefore, it is reasonable to assume a constant density of the media. Then the acoustic wave equation is of the the form  
+The seismic method is one of the primary tools in exploration geophysics. In seismic survey, man-made vibration sources (e.g. dynamite, viborseis trucks, and air guns) are fired off. Then the wave propagates through the subsurface geological media. The wave filed which contains direct wave, reflection, and refraction, will be recorded by the array of receivers (e.g. geophones and hydrophones). In order to simulate this physical process with computers, it is crucial to solve wave equations  accurately and efficiently in the complex media with numerical methods. The real earth is an elastic media, such that the seismic waves contain both P-wave and S-wave components. For simplicity, we some times only consider the P-wave field, which is described by an acoustic wave equation. It is verified by borehole data that the media density variations are not the main source of reflected waves \cite{Hood:1981aa}. Therefore, it is reasonable to assume a constant density of the media. Then the acoustic wave equation can be written as
 \begin{equation}\label{eq:aw}
 \frac{1}{v^2(\bx)}\frac{\partial^2 p(\bx, t)}{\partial t^2} + f(\bx, t) = \nabla^2 p(\bx, t),
 \end{equation}
-where $p(\bx)$ is the filed of pressure variation and $\bx=(z,x)$ or $\bx=(z,x,y)$ is the coordinates in the Cartesian coordinate system for the 2-D and 3-D case, respectively. Following the convention in geophysics, the $z$ direction is pointing downwards. The $v(\bx)$ is the velocity of P-wave at location $\bx$. The $f(\bx,t)$ is the source term. Moreover, $\Delta$ in \eqref{eq:aw} is the Laplace operator defined as 
+where $p(\bx)$ is the filed of pressure variation and $\bx=(z,x)$ or $\bx=(z,x,y)$ is the coordinates in the Cartesian coordinate system for the 2-D and 3-D case, respectively. Following the convention in geophysics, the $z$ direction is pointing downwards. The $v(\bx)$ is the velocity of P-wave at location $\bx$ and$f(\bx,t)$ is the source term. Moreover, $\Delta$ in \eqref{eq:aw} is the Laplace operator defined as 
 \begin{equation}
 \Delta: =\left\{
 \begin{aligned}
@@ -198,13 +191,12 @@ where $p(\bx)$ is the filed of pressure variation and $\bx=(z,x)$ or $\bx=(z,x,y
 \right.  
 \end{equation}
 
-The Ricker wavelet is a widely used for seismic source term whose amplitude $A(t)$ with the peak frequency $\sff$ at time $t$ is computed 
-as:
+The Ricker wavelet is a widely used for seismic source term whose amplitude $A(t)$ with the peak frequency $\sff$ at time $t$ is computed as:
 \begin{equation}
 A(t)=(1-2\pi^2 \sff^2 t^2)e^{-\pi^2 \sff^2 t^2}.
 \end{equation}
 The \path{src/ricker.m} provides a Ricker wavelet generator which requires the peak frequency $\sff$, number of time samples $n$, 
-sampling time $dt$, and peak location $t_0$ as inputs. The Figure \ref{fig:ricker} illustrates the waveform of a Ricker wavelet with peak frequency equals 20 Hz. In SSSI you can choose from several different wavelets for the source term (Ricker wavelet, Fuchs-Mueller wavelet, sine cube wavelet, etc), which can be generated by \path{src/waveletGenerator.m}.
+sampling time $dt$, and peak location $t_0$ as inputs. The Figure \ref{fig:ricker} illustrates the waveform of a Ricker wavelet with peak frequency equals 20 Hz. In SSSI the user can choose from several different wavelets for the source term (Ricker wavelet, Fuchs-Mueller wavelet, sine cube wavelet, etc) which can be generated using \path{src/waveletGenerator.m}.
 
 \begin{figure}[htbp]
 \centering
@@ -215,19 +207,18 @@ sampling time $dt$, and peak location $t_0$ as inputs. The Figure \ref{fig:ricke
 
 
 \subsection{Finite Difference Method on Standard Grid}
-There are two popular methods of solving the wave equation numerically. One is the Finite Difference Method (FDM), the other is the Finite Elements Method (FEM) method. Each method has its pros and cons. Concretely, the FDM which is adopted by the SSSI is simple to implement. For most of the simulations, it has sufficient accuracy. The FEM usually provides more accurate results, which is based on adaptive meshing (multiscale) of the simulated region. However, its implementation is less straightforward, especially when adding boundary conditions.   
+Currently, there are two popular methods of solving the wave equation numerically. One is the Finite Difference Method (FDM), and the other is the Finite Elements Method (FEM) method. Each method has its pros and cons. Concretely, the FDM which is adopted by the SSSI is simple to implement. For most of the simulations, it has sufficient accuracy. The FEM usually provides more accurate results, which is based on adaptive meshing (multiscale) of the simulated region. However, its implementation is less straightforward, especially when adding boundary conditions.   
 
-In order to solve the wave equation with FDM, functions are represented by their values at certain discrete grid points and and derivatives are approximated through difference in these values. For instance, in a 2-D region we use the equi-distributed grid points $(z_i)_{0\le i \le I-1 }$, $(x_j)_{0\le j \le J-1}$, and $(t_n)_{0\le n \le N-1}$ given by $z_i = i\Delta z$, $x_j = j\Delta x$ and $t_n=n\Delta t$. Instead of solving the wave equation in a continuous domain (both in space and time) analytically, the FDM looks for a numerical solution on these grid points.  
+In order to solve the wave equation with FDM, the continuous functions and models are represented by their values at grid points and and derivatives are approximated by linear combination of these values. For instance, in a 2-D region we use the uniformly distributed grid points $(z_i)_{0\le i \le I-1 }$, $(x_j)_{0\le j \le J-1}$, and $(t_n)_{0\le n \le N-1}$ given by $z_i = i\Delta z$, $x_j = j\Delta x$ and $t_n=n\Delta t$. Instead of solving the wave equation in a continuous domain (both in space and time) analytically, the FDM provides for an approximated solution on these grid points.  
 
-A crucial step of FDM for wave equations is to find good approximations of the derivatives in \eqref{eq:aw} with function values on the grid points. Let us begin with the definition of the derivative, 
+The estimation of derivatives in \eqref{eq:aw} is extremely important in FDM. Let us begin with the definition of the derivative, 
  \begin{equation}
   \begin{aligned}
   \frac{\partial p(z, x, t)}{\partial z} &= \lim\limits_{\Delta z \rightarrow 0} \frac{p(z+\Delta z, x, t) - p(z, x, t)}{\Delta z}\\
   &\approx \frac{p(z+\Delta z, x, t) - p(z, x, t)}{\Delta z}.
   \end{aligned}
   \end{equation}
- Assuming the finite grid size $\Delta z$ is small enough, $(p(z+\Delta z, x, t) - p(z, x, t))/\Delta z$ is an accurate estimation of the derivative.
-  Apply this approximation twice. We can derive an estimation of the 2nd derivative in \eqref{eq:aw}
+ Assuming the grid size $\Delta z$ is small enough, $(p(z+\Delta z, x, t) - p(z, x, t))/\Delta z$ is an accurate estimation of the derivative. After applying this approximation twice, we derive an central difference scheme for the second-order derivative in \eqref{eq:aw}
   \begin{equation}
   \begin{aligned}
   &\frac{\partial^2 p(z, x, t)}{\partial z^2} = \frac{\partial}{\partial z}\frac{\partial p(z, x, t)}{\partial z} \approx \frac{\frac{\partial p(z, x, t)}{\partial z} - \frac{\partial p(z-\Delta z, x, t)}{\partial z}}{\Delta z}\\
@@ -252,7 +243,7 @@ Simple algebraic manipulations lead to a recursive expression of the wave equati
     &+ 2p_{i,j}^{(n)}-p_{i,j}^{(n-1)} + v_{i,j}^2\Delta t^2 f_{i,j}^{(n)}.
     \end{aligned}
   \end{equation}
-  In \eqref{eq:stagGrid}, all values of $p$ are computed on integer grid points as we illustrated in Figure \ref{fig:stanG}. The FDM on standard grid is an easy-to-understand numerical scheme, which serves as an excellent explanatory example. However, it is not adopted in SSSI because of its drawbacks in accuracy.  
+  In \eqref{eq:stagGrid}, all values of $p$ are computed on integer grid points as we illustrated in Figure \ref{fig:stanG}. This FDM on standard grid is an easy-to-understand numerical scheme, which serves as an excellent explanatory example. However, SSSI used another scheme, which will discuss momentarily, for its better accuracy.  
   
 \begin{figure}[htbp]
 \centering
@@ -300,18 +291,18 @@ Simple algebraic manipulations lead to a recursive expression of the wave equati
 
 
 \subsection{Finite Difference Method on Staggered Grid}
-With a sophisticated design, we can actually obtain higher order of approximation of the derivatives if we have access to the value of $p$ on the half grid points, as denoted by the green dots in Figure \ref{fig:stagG}. 
+With a sophisticated design, it turns out we can obtain higher order of approximation of the derivatives if we have access to the value of $p$ on the half grid points, as denoted by the green dots in Figure \ref{fig:stagG}. 
 
 By Taylor expansion of a function $p(u)$ on the half grid points
   \begin{equation}\label{eq:half1}
-      p\left(u + \frac{2k+1}{2}\Delta u\right) = p(u) + \sum\limits_{n=1}^{\infty} \frac{1}{n!}\frac{\partial^n p(u)}{\partial u^n}\left(\frac{2k+1}{2}\Delta u\right)^n, 
+      p\left(u + \frac{2k+1}{2}\Delta u\right) = p(u) + \sum\limits_{n=1}^{\infty} \frac{1}{n!}     \frac{\partial^n p(u)}{\partial u^n}\left(\frac{2k+1}{2}\Delta u\right)^n, 
       \end{equation}
       \begin{equation}\label{eq:half2}
       p\left(u - \frac{2k+1}{2}\Delta u\right) = p(u) + \sum\limits_{n=1}^{\infty} \frac{(-1)^n}{n!}\frac{\partial^n p(u)}{\partial u^n}\left(\frac{2k+1}{2}\Delta u\right)^n,
   \end{equation}
 where $u = z, x; \; k = 0, 1, 2, \dots $.
-  Take the difference between \eqref{eq:half1} and \eqref{eq:half2} which cancels all the terms when $n$ is even.
-So it implies for $k = 0, 1, 2, \dots$
+  The difference between \eqref{eq:half1} and \eqref{eq:half2} cancels all the terms when $n$ is even.
+So it implies that for $k = 0, 1, 2, \dots$
 \begin{equation}
 \label{eq:Fdiff}
     \begin{aligned}
@@ -319,7 +310,7 @@ So it implies for $k = 0, 1, 2, \dots$
     &~~~~~~~~~  =  \frac{\partial p(u)}{\partial u} + \sum\limits_{n=1 }^{\infty} \frac{1}{(2n+1)!}\frac{\partial^{(2n+1)} p(u)}{\partial u^{(2n+1)}}\left(\frac{2k+1}{2}\Delta u\right)^{2n}.
     \end{aligned}
     \end{equation}
-We can approximate $\frac{\partial p(u)}{\partial u}$ as a weighted sum of finite differences based on \eqref{eq:Fdiff}
+We can approximate $\frac{\partial p(u)}{\partial u}$ using a linear combination of the finite differences based on \eqref{eq:Fdiff} as follows
   \begin{equation}
   \label{eq:weight}
   \begin{aligned}
@@ -327,9 +318,9 @@ We can approximate $\frac{\partial p(u)}{\partial u}$ as a weighted sum of finit
     &= \sum\limits_{k=0}^{N-1} a_k \left[ \frac{\partial p(u)}{\partial u} + \frac{\Delta u^2}{3! \cdot 2^2}(2k+1)^2\frac{\partial^3 p(u)}{\partial u^3} \right.\\&\left. + \frac{\Delta u^4}{5! \cdot 2^4}(2k+1)^4\frac{\partial^5 p(u)}{\partial u^5} + \cdots \right.\\&\left. + \frac{\Delta u^{2N-2}}{(2N-1)! \cdot 2^{2N-2}}(2k+1)^{2N-2}\frac{\partial^{2N-1} p(u)}{\partial u^{2N-1}} + o(\Delta u^{2N}) \right].
   \end{aligned}
   \end{equation}
-If the weighted $\{ a_k\}_{k=0}^{N-1}$ are chosen carefully, we can eliminate all the term on the right hand side of \eqref{eq:weight} and make the coefficient of $\frac{\partial p(u)}{\partial u} =1$. These $N$ weights generate a approximation of the derivative of order $2N$. Additionally, the derivative $\frac{\partial p(u)}{\partial u}$ and function itself $p(u)$ live on different colors of dots, i.e. $\frac{\partial p(u)}{\partial u}$ on half gird points, and $p(u)$ on integer grid points.
+If the weights $\{ a_k\}_{k=0}^{N-1}$ are chosen properly, all the term on the right hand side of \eqref{eq:weight} can be eliminated except $\frac{\partial p(u)}{\partial u}$ and the error term $o(\Delta u^{2N})$. These $N$ term linear combination servers as an approximation of the derivative of order $2N$. Additionally, the derivative $\frac{\partial p(u)}{\partial u}$ and function itself $p(u)$ live on different colors of dots, i.e. $\frac{\partial p(u)}{\partial u}$ on half gird points, and $p(u)$ on integer grid points. This staggered grid does not implies we actually need access of the values on half grid points when we solve the wave equation using FDM because using this approximation twice, the second-order derivative $\frac{\partial^2 p(u)}{\partial u}$ and the $p(u)$ both live on integer grid points.
 
-Solving $\{a_k\}_{k=0}^{N-1}$ by the following linear equations
+From the purpose of the choosing the weights $\{a_k\}_{k=0}^{N-1}$, it is clearly that they satisfy the following system of linear equations
 \begin{equation*}
 \begin{bmatrix}
   1 & 1 & \cdots & 1 \\
@@ -354,34 +345,32 @@ Solving $\{a_k\}_{k=0}^{N-1}$ by the following linear equations
   &\vdots
   \end{aligned}
 \end{equation*}
-
-The source code which generates the appropriate weights can be found at \path{src/dCoef.m}. Moreover, the finite difference operator on staggered grid is fulfilled by \path{src/diffOperator.m} which can perform arbitrarily high order of approximation. The default value of \texttt{nDiffOrder = 3} generates 6-th order of approximation of the spatial derivatives.
-
+The source code \path{src/dCoef.m} gives a solution for the above system of arbitrary $N$. Moreover, the finite difference operator on staggered grid is fulfilled by \path{src/diffOperator.m} which can perform arbitrarily high order of approximation. The default value of \texttt{nDiffOrder = 3}, which generates 6-th order of approximation of the spatial derivatives, is good enough in most of the cases.
 
 \subsection{Absorbing Boundary Conditions (ABC)}
-For the sake of efficiency and storage, we only simulate wave propagation in a truncated region which contains the seismic source and array of sensors. In a real seismic survey, the seismic wave generated by the source should have no reflection on the simulation boundaries to mimic the unbounded media. If we do not take care with particular techniques and run the recursive formula, say \eqref{eq:stagGrid}, the numerical simulation will generate strong reflections on the boundaries which do not exist in the real earth. In order to attenuate the reflections, a common method is to impose the absorbing boundary conditions (ABC) \cite{Engquist:1977aa, Clayton:1977aa}. Figure \ref{fig:ABC} illustrates the 2-D scenario, when we pad the original velocity model's left, right, bottom boundaries with absorbing boundaries of certain width (fulfilled by \path{src/extBoundary.m}). ABC will attenuated the wave amplitude in those absorbing boundaries and keep it unaltered outside of the absorbing boundaries. Throughout the SSSI, except specified explicitly, we consider the top of the simulated region to be the surface of the earth, which is a free surface. Therefore, no absorbing boundary added to it.
+In a real seismic survey, the seismic wave propagates in a unbounded half-space media. For the sake of computational efficiency and storage, the seismic survey is simulated only in a truncated region. If no particular techniques are applied on the boundary of the simulated region, the recursive formula (e.g. \eqref{eq:stagGrid}) will generate strong reflections there which do not physically exist in the real seismic survey. In order to attenuate the reflections, a common method is to impose the absorbing boundary conditions (ABC) \cite{Engquist:1977aa, Clayton:1977aa}. Figure \ref{fig:ABC} illustrates the 2-D scenario, when we pad the original truncated velocity model's left, right, bottom boundaries with absorbing boundaries of certain width (fulfilled by \path{src/extBoundary.m}). ABC will attenuated the wave amplitude in those absorbing boundaries and keep the waveform unaltered outside of the absorbing boundaries. Throughout the SSSI, except specified explicitly, we consider the top of the simulated region to be the surface of the earth, which is a free surface without ABC applied.
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.6\textwidth]{Fig/abc.png}
-\caption{Absorbing boundaries of the 2-D simulation region}
+\includegraphics[width=0.6\textwidth]{Fig/ABC}
+\caption{Absorbing boundaries of a 2-D simulation region}
 \label{fig:ABC}
 \end{figure}
 
 Numerically, a simple but efficient method for the ABC is called sponge ABC \cite{Cerjan:1985aa}. Suggested by its name, the reflections are exponentially attenuated in the extended artificial boundary area by multiplying a factor $d(u) < 1$.
 \begin{equation}
-  d(u) = e^{-\alpha^2\text{dist}(u)^2}, \mbox{  where  } u=x, z
+d(u) = e^{-\alpha^2\text{dist}(u)^2}, \mbox{  where  } u=x, z
 \end{equation}
 where $\text{dist}(u)$ is the distance from $u$ to the original boundary in the $u$ direction. 
 
-The source code of which implements the acoustic wave propagation with sponge ABC 
-is \path{src/fwdTimeSpongeFor2dAw.m}. Through out all names of the source files in SSSI,  we follow this rule: \path{fwd} means forward (\path{rvs} means reverse); \path{Time} means the equation is solved in the time domain (\path{freq} means in frequency domain); \path{For2d} means 2-D (\path{For3d} means 3-D); and \path{Aw} is short
- for acoustic wave (\path{Ew} is for elastic wave).  Although the waves are attenuated by ABC, however the reflection can not be completely eliminated. This is the reason in SSSI we utilize the following method called Perfectly Matched Layer as well. 
+The source code which implements the acoustic wave propagation with sponge ABC 
+is \path{src/fwdTimeSpongeFor2dAw.m}. Through out of the source files in SSSI,  we follow the following naming rules: \path{fwd} means forward (\path{rvs} means reverse); \path{Time} means the equation is solved in the time domain (\path{freq} means in frequency domain); \path{For2d} means 2-D (\path{For3d} means 3-D); and \path{Aw} is short
+ for acoustic wave (\path{Ew} is for elastic wave).  Although the waves are considerably attenuated by ABC, the reflection still can not be completely eliminated. This is the reason in SSSI we utilize the following method called Perfectly Matched Layer as well. 
 
 
 
 \subsubsection{Perfectly Matched Layer (PML)}
- Perfectly Matched Layer (PML) method which was originally formulated for use with electromagnetic equations which outperforms other existing methods. The PML is proven to be efficient for wave equations (both acoustic and elastic) as well \cite{Komatitsch:2007aa}. It has a zero reflection coefficient for all angles of incidence and all frequencies before discretization. Moreover, a PML interface between a physical medium and the extended artificial boundary completely absorbs incident waves from the physical medium regardless of its incidence angle and frequency.
+The Perfectly Matched Layer (PML) method was originally formulated for use with electromagnetic equations. In seismic simulations the PML is proven to be efficient for wave equations (both acoustic and elastic) as well \cite{Komatitsch:2007aa}. It has a zero reflection coefficient for all angles of incidence and all frequencies before discretization. Moreover, a PML interface between a physical medium and the extended artificial boundary completely absorbs incident waves from the physical medium regardless of its incidence angle and frequency.
 By defining a damping profile $d(u)$ ($u=z, x, y$) function (see \path{src/dampPml.m}) such that $d(u) = 0$ inside the physical medium and $d(u) > 0$ in the PML region, a new complex coordinate $\tilde{u}$ is introduced as
   \begin{equation}
   \label{eq:replace}
@@ -398,8 +387,8 @@ Or equivalently,
 \caption{The damping profile $d(u)$}
 \end{figure}
 
-In the homogeneous media, the acoustic wave equation has the following solution $A \exp(-j (\bk \cdot \bx -\omega t))$, where $A$ represents the amplitude and polarization of the plane wave. The $\bk = k_x \hx + k_y \hy +k_z \hz$ denotes the wave vector, which 
-indicates the direction of wave propagation of the plane wave. $\bx = x\hx +y\hy +z \hz$ is the position vector. After the replacement in \eqref{eq:replace}, we can derive another solution of the acoustic equation as follows,
+In homogeneous media, the acoustic wave equation has a solution $A \exp(-j (\bk \cdot \bx -\omega t))$, where $A$ represents the amplitude and polarization of the plane wave. The $\bk = k_x \hx + k_y \hy +k_z \hz$ denotes the wave vector, which 
+indicates the direction of wave propagation of the plane wave. $\bx = x\hx +y\hy +z \hz$ is the position vector. By substitution  in \eqref{eq:replace}, we can derive another solution of the acoustic equation as follows,
 \begin{equation}
 \begin{aligned}
 &A\exp(-j(k_x \tilde{x} + k_y y + k_z z -\omega t))=\\
@@ -408,9 +397,9 @@ indicates the direction of wave propagation of the plane wave. $\bx = x\hx +y\hy
 \end{equation}
 In the original simulated region the the new solution is equivalent to the old one, since $d_x=0$. Additionally, in the $\hat{\mathbf{n}}= \hx$ direction, the wave amplitude decay with a coefficient $\exp(-kx/\omega \int_0^x d(s)ds)$ that is inversely proportional to the angular frequency $\omega$ of the plane wave. 
 
-In SSSI we use a non-split method, the Convolutional PML (CPML) \cite{Luebbers:1992aa, Roden:2000aa, Komatitsch:2007aa}, which is more reasonable to work with the acoustic (pressure) source. In time domain,
-  \begin{equation}
-    \frac{\partial}{\partial \tilde{u}} = s_u(t) * \frac{\partial}{\partial u} = \frac{\partial}{\partial u} - \left(d(u)H(t)e^{-d(u)t}\right) * \frac{\partial}{\partial u}
+In SSSI we implement a non-split method, the Convolutional PML (CPML) \cite{Luebbers:1992aa, Roden:2000aa, Komatitsch:2007aa}, which is more natural for a acoustic (pressure) source function. In time domain,
+ \begin{equation}
+    \frac{\partial}{\partial \tilde{u}} = s_u(t) * \frac{\partial}{\partial u} = \frac{\partial}{\partial u} - \left(d(u)H(t)e^{-d(u)t}\right) * \frac{\partial}{\partial u}.
   \end{equation}
 The convolution can be performed as follows,
   \begin{equation}
@@ -425,7 +414,6 @@ The convolution can be performed as follows,
   \end{aligned}
   \right.
   \end{equation}
-  
   and  
   \begin{equation}
   \label{eq:fwdTimeCpml_var}
@@ -441,8 +429,8 @@ The convolution can be performed as follows,
   \right.
   \end{equation}
 
-The implemention of acoustic wave propagation with CPML is \path{src/fwdTimeCpmlFor2dAw.m} and \path{src/fwdTimeCpmlFor3dAw.m}.
-For higher efficiency of the simulation, the \path{fwdTimeCpmlFor2dAw.m}, which is used frequently in the seismic imaging algorithms, is also implemented with C and mex file. 
+The implementation of acoustic wave propagation with CPML is \path{src/fwdTimeCpmlFor2dAw.m} and \path{src/fwdTimeCpmlFor3dAw.m}.
+For higher efficiency of the simulation, the \path{fwdTimeCpmlFor2dAw.m}, which is used frequently in the seismic imaging algorithms, is also implemented with C MEX-files. 
 
 
 \subsection{Parallel Computing using OpenMPI}
@@ -529,20 +517,18 @@ to run the parallel forward acoustic wave propagation, where \texttt{<NP>} refer
 
 
 \subsection{Numerical Artifacts and Instabilities}
-In seismic simulations, there are several parameters you should play with, such as the spatial grid, source function, sampling rate, etc. However, 
-for the stability and accuracy of the numerical scheme, some premises should be honored when we adjust values for these parameters.  
+In seismic simulations, there are a number of parameters need to be specified, such as the grid size, source function frequency, sampling rate, etc. However, for the stability and accuracy of the numerical scheme, some premises should be honored when we adjust these parameters.  
 Particularly, when Nyquist sampling criteria for the finite difference wave field simulation has not been satisfied on space or time domain, some numerical artifacts and instabilities will occur. In summary, when the spatial sampling rate is too low,  the solution suffers numerical grid dispersion; when the temporal sampling rate is too low, the Courant instability happens.
 
 To avoid the occurrence of harmful grid dispersion the following criteria for the spatial grid spacing $\Delta u$ has to be satisfied
 \begin{equation}
   \Delta u \leq \frac{\lambda_{\min}}{n} = \frac{V_{\min}}{nf_{\max}}
 \end{equation}
-where $n$ is the number of sampling points per wavelength, $\lambda_{\min}$ and $V_{\min}$ are the minimal wave length and velocity, and $f_{\max}$ is the maximal frequency. 
-Video clips of acoustic wave propagation with and without numerical grid dispersion can be found at:
+where $n$ is the number of sampling points per wavelength, $\lambda_{\min}$ and $V_{\min}$ are the minimal wave length and velocity, and $f_{\max}$ is the maximal frequency. Video clips of acoustic wave propagation with and without numerical grid dispersion can be found at:
 \url{https://www.youtube.com/watch?v=scBvd3FQ73U} and \url{https://www.youtube.com/watch?v=Q17tieZuhJQ}
 
 In order to avoid the Courant instability, the time step $\Delta t$ must be less than the time for the wave to travel between two 
-adjacent sampling points with grid grid spacing $\Delta u$. In the 2-D scenario,
+adjacent sampling points with grid grid spacing $\Delta u$. In 2-D scenarios,
 \begin{equation}
 \frac{\sqrt{2}V_{\textbf{max}}\Delta t}{\min\{\Delta z, \Delta x\}}\le \epsilon \le 1.
 \end{equation}
@@ -550,21 +536,19 @@ Examples of acoustic wave propagation which are Courant stable and Courant insta
 \url{https://www.youtube.com/watch?v=Gl1pNm3jF8g}  and \url{https://www.youtube.com/watch?v=wMAuhW7gzdM}. 
 In the Courant instable case, noticing the color bar, the solution actually blows up over time.
 
-One method to alleviate the numerical dispersion is flux-corrected transport (FCT) introduced by \cite{Fei:1995aa}, 
+A approach to alleviate the numerical dispersion is flux-corrected transport (FCT) introduced by \cite{Fei:1995aa}, 
 which is implemented for both acoustic and elastic waves in SSSI (see \path{src/fctForAw.m} and \path{src/fctForEw.m}).
-In the default simulations of acoustic and elastic waves in SSSI the application of FCT is muted, which may can slow down the 
-simulation considerably. If possible, we strongly suggest to modify the sampling rate and $\Delta u$ 
-to avoid the grid dispersion than employing the FCT.  
-
+In the default simulations of acoustic and elastic waves in SSSI the application of FCT is muted, which may can slow down the simulation significantly. If possible, we strongly suggest to modify the sampling rate and $\Delta u$ 
+to avoid the grid dispersion rather than employing FCT.  
 
 \subsection{2-D Acoustic Wave Equation in Frequency Domain}
 In signal processing, a signal transformed into frequency domain may unveil hidden information in time domain and brings new processing
 techniques. The acoustic wave equation given in \eqref{eq:aw} which is time dependent can be transformed and solved in frequency domain. 
-Taking Fourier transform of \eqref{eq:aw} with respect to $t$ on both sides
+Taking Fourier transform of \eqref{eq:aw} with respect to $t$ on both sides, we obtain
   \begin{equation}
   \frac{\omega^2}{c^2(z, x)}P_{\omega}(z, x) + \nabla^2 P_{\omega}(z, x) =- F_{\omega}(z, x).
   \end{equation}
-  We spatially discretize the simulated region as we did for the FDM in time domain.  
+ The simulated region is spatially discretized the same as the FDM in time domain.  
   Let $P_{i,j}^{(\omega)} := P_{\omega}(i\Delta z, j\Delta x)$, $F_{i,j}^{(\omega)} := 
   F_{\omega}(i\Delta z, j\Delta x)$, $c_{i,j} := c(i\Delta z, j\Delta x)$  with 1st-order finite difference approximation of the Laplace operator.
   We obtain the following discrete equation for a specific frequency $\omega$
@@ -574,26 +558,25 @@ Taking Fourier transform of \eqref{eq:aw} with respect to $t$ on both sides
   \end{aligned}
   \end{equation}
   
-There are some advantages of Finite Difference in Frequency Domain (FDFD) over Finite Difference in Time Domain (FDTD), we will discuss momentarily. FDFD transforms wave equation for wave fields at a constant frequency into a linear system 
+There are some advantages of Finite Difference in Frequency Domain (FDFD) over Finite Difference in Time Domain (FDTD) that we will discuss shortly. The Fourier transform convert the second-order derivative in the wave equation into a product. So the wave field at a certain frequency $\omega$ is determined by a system of linear equations 
 \begin{equation}\label{eq:awFreq}
 \bA^{(\omega)}\bp^{(\omega)} = \bff^{(\omega)},
 \end{equation}
 where $\bff$ and $\bp$ are the vectorized source term $F_{i,j}$ and pressure field $P_{i,j}$.
-\begin{figure}[htbp]
+ \begin{figure}[htbp]
 \centering
 \includegraphics[width=0.5\textwidth]{Fig/FDFDMatrixA.pdf}
 \caption{sparse FDFD matrix $\bA$ for a specific frequency $\omega$. Blue dots denotes the nonzero elements.}
 \label{fig:SparseA}
 \end{figure}
 
-In order to solve acoustic wave equation in frequency $\omega$, we only have to solve the matrix equation \eqref{eq:awFreq}. The 
-  matrix $\bA$ is highly sparse (see Figure \ref{fig:SparseA}), because $P_{i,j}$ is only dependent on its adjacent grid points and such that each row of $\bA$ has at most five nonzero entries.
+The matrix $\bA$ is highly sparse (see Figure \ref{fig:SparseA}), because $P_{i,j}$ is only dependent on its adjacent grid points and such that each row of $\bA$ has at most five nonzero entries.
   Matlab has been optimized to invert the sparse matrix. Other than the tool come along with Matlab, when the size of $\bA$ is huge, we recommend a well developed package with a Matlab interface called MUMPS (MUltifrontal Massively Parallel sparse direct Solver) to solve the sparse matrix inversion problem. 
- The concerning of data volume to store and process is another point which made FDFD excels FDTD for our application. Instead of processing the whole data set in time domain, we can solve the wave equation only in the important part of spectrum using FDFD, which considerably reduces the size of the data and makes large-scale problems (e.g., full waveform inversion) feasible. For speed purposes, since the wave equations are independent over frequencies, FDFD can be easily parallelized across frequencies.
+ The concerns on data volume to store and process is another factor which made FDFD excels FDTD for our application. Instead of processing the whole data set in time domain, we can solve the wave equation only in the important part of spectrum using FDFD, which considerably reduces the size of the data and makes large-scale problems (e.g., full waveform inversion) feasible. For speed purposes, since the wave equations are independent over frequencies, FDFD can be easily parallelized across frequencies.
 
-An interesting example is the Green's function, which is the solution of wave equation with an impulse source term. Numerically,
-the Green's function cannot be solved accurately with FDTD, because of the impulse function has components in arbitrarily high
-frequency. This will bring serve grid dispersion to the numerical solution. However this is not a problem for FDFD. The Green's Function 
+
+An interesting example is the Green's function, which is the solution of wave equation with an impulse source term. Numerically, the Green's function cannot be solved accurately with FDTD, because of the impulse function has components in arbitrarily high
+frequency. This source function brings serve grid dispersion to the numerical solution. However this is not an issue for FDFD. The Green's Function 
 $G_{\omega}$ in frequency domain, which solves  
   \begin{equation}
   \frac{\omega^2}{c^2(z, x)}G(z, x;\omega) + \nabla^2 G(z, x;\omega) = \delta_{\omega}(z-z_0, x-x_0)
@@ -603,13 +586,13 @@ $G_{\omega}$ in frequency domain, which solves
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=0.5\textwidth]{Fig/GreensFunction.pdf}
-\caption{Real part of the Green's function at frequency 20 Hz} 
+\caption{Real part of the Green's function at frequency 20 Hz for a region with PML} 
 \end{figure}
 
 
 
 \section{Numerical solution for elastic wave equation}
-In the real media, the seismic waves are in the form of elastic waves which are composed of both P-wave and S-wave
+In the real media, the seismic waves are in the form of elastic waves which are composed of both P-wave and S-wave. The particle velocity field satisfies 
 \begin{equation}
     \left\{
     \begin{aligned}
@@ -623,9 +606,8 @@ In the real media, the seismic waves are in the form of elastic waves which are 
     \right.
     \end{equation}
   where $(v_z, v_x)$ is the particle velocity field, $v_{up}$ is P-wave field in $u$-direction $(u=x, z)$,
-  $v_{us}$ is the S-wave fields in $u$-direction $(u=x, z)$, and $(s_z, s_x)$: particle displacement vector.
-  We can see that in this form, we separate the P-wave and S-wave fields in the solution \cite{Chen:2014aa}. Since 
-  we already split the velocity field into $z$ and $x$ directions, we use a split PML (SPML) for the FDFD. See \path{src/fwdTimeSpmlFor2dEw.m}.
+  $v_{us}$ is the S-wave fields in $u$-direction $(u=x, z)$, and $(s_z, s_x)$ is particle displacement vector.
+  We can see that in this form the P-wave and S-wave fields are separated in the solution \cite{Chen:2014aa}. Thus a split PML (SPML) for the FDFD is adopted in SSSI (see \path{src/fwdTimeSpmlFor2dEw.m}).
     
 \begin{figure}[htbp]
 \centering
@@ -654,19 +636,19 @@ I(\xi)=\int_{\Omega_\xi} W(\xi,\bm,\bh)dt(t=t_d(\xi,
 \bm,\bh),\bm,\bh)d\bm d\bh,
 \end{equation}
 where limited region $\Omega_\xi$ is centered around the location $\xi$
-in the $m$ plane, called the migration aperture. $t_d=t_s[\bx,\bs,v(z,x,y)]+t_g[\bx,\bg,v(z,x,y)]$.
+in the $m$ plane, called the migration aperture. $t_d=t_s[\bx,\bs,v(z,x,y)]+t_r[\bx,\bg,v(z,x,y)]$.
 For reflector $\xi = (z_\xi, x_\xi, y_\xi)$ in 3-D and $\xi = (z_\xi, x_\xi)$ in 2-D case.
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.5\textwidth]{Fig/tstg.PNG}
+\includegraphics[width=0.5\textwidth]{Fig/tstr}
 \caption{Reflector, and travel times (adapted from \cite{Biondi:2006aa})}
 \end{figure}
   
 An example of Kirchhoff's migration for the fault model (available in the \path{modelData} folder) can 
 be found in \path{src/mainKirkCpmlFor2dAw_fault.m}, which is 
 inherited from a existing package \cite{Kozola:2011aa}.
-The most important part of Kirchhoff's migration is the computation of travel times $t_s$ and $t_g$.   
+The most important part of Kirchhoff's migration is the computation of travel times $t_s$ and $t_r$.   
 These can be done either with \path{src/ray2d.m} from \cite{Kozola:2011aa} or
 \path{src/eikonal2d.m} which solves the 2-D Eikonal equation using a fast sweeping method \cite{Zhao:2004aa}.
 The Eikonal equation is of the form
@@ -679,9 +661,8 @@ first arrival in this region.
 
 
 \subsection{Reverse Time Migration (RTM)}
-The Reverse Time Migration (RTM) is a two-way wave-equation migration for accurate imaging in and below areas with complex subsurface 
-structure. RTM has a relatively old origin, however it has not been used routinely until recently because of its
-computation expense. In RTM a forward wave propagation and a reverse time wave propagation need to be 
+The Reverse Time Migration (RTM) is a two-way wave-equation migration for accurate imaging in and below areas with complex subsurface structure. In the literature RTM has a relatively old origin, however it has not been used routinely until recently because of its
+computational intensity. In RTM a forward wave propagation and a reverse wave propagation need to be 
 simulated, which requires a lot of computation power. However, RTM has a number of advantages over conventional depth migration methods such as 
 handing evanescent energy and no dip limitation \cite{McMechan:1983aa, Baysal:1983aa}. In summary, RTM is implemented in three steps. 
 \begin{enumerate}
@@ -689,90 +670,90 @@ handing evanescent energy and no dip limitation \cite{McMechan:1983aa, Baysal:19
 \item solve the reverse wave field $p_r(\bx, t)$ by the received surface data through the incident model, which is typically a smoothed version of the true model
 \item superposition of above using an imaging condition (chosen from a number existing imaging conditions)
 \end{enumerate}
-The second step is equivalent to reverse the recorded traces in time. Then input those traces as source function and solve the wave field. 
+The second step above is equivalent to reverse the recorded traces in time then input those traces as source functions and solve a forward wave field. 
 
 For instance, an imaging condition with cross-correlation is 
 \begin{equation}
 \label{eq:rtmImaging}
 I(\bx) = \sum_{\bx_s} \frac{\int_0^T p_f(\bx, t; \bx_s)p_r(\bx, t)\mathrm{d}t}{\int_0^T |p_f(\bx, t; \bx_s)|^2\mathrm{d}t + \epsilon^2}.
 \end{equation}
-Worth noticing that, using the imaging conditions \eqref{eq:kirchhoffImaging}, \eqref{eq:rtmImaging}, and many other imaging conditions, the values $I(\bx)$ are not necessarily to be in the model domain. It only depicts the locations of the reflectors. Based on a migrated image, we may only qualitatively claim that the stronger model perturbation gives greater values in the image. 
+Worth noticing that using the imaging conditions \eqref{eq:kirchhoffImaging}, \eqref{eq:rtmImaging}, and many other imaging conditions, the values $I(\bx)$ are not necessarily to be meaningful in the model domain. $I(\bx)$ only depicts the locations of the reflectors. Based on a migrated image, we may only qualitatively claim that the stronger model perturbation gives greater values $I(\bx)$. 
 
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=1\textwidth]{Fig/MarmousiRTM.pdf}
-\caption{RTM results. (a) Marmousi model, (b) accumulated RTM result; (c) a sample shot record; (d) migrated result of the sample shot. The parameters settings are 15 Hz (center frequency) Ricker wavelet, 384 sensors, 384 shots, grid size $122 \times 384$, $\Delta z = \Delta x = 24m$.}
+\caption{RTM results. (a) Marmousi model, (b) accumulated RTM result; (c) a sample shot record; (d) migrated result of the sample shot. The parameters settings are 15 Hz (center frequency) Ricker wavelet, 384 sensors, 384 shots, grid size $122 \times 384$, $\Delta z = \Delta x = 24$ m.}
 \label{fig:RTM}
 \end{figure}
 
-The RTM result of Marmousi model is illustrated with Figure \ref{fig:RTM}. In order to show the aggregating process across source shots, another result for faults model can be viewed in this video clip
+The RTM result of Marmousi model is illustrated with Figure \ref{fig:RTM}. Moreover, the aggregating process across source shots for a fault model can be viewed in this video clip
 \url{https://www.youtube.com/watch?v=lL-UpW-5xms&feature=youtu.be}.
 
 
 
 \section{Least Square Reverse Time Migration (LS-RTM)}
-RTM serves the imaging complex structures purposes as a reliable method. However, there are still some distortions caused by RTM crosstalk
-artifacts. Mathematically, the migration operator is just a adjoint of the forward modeling operator, it does not minimize the mismatch of the observed and simulated traces. Least Square RTM (LSRTM) introduced by \cite{Nemeth:1999aa} derives an imaging condition by formulating migration as an inverse problem based on a least-squares misfit function. The implementation of LSRTM can either be time domain or frequency domain.
+RTM serves the purpose of imaging complex structures as a reliable method. However, there are still some distortions caused by RTM crosstalk artifacts. Mathematically, the migration operator is just the adjoint of the forward modeling operator, it does not minimize the mismatch of the observed and simulated traces. Least Square RTM (LSRTM) introduced by \cite{Nemeth:1999aa} derives an imaging condition by formulating migration as an inverse problem based on a least-squares misfit function. The implementation of LSRTM can either be in time domain or frequency domain.
 
 The model $m(\bx)=1/c^2(\bx)$ denotes the square slowness at point $\bx$. 
-We consider the decomposition of model $m$ into a smooth model (initial guess) and a rough perturbation:
+We consider the decomposition of model $m$ into a smooth model (initial guess) and a perturbation:
 \begin{equation}
 m(\bx)=m_0(\bx)+\delta m(\bx),
 \end{equation} 
-where $m_0$ is the smooth model and $\delta m(\bx) \ll m_0(\bx)$. We split the wave field $p(\bx,t)$ into 
+where $m_0$ is the smooth model and perturbation $\delta m(\bx) \ll m_0(\bx)$. We split the wave field $p(\bx,t)$ into 
 \begin{equation}
 p=p_0+\delta p,
 \end{equation}
 where $p_0$ solves the wave equation in the incident model $m_0(\bx)$.
 In light of the advantages we have mentioned above, we formulate the problem in frequency domain (For the LSRTM in time domain, one can use the iterative method in \cite{Dong:2012aa}).
-Accordingly, $P(\bx_s,\bx;\omega)$, the waveform generated by source at position $\bx_s$, can also be split into two parts: the incident wavefield $P_0$
-and $\delta P$. The $P_0(\bx_s,\bx;\omega)$ is determined by the smooth model and source function via the following acoustic wave equation:
+Accordingly, $P(\bx;\bx_s, \omega)$, the waveform generated by source at position $\bx_s$, can also be split into two parts: the incident wavefield $P_0$
+and $\delta P$. The $P_0(\bx; \bx_s, \omega)$ is determined by the smooth model and source function via the following acoustic wave equation:
 \begin{equation}
-\cL( m_0) P_0(\bx_s,\bx; \omega)=F_s(\omega),
+\cL( m_0) P_0(\bx; \bx_s, \omega)=F_s(\omega),
 \end{equation} 
-where operator $\cL( m_0)=\Big(-\omega^2 m_0(\bx)-\Delta\Big)$ and the $F_s(\omega)$ gives the source function at source location $\bx_s$. 
+where operator $\cL( m_0)=(-\omega^2 m_0(\bx)-\Delta)$ and the $F_s(\omega)$ gives the source function at source location $\bx_s$. 
 Using Born approximation, the scattered filed can be approximated by  
 \begin{equation}
-\cL( m_0)\delta P(\bx_s,\bx;\omega) =\omega^2 \delta m P_0(\bx_s,\bx;\omega).
+\cL( m_0)\delta P(\bx;\bx_s,\omega) =\omega^2 \delta m P_0(\bx;\bx_s,\omega).
 \end{equation}
-Denote $G(\bx_s,\bx; \omega)$ as the Green's functions from the shot position $\bx_s$ to a point in the model space $\bx$, which is the solution of 
+Denote $G(\bx; \bx_s, \omega)$ as the Green's functions from the shot position $\bx_s$ to a point in the model space $\bx$, which is the solution of 
 \begin{equation}
-\cL(m_0)G(\bx_s,\bx;\omega)=\delta(\bx-\bx_s).
+\cL(m_0)G(\bx;\bx_s,\omega)=\delta(\bx-\bx_s).
 \end{equation}
 It is worth noting that the Green's function $G$ is only dependent on the smooth model 
 $m_0$. In least square migration, with an accurate smooth model, i.e. starting model, we can calculate the Green's function and save it for the use of every iteration without updating. 
   
 Then the incident field $u_0$ at the surface point $\bx$ becomes
 \begin{equation}
-P_0(\bx_s,\bx; \omega)=F_s(\omega)G(\bx_s,\bx; \omega).
+P_0(\bx; \bx_s,\omega)=F_s(\omega)G(\bx; \bx_s,\omega).
 \end{equation}
 And the secondary filed as the surface point $\by$ can be written as 
 \begin{equation}
-\delta P(\bx_s,\by; \omega)=\omega^2 \sum_{\bx}  \delta m(\bx) P_0(\bx_s,\bx;\omega) G(\bx,\by;\omega).
+\delta P(\by; \bx_s,\omega)=\omega^2 \sum_{\bx}  \delta m(\bx) P_0(\bx;\bx_s,\omega) G(\by;\bx,\omega).
 \end{equation}
 
 
 
 For $\by=\bx_r$, we obtain the Born approximation of the synthetic field at the receiver position $\bx_r$. In general, the synthetic data for one frequency $\omega$, a shot positioned at $\bx_s$, and a receiver positioned at $\bx_r$ can be given by a linear operator $L(\bx_s,\bx_r)$ acting on the model $m(\bx)$, as follows:
 \begin{align}
-\delta P(\bx_r,\bx_s;\omega)&=L(\bx_s,\bx_r)\delta \bm=\omega^2 F_s(\omega)\sum_{\bx}\delta m(\bx)G(\bx_s,\bx;\omega)G(\bx,\bx_r;\omega)\nonumber\\
-&=\omega^2 [...,F_s(\omega)G(\bx_s,\bx;\omega)G(\bx,\bx_r;\omega),...]\delta \bm
+\delta P(\bx_r;\bx_s, \omega)&=L(\bx_s,\bx_r)\delta \bm=\omega^2 F_s(\omega)\sum_{\bx}\delta m(\bx)G(\bx;\bx_s,\omega)G(\bx_r;\bx,\omega)\nonumber\\
+&=\omega^2 [...,F_s(\omega)G(\bx;\bx_s,\omega)G(\bx_r;\bx,\omega),...]\delta \bm
 \end{align} 
-We can write the forward model operator as a $n_s n_r\times K$ matrix $\bL$
+We can write the forward model operator as a $n_s n_r\times K$ ($K$ is the number of grid points) matrix $\bL$
 \begin{equation}
 \label{eq:operatorL}
-\bL(\bx_s,\bx_r;\omega) = \omega^2 [...,L(\bx_s,\bx_r)^*,...]^*.
+\bL(\bx_r;\bx_s,\omega) = \omega^2 [...,L(\bx_s,\bx_r)^*,...]^*.
 \end{equation}
 
+The cost function $J$ is the $\ell_2$ norm of the difference between the simulated and observed traces
   \begin{equation}
   \begin{aligned}
   %\hspace{-20pt}
-  J&(\delta \bm) = \frac{1}{2} \sum\limits_{\omega,\bx_s,\bx_r}  \left| P^{\text{(sim)}}(\bx_r, \bx_s; \omega) - P^{\text{(obs)}}(\bx_r, \bx_s; \omega) \right|^2 \\
+  J&(\delta \bm) = \frac{1}{2} \sum\limits_{\omega,\bx_s,\bx_r}  \left| P^{\text{(sim)}}(\bx_r; \bx_s,  \omega) - P^{\text{(obs)}}(\bx_r; \bx_s, \omega) \right|^2 \\
   &= \frac{1}{2} \sum\limits_{\omega,\bx_s,\bx_r} \Big| \omega^2 F_s(\omega) \sum\limits_{\bx}\delta m(\bx)G_{\omega}(\bx; \bx_s)G_{\omega}(\bx_r; \bx) \\&- \delta P^{(obs)}(\bx_r, \bx_s; \omega) \Big|^2\\
   &= \frac{1}{2} \left\| \bL\delta \bm - \delta\bP^{(obs)}\right\|_2^2,
   \end{aligned}
   \end{equation}
-  where $\delta m$ is the module perturbation (roughly saying, the reflectors), $\bL$ is the forward modeling operator. The superscript (sim) means simulated results and (obs) means
+  where $\delta \bm$ is the module perturbation (roughly saying, the reflectors), $\bL$ is the forward modeling operator. The superscript (sim) means simulated results and (obs) means
   observed. The optimized model perturbation is 
     \begin{equation}
     \delta \bm^{\text{(opt)}} = \left( \bL^{*}\bL \right)^{-1} \bL^{*} \delta\bP^{(obs)}.
@@ -782,15 +763,14 @@ We can write the forward model operator as a $n_s n_r\times K$ matrix $\bL$
     of the Hessian matrix. In the case of large acquisition aperture, wide frequency band and slow variation of the velocity model, the Hessian matrix
     is diagonal. In a simulation such as Marmousi model, the Hessian matrix is diagonal dominated. 
 
-The gradient is 
+The gradient of the cost function is
 \begin{equation}
-\bg_k(\delta\bm)=\text{Re}\bigg(\sum_{\omega,\bx_s,\bx_r } \omega^2  \bar{F}_s(\omega) \bar{G}_\omega(\bx_s,\bx)\bar{ G}_\omega(\bx,\bx_r)\Delta d(\bx_s,\bx_r;\omega)\bigg), 
+\bg_k(\delta\bm)=\text{Re}\bigg(\sum_{\omega,\bx_s,\bx_r } \omega^2  \bar{F}_s(\omega) \bar{G}_\omega(\bx;\bx_s)\bar{ G}_\omega(\bx_r;\bx)\Delta d(\bx_r;\bx_s,\omega)\bigg), 
 \end{equation}
-where $\Delta d(\bx_s,\bx_r;\omega)=\bL\delta \bm - \delta\bP^{(obs)}$. 
-
+where $\Delta d(\bx_r;\bx_s,\omega)=\bL\delta \bm - \delta\bP^{(obs)}$. 
 As discussed in the preceding sections, the Hessian matrix can be approximated by its diagonal elements.
 \begin{equation}
-\bH(\bm)= \text{Re}\bigg( \sum_{\omega,\bx_s,\bx_r} \omega^4 |F_s(\omega)|^2 |G(\bx_s,\bx;\omega)|^2 |G(\bx,\bx_r;\omega)|^2 \bigg)
+\bH(\bm)= \text{Re}\bigg( \sum_{\omega,\bx_s,\bx_r} \omega^4 |F_s(\omega)|^2 |G_\omega(\bx;\bx_s)|^2 |G_\omega(\bx_r;\bx)|^2 \bigg)
 \end{equation} 
 
 \begin{equation}
