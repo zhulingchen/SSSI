@@ -89,7 +89,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     /* end of declaration */
     
     if (nrhs < 7)
-        mexErrMsgTxt("Error: All 7 input arguments shall be provided!");
+        mexErrMsgTxt("All 7 input arguments shall be provided!");
     
     /* load velocity model and source field */
     pVelocityModel = mxGetPr(VM_IN);
@@ -104,8 +104,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     nz = pDimsSource[0];
     nx = pDimsSource[1];
     nt = pDimsSource[2];
-    mxAssert(nz == mxGetM(VM_IN), "Error: Velocity model and source grids should have the same z-axis grids!");
-    mxAssert(nx == mxGetN(VM_IN), "Error: Velocity model and source grids should have the same x-axis grids!");
+    mxAssert(nz == mxGetM(VM_IN), "Velocity model and source grids should have the same z-axis grids!");
+    mxAssert(nx == mxGetN(VM_IN), "Velocity model and source grids should have the same x-axis grids!");
     
     pCoeff = dCoef(diffOrder, "s");
     l = 2 * diffOrder - 1;
@@ -159,7 +159,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     recvcount_block_nx = sendcounts_block_nx[taskId];
     
     if (l > recvcount_block_nx)
-        mexWarnMsgTxt("Warning: width of ghost cells is larger than width of current block, data transfer may be incorrect!");
+        mexWarnMsgTxt("width of ghost cells is larger than width of current block, data transfer may be incorrect!");
     
     /* scatter velocity model */
     pVelocityModel_local = (double*)mxCalloc(nz * recvcount_block_nx, sizeof(double));
