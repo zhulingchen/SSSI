@@ -66,6 +66,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     /* MPI-related variables */
     int numProcesses, taskId, errorCode;
     int avg_nx, rem_nx, block_nx, offset_block_nx, recvcount_block_nx;
+    int rem_l, numVicinity;
     int block_nx_dampPml;
     int *sendcounts_block_nx, *displs_block_nx, *sendcounts_band_nx, *displs_band_nx;
     MPI_Datatype type_ztPlane_global, type_ztPlane_global_resized, type_ztPlane_local, type_ztPlane_local_resized;
@@ -88,7 +89,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     /* end of declaration */
     
     if (nrhs < 7)
-        mexErrMsgTxt("All 7 input arguments shall be provided!");
+        mexErrMsgTxt("Error: All 7 input arguments shall be provided!");
     
     /* load velocity model and source field */
     pVelocityModel = mxGetPr(VM_IN);
@@ -103,8 +104,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     nz = pDimsSource[0];
     nx = pDimsSource[1];
     nt = pDimsSource[2];
-    mxAssert(nz == mxGetM(VM_IN), "Velocity model and source grids should have the same z-axis grids!");
-    mxAssert(nx == mxGetN(VM_IN), "Velocity model and source grids should have the same x-axis grids!");
+    mxAssert(nz == mxGetM(VM_IN), "Error: Velocity model and source grids should have the same z-axis grids!");
+    mxAssert(nx == mxGetN(VM_IN), "Error: Velocity model and source grids should have the same x-axis grids!");
     
     pCoeff = dCoef(diffOrder, "s");
     l = 2 * diffOrder - 1;
@@ -156,6 +157,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         offset_block_nx += sendcounts_block_nx[irank];
     }
     recvcount_block_nx = sendcounts_block_nx[taskId];
+    
+    if (l > recvcount_block_nx)
+        mexWarnMsgTxt("Warning: width of ghost cells is larger than width of current block, data transfer may be incorrect!");
     
     /* scatter velocity model */
     pVelocityModel_local = (double*)mxCalloc(nz * recvcount_block_nx, sizeof(double));
@@ -412,32 +416,24 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                 MPI_Isend(pxPhi_local + nz * l, nz * l, MPI_DOUBLE,
                         taskId - 1, RIGHT_TO_LEFT, MPI_COMM_WORLD, &send_request);
                 MPI_Wait(&send_request, &status);
-//                 MPI_Send(pxPhi_local + nz * l, nz * l, MPI_DOUBLE,
-//                         taskId - 1, RIGHT_TO_LEFT, MPI_COMM_WORLD);
             }
             if ( taskId < numProcesses - 1 )
             {
                 MPI_Irecv(pxPhi_local + nz * (recvcount_block_nx+l), nz * l, MPI_DOUBLE,
                         taskId + 1, RIGHT_TO_LEFT, MPI_COMM_WORLD, &recv_request);
                 MPI_Wait(&recv_request, &status);
-//                 MPI_Recv(pxPhi_local + nz * (recvcount_block_nx+l), nz * l, MPI_DOUBLE,
-//                         taskId + 1, RIGHT_TO_LEFT, MPI_COMM_WORLD, &status);
             }
             if ( taskId < numProcesses - 1 )
             {
                 MPI_Isend(pxPhi_local + nz * recvcount_block_nx, nz * l, MPI_DOUBLE,
                         taskId + 1, LEFT_TO_RIGHT, MPI_COMM_WORLD, &send_request);
                 MPI_Wait(&send_request, &status);
-//                 MPI_Send(pxPhi_local + nz * recvcount_block_nx, nz * l, MPI_DOUBLE,
-//                         taskId + 1, LEFT_TO_RIGHT, MPI_COMM_WORLD);
             }
             if ( taskId > 0 )
             {
                 MPI_Irecv(pxPhi_local, nz * l, MPI_DOUBLE,
                         taskId - 1, LEFT_TO_RIGHT, MPI_COMM_WORLD, &recv_request);
                 MPI_Wait(&recv_request, &status);
-//                 MPI_Recv(pxPhi_local, nz * l, MPI_DOUBLE,
-//                         taskId - 1, LEFT_TO_RIGHT, MPI_COMM_WORLD, &status);
             }
         }
         
@@ -533,32 +529,24 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                 MPI_Isend(pCurFdm_local + (nz+2*l) * l, (nz+2*l) * l, MPI_DOUBLE,
                         taskId - 1, RIGHT_TO_LEFT, MPI_COMM_WORLD, &send_request);
                 MPI_Wait(&send_request, &status);
-//                 MPI_Send(pCurFdm_local + (nz+2*l) * l, (nz+2*l) * l, MPI_DOUBLE,
-//                         taskId - 1, RIGHT_TO_LEFT, MPI_COMM_WORLD);
             }
             if ( taskId < numProcesses - 1 )
             {
                 MPI_Irecv(pCurFdm_local + (nz+2*l) * (recvcount_block_nx+l), (nz+2*l) * l, MPI_DOUBLE,
                         taskId + 1, RIGHT_TO_LEFT, MPI_COMM_WORLD, &recv_request);
                 MPI_Wait(&recv_request, &status);
-//                 MPI_Recv(pCurFdm_local + (nz+2*l) * (recvcount_block_nx+l), (nz+2*l) * l, MPI_DOUBLE,
-//                         taskId + 1, RIGHT_TO_LEFT, MPI_COMM_WORLD, &status);
             }
             if ( taskId < numProcesses - 1 )
             {
                 MPI_Isend(pCurFdm_local + (nz+2*l) * recvcount_block_nx, (nz+2*l) * l, MPI_DOUBLE,
                         taskId + 1, LEFT_TO_RIGHT, MPI_COMM_WORLD, &send_request);
                 MPI_Wait(&send_request, &status);
-//                 MPI_Send(pCurFdm_local + (nz+2*l) * recvcount_block_nx, (nz+2*l) * l, MPI_DOUBLE,
-//                         taskId + 1, LEFT_TO_RIGHT, MPI_COMM_WORLD);
             }
             if ( taskId > 0 )
             {
                 MPI_Irecv(pCurFdm_local, (nz+2*l) * l, MPI_DOUBLE,
                         taskId - 1, LEFT_TO_RIGHT, MPI_COMM_WORLD, &recv_request);
                 MPI_Wait(&recv_request, &status);
-//                 MPI_Recv(pCurFdm_local, (nz+2*l) * l, MPI_DOUBLE,
-//                         taskId - 1, LEFT_TO_RIGHT, MPI_COMM_WORLD, &status);
             }
         }
     }
