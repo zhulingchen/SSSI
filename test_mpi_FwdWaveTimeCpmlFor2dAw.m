@@ -61,7 +61,7 @@ sourceTime(zShotGrid, xShotGrid+nBoundary, :) = reshape(wave1dTime, 1, 1, nt);
 % test end
 tic; [dataTrue, snapshotTrue] = fwdTimeCpmlFor2dAw(V, sourceTime, nDiffOrder, nBoundary, dz, dx, dt); toc;
 tic; [model, rtmsnapshot] = rvsTimeCpmlFor2dAw(V, dataTrue, nDiffOrder, nBoundary, dz, dx, dt); toc;
-tic; [dataTrue_mpi, snapshotTrue_mpi, taskId, test_mpi] = fwdTimeCpmlFor2dAw_openmpi_mex(V, sourceTime, nDiffOrder, nBoundary, dz, dx, dt); toc;
+tic; [dataTrue_mpi, snapshotTrue_mpi, taskId] = fwdTimeCpmlFor2dAw_openmpi_mex(V, sourceTime, nDiffOrder, nBoundary, dz, dx, dt); toc;
 if (taskId == 0)
 %     delta = test - test_mpi;
 %     display(max(delta, [], 1));

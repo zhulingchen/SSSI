@@ -35,7 +35,7 @@
 #define DATA_OUT        plhs[0]
 #define SNAPSHOT_OUT    plhs[1]
 #define TASKID_OUT      plhs[2]     /* rank (task ID) of the calling process to return */
-#define TEST_OUT        plhs[3]     /* out argument for test */
+/* #define TEST_OUT        plhs[3] */     /* out argument for test */
 
 /* MPI-related macros */
 #define LEFT_TO_RIGHT   1
@@ -58,15 +58,16 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     double *pCoeff;
     
     /* test begin */
+    /*
     double *pTestOut;
     mwSize pDimsTestOut[3] = {0};
     int *sendcounts_band2_nx, *displs_band2_nx;
+     */
     /* test end */
     
     /* MPI-related variables */
     int numProcesses, taskId, errorCode;
     int avg_nx, rem_nx, block_nx, offset_block_nx, recvcount_block_nx;
-    int rem_l, numVicinity;
     int block_nx_dampPml;
     int *sendcounts_block_nx, *displs_block_nx, *sendcounts_band_nx, *displs_band_nx;
     MPI_Datatype type_ztPlane_global, type_ztPlane_global_resized, type_ztPlane_local, type_ztPlane_local_resized;
@@ -136,10 +137,12 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     displs_block_nx = (int*)mxCalloc(numProcesses, sizeof(int));
     sendcounts_band_nx = (int*)mxCalloc(numProcesses, sizeof(int));
     displs_band_nx = (int*)mxCalloc(numProcesses, sizeof(int));
-    // test begin
+    /* test begin */
+    /*
     sendcounts_band2_nx = (int*)mxCalloc(numProcesses, sizeof(int));
     displs_band2_nx = (int*)mxCalloc(numProcesses, sizeof(int));
-    // test end
+     */
+    /* test end */
     for (irank = 0; irank < numProcesses; irank++)
     {
         block_nx = (irank < rem_nx) ? (avg_nx + 1) : (avg_nx);
@@ -150,10 +153,12 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         /* displacements (relative to sendbuf) from which to take the outgoing elements to each process */
         displs_block_nx[irank] = offset_block_nx;
         displs_band_nx[irank] = nz * offset_block_nx;
-        // test begin
+        /* test begin */
+        /*
         sendcounts_band2_nx[irank] = (nz+2*l) * block_nx;
         displs_band2_nx[irank] = (nz+2*l) * offset_block_nx;
-        // test end
+         */
+        /* test end */
         offset_block_nx += sendcounts_block_nx[irank];
     }
     recvcount_block_nx = sendcounts_block_nx[taskId];
@@ -332,14 +337,16 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         for (i = 0; i < nz; i++)
             pVdtSq_local[j * nz + i] = (pVelocityModel_local[j * nz + i] * dt) * (pVelocityModel_local[j * nz + i] * dt);
     
-//     // test begin
+    /* test begin */
+    /*
     pTestOut = (double*)mxCalloc(nz * nx, sizeof(double));
     MPI_Gatherv(pxb_local, nz * recvcount_block_nx, MPI_DOUBLE,
             pTestOut, sendcounts_band_nx, displs_band_nx, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-//     pTestOut = (double*)mxCalloc(nz * nx * nt, sizeof(double));
-//     MPI_Gatherv(pSource_local, recvcount_block_nx, type_ztPlane_local_resized,
-//             pTestOut, sendcounts_block_nx, displs_block_nx, type_ztPlane_global_resized, 0, MPI_COMM_WORLD);
-//     // test end
+    pTestOut = (double*)mxCalloc(nz * nx * nt, sizeof(double));
+    MPI_Gatherv(pSource_local, recvcount_block_nx, type_ztPlane_local_resized,
+            pTestOut, sendcounts_block_nx, displs_block_nx, type_ztPlane_global_resized, 0, MPI_COMM_WORLD);
+     */
+    /* test end */
     
     /* ======================================================================
      * 2-D Acoustic Wave Forward-Time Modeling
@@ -551,11 +558,13 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         }
     }
     
-//     // test begin
-//     pTestOut = (double*)mxCalloc((nz+2*l) * nx, sizeof(double));
-//     MPI_Gatherv(pzPhi_local, (nz+2*l) * recvcount_block_nx, MPI_DOUBLE,
-//             pTestOut, sendcounts_band2_nx, displs_band2_nx, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-//     // test end
+    /* test begin */
+    /*
+    pTestOut = (double*)mxCalloc((nz+2*l) * nx, sizeof(double));
+    MPI_Gatherv(pzPhi_local, (nz+2*l) * recvcount_block_nx, MPI_DOUBLE,
+            pTestOut, sendcounts_band2_nx, displs_band2_nx, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+     */
+    /* test end */
     
     /* gather output */
     if (taskId == 0)
@@ -617,7 +626,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     DATA_OUT = mxCreateNumericMatrix(0, 0, mxDOUBLE_CLASS, mxREAL);
     SNAPSHOT_OUT = mxCreateNumericMatrix(0, 0, mxDOUBLE_CLASS, mxREAL);
     /* test begin */
-    TEST_OUT = mxCreateNumericMatrix(0, 0, mxDOUBLE_CLASS, mxREAL);
+    /* TEST_OUT = mxCreateNumericMatrix(0, 0, mxDOUBLE_CLASS, mxREAL); */
     /* test end */
     /* set output arrays and dimensions */
     if (taskId == 0)
@@ -634,13 +643,15 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         
         
         /* test begin */
+        /*
         mxSetPr(TEST_OUT, pTestOut);
         mxSetM(TEST_OUT, nz);
         mxSetN(TEST_OUT, nx);
-//         pDimsTestOut[0] = nz;
-//         pDimsTestOut[1] = nx;
-//         pDimsTestOut[2] = nt;
-//         mxSetDimensions(TEST_OUT, pDimsTestOut, 3);
+        pDimsTestOut[0] = nz;
+        pDimsTestOut[1] = nx;
+        pDimsTestOut[2] = nt;
+        mxSetDimensions(TEST_OUT, pDimsTestOut, 3);
+         */
         /* test end */
     }
     TASKID_OUT = mxCreateNumericMatrix(1, 1, mxUINT8_CLASS, mxREAL);
