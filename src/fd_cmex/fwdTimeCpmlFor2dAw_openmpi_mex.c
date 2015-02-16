@@ -421,14 +421,14 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         /* transfer of ghost cell values */
         if (numProcesses > 1)
         {
-            if ((taskId >= rem_nx) && (taskId < rem_nx + l/avg_nx) && (recvcount_block_nx < l))
-                rem_l_to_left = l-1;
-            else
+//             if ((taskId >= rem_nx) && (taskId < rem_nx + l/avg_nx) && (recvcount_block_nx < l))
+//                 rem_l_to_left = l-1;
+//             else
                 rem_l_to_left = l;
             rem_l_from_right = l;
-            if ((taskId >= rem_nx - l/avg_nx) && (taskId < rem_nx) && (recvcount_block_nx <= l))
-                rem_l_to_right = l+1;
-            else
+//             if ((taskId >= rem_nx - l/avg_nx) && (taskId < rem_nx) && (recvcount_block_nx <= l))
+//                 rem_l_to_right = l+1;
+//             else
                 rem_l_to_right = l;
             rem_l_from_left = l;
             offset_l_from_right = 0;
@@ -456,6 +456,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                     mexPrintf("t = %d (pxPhi_local): %d sends to %d, pxPhi_local send_request flag: %d\n", t, taskId, taskId - (leftBound + 1), flag);
                     /* test end */
                     rem_l_to_left -= cur_l_to_left;
+                    if ((taskId >= rem_nx) && (taskId < rem_nx + l/avg_nx) && (rem_l_to_left < avg_nx) && (recvcount_block_nx < l))
+                        rem_l_to_left--;
                 }
                 else
                 {
@@ -502,6 +504,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                     mexPrintf("t = %d (pxPhi_local): %d sends to %d, pxPhi_local send_request flag: %d\n", t, taskId, taskId + (leftBound + 1), flag);
                     /* test end */
                     rem_l_to_right -= cur_l_to_right;
+                    if ((taskId >= rem_nx - l/avg_nx) && (taskId < rem_nx) && (rem_l_to_right < avg_nx) && (recvcount_block_nx <= l))
+                        rem_l_to_right++;
                 }
                 else
                 {
@@ -626,14 +630,14 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         /* transfer of ghost cell values */
         if (numProcesses > 1)
         {
-            if ((taskId >= rem_nx) && (taskId < rem_nx + l/avg_nx) && (recvcount_block_nx < l))
-                rem_l_to_left = l-1;
-            else
+//             if ((taskId >= rem_nx) && (taskId < rem_nx + l/avg_nx) && (recvcount_block_nx < l))
+//                 rem_l_to_left = l-1;
+//             else
                 rem_l_to_left = l;
             rem_l_from_right = l;
-            if ((taskId >= rem_nx - l/avg_nx) && (taskId < rem_nx) && (recvcount_block_nx <= l))
-                rem_l_to_right = l+1;
-            else
+//             if ((taskId >= rem_nx - l/avg_nx) && (taskId < rem_nx) && (recvcount_block_nx <= l))
+//                 rem_l_to_right = l+1;
+//             else
                 rem_l_to_right = l;
             rem_l_from_left = l;
             offset_l_from_right = 0;
@@ -661,6 +665,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                     mexPrintf("t = %d (pCurFdm_local): %d sends to %d, pCurFdm_local send_request flag: %d\n", t, taskId, taskId - (leftBound + 1), flag);
                     /* test end */
                     rem_l_to_left -= cur_l_to_left;
+                    if ((taskId >= rem_nx) && (taskId < rem_nx + l/avg_nx) && (rem_l_to_left < avg_nx) && (recvcount_block_nx < l))
+                        rem_l_to_left--;
                 }
                 else
                 {
@@ -707,6 +713,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                     mexPrintf("t = %d (pCurFdm_local): %d sends to %d, pCurFdm_local send_request flag: %d\n", t, taskId, taskId + (leftBound + 1), flag);
                     /* test end */
                     rem_l_to_right -= cur_l_to_right;
+                    if ((taskId >= rem_nx - l/avg_nx) && (taskId < rem_nx) && (rem_l_to_right < avg_nx) && (recvcount_block_nx <= l))
+                        rem_l_to_right++;
                 }
                 else
                 {
