@@ -421,12 +421,12 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         /* transfer of ghost cell values */
         if (numProcesses > 1)
         {
-            if ((taskId == rem_nx) && (recvcount_block_nx < l))
+            if ((taskId >= rem_nx) && (taskId < rem_nx + l/avg_nx) && (recvcount_block_nx < l))
                 rem_l_to_left = l-1;
             else
                 rem_l_to_left = l;
             rem_l_from_right = l;
-            if ((taskId == rem_nx - 1) && (recvcount_block_nx < l))
+            if ((taskId >= rem_nx - l/avg_nx) && (taskId < rem_nx) && (recvcount_block_nx <= l))
                 rem_l_to_right = l+1;
             else
                 rem_l_to_right = l;
@@ -626,12 +626,12 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         /* transfer of ghost cell values */
         if (numProcesses > 1)
         {
-            if ((taskId == rem_nx) && (recvcount_block_nx < l))
+            if ((taskId >= rem_nx) && (taskId < rem_nx + l/avg_nx) && (recvcount_block_nx < l))
                 rem_l_to_left = l-1;
             else
                 rem_l_to_left = l;
             rem_l_from_right = l;
-            if ((taskId == rem_nx - 1) && (recvcount_block_nx < l))
+            if ((taskId >= rem_nx - l/avg_nx) && (taskId < rem_nx) && (recvcount_block_nx <= l))
                 rem_l_to_right = l+1;
             else
                 rem_l_to_right = l;
