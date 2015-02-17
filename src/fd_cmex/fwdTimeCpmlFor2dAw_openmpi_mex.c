@@ -421,15 +421,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         /* transfer of ghost cell values */
         if (numProcesses > 1)
         {
-//             if ((taskId >= rem_nx) && (taskId < rem_nx + l/avg_nx) && (recvcount_block_nx < l))
-//                 rem_l_to_left = l-1;
-//             else
-                rem_l_to_left = l;
+            rem_l_to_left = l;
             rem_l_from_right = l;
-//             if ((taskId >= rem_nx - l/avg_nx) && (taskId < rem_nx) && (recvcount_block_nx <= l))
-//                 rem_l_to_right = l+1;
-//             else
-                rem_l_to_right = l;
+            rem_l_to_right = l;
             rem_l_from_left = l;
             offset_l_from_right = 0;
             offset_l_from_left = 0;
@@ -438,25 +432,27 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
             
             while ( (rem_l_to_left > 0) || (rem_l_from_right > 0) || (rem_l_to_right > 0) || (rem_l_from_left > 0) )
             {
-                mexPrintf("t = %d (pxPhi_local): taskId: %d, rem_l_to_left = %d, rem_l_from_right = %d, rem_l_to_right = %d, rem_l_from_left = %d, leftBound = %d\n", t, taskId, rem_l_to_left, rem_l_from_right, rem_l_to_right, rem_l_from_left, leftBound);
+//                 /* test begin */
+//                 mexPrintf("t = %d (pxPhi_local): taskId: %d, rem_l_to_left = %d, rem_l_from_right = %d, rem_l_to_right = %d, rem_l_from_left = %d, leftBound = %d\n", t, taskId, rem_l_to_left, rem_l_from_right, rem_l_to_right, rem_l_from_left, leftBound);
+//                 /* test end */
                 if ( (taskId > leftBound) && (rem_l_to_left > 0) )
                 {
                     cur_l_to_left = (rem_l_to_left <= recvcount_block_nx) ? rem_l_to_left : recvcount_block_nx;
                     MPI_Isend(&cur_l_to_left, 1, MPI_INT, taskId - (leftBound + 1), RIGHT_TO_LEFT, MPI_COMM_WORLD, &send_request);
                     MPI_Wait(&send_request, &status);
-                    /* test begin */
-                    MPI_Test(&send_request, &flag, &status);
-                    mexPrintf("t = %d (pxPhi_local): %d sends to %d, cur_l_to_left(%d) send_request flag: %d\n", t, taskId, taskId - (leftBound + 1), cur_l_to_left, flag);
-                    /* test end */
+//                     /* test begin */
+//                     MPI_Test(&send_request, &flag, &status);
+//                     mexPrintf("t = %d (pxPhi_local): %d sends to %d, cur_l_to_left(%d) send_request flag: %d\n", t, taskId, taskId - (leftBound + 1), cur_l_to_left, flag);
+//                     /* test end */
                     MPI_Isend(pxPhi_local + nz * l, nz * cur_l_to_left, MPI_DOUBLE,
                             taskId - (leftBound + 1), RIGHT_TO_LEFT, MPI_COMM_WORLD, &send_request);
                     MPI_Wait(&send_request, &status);
-                    /* test begin */
-                    MPI_Test(&send_request, &flag, &status);
-                    mexPrintf("t = %d (pxPhi_local): %d sends to %d, pxPhi_local send_request flag: %d\n", t, taskId, taskId - (leftBound + 1), flag);
-                    /* test end */
+//                     /* test begin */
+//                     MPI_Test(&send_request, &flag, &status);
+//                     mexPrintf("t = %d (pxPhi_local): %d sends to %d, pxPhi_local send_request flag: %d\n", t, taskId, taskId - (leftBound + 1), flag);
+//                     /* test end */
                     rem_l_to_left -= cur_l_to_left;
-                    if ((taskId >= rem_nx) && (taskId < rem_nx + l/avg_nx) && (rem_l_to_left < avg_nx) && (recvcount_block_nx < l))
+                    if ((recvcount_block_nx < l) && (rem_l_to_left <= avg_nx) && (taskId >= rem_nx) && (taskId < rem_nx + (l+1)/(avg_nx+1)))
                         rem_l_to_left--;
                 }
                 else
@@ -468,17 +464,17 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                 {
                     MPI_Irecv(&cur_l_from_right, 1, MPI_INT, taskId + (leftBound + 1), LEFT_FROM_RIGHT, MPI_COMM_WORLD, &recv_request);
                     MPI_Wait(&recv_request, &status);
-                    /* test begin */
-                    MPI_Test(&recv_request, &flag, &status);
-                    mexPrintf("t = %d (pxPhi_local): %d receives from %d, cur_l_from_right(%d) recv_request flag: %d\n", t, taskId, taskId + (leftBound + 1), cur_l_from_right, flag);
-                    /* test end */
+//                     /* test begin */
+//                     MPI_Test(&recv_request, &flag, &status);
+//                     mexPrintf("t = %d (pxPhi_local): %d receives from %d, cur_l_from_right(%d) recv_request flag: %d\n", t, taskId, taskId + (leftBound + 1), cur_l_from_right, flag);
+//                     /* test end */
                     MPI_Irecv(pxPhi_local + nz * (recvcount_block_nx+l + offset_l_from_right), nz * cur_l_from_right, MPI_DOUBLE,
                             taskId + (leftBound + 1), LEFT_FROM_RIGHT, MPI_COMM_WORLD, &recv_request);
                     MPI_Wait(&recv_request, &status);
-                    /* test begin */
-                    MPI_Test(&recv_request, &flag, &status);
-                    mexPrintf("t = %d (pxPhi_local): %d receives from %d, pxPhi_local recv_request flag: %d\n", t, taskId, taskId + (leftBound + 1), flag);
-                    /* test end */
+//                     /* test begin */
+//                     MPI_Test(&recv_request, &flag, &status);
+//                     mexPrintf("t = %d (pxPhi_local): %d receives from %d, pxPhi_local recv_request flag: %d\n", t, taskId, taskId + (leftBound + 1), flag);
+//                     /* test end */
                     rem_l_from_right -= cur_l_from_right;
                     offset_l_from_right += cur_l_from_right;
                 }
@@ -492,19 +488,19 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                     cur_l_to_right = (rem_l_to_right <= recvcount_block_nx) ? rem_l_to_right : recvcount_block_nx;
                     MPI_Isend(&cur_l_to_right, 1, MPI_INT, taskId + (leftBound + 1), LEFT_TO_RIGHT, MPI_COMM_WORLD, &send_request);
                     MPI_Wait(&send_request, &status);
-                    /* test begin */
-                    MPI_Test(&send_request, &flag, &status);
-                    mexPrintf("t = %d (pxPhi_local): %d sends to %d, cur_l_to_right(%d) send_request flag: %d\n", t, taskId, taskId + (leftBound + 1), cur_l_to_right, flag);
-                    /* test end */
+//                     /* test begin */
+//                     MPI_Test(&send_request, &flag, &status);
+//                     mexPrintf("t = %d (pxPhi_local): %d sends to %d, cur_l_to_right(%d) send_request flag: %d\n", t, taskId, taskId + (leftBound + 1), cur_l_to_right, flag);
+//                     /* test end */
                     MPI_Isend(pxPhi_local + nz * (l + recvcount_block_nx - cur_l_to_right), nz * cur_l_to_right, MPI_DOUBLE,
                             taskId + (leftBound + 1), LEFT_TO_RIGHT, MPI_COMM_WORLD, &send_request);
                     MPI_Wait(&send_request, &status);
-                    /* test begin */
-                    MPI_Test(&send_request, &flag, &status);
-                    mexPrintf("t = %d (pxPhi_local): %d sends to %d, pxPhi_local send_request flag: %d\n", t, taskId, taskId + (leftBound + 1), flag);
-                    /* test end */
+//                     /* test begin */
+//                     MPI_Test(&send_request, &flag, &status);
+//                     mexPrintf("t = %d (pxPhi_local): %d sends to %d, pxPhi_local send_request flag: %d\n", t, taskId, taskId + (leftBound + 1), flag);
+//                     /* test end */
                     rem_l_to_right -= cur_l_to_right;
-                    if ((taskId >= rem_nx - l/avg_nx) && (taskId < rem_nx) && (rem_l_to_right < avg_nx) && (recvcount_block_nx <= l))
+                    if ((recvcount_block_nx <= l) && (rem_l_to_right < avg_nx) && (taskId >= rem_nx - (l+1)/(avg_nx+1)) && (taskId < rem_nx))
                         rem_l_to_right++;
                 }
                 else
@@ -516,17 +512,17 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                 {
                     MPI_Irecv(&cur_l_from_left, 1, MPI_INT, taskId - (leftBound + 1), RIGHT_FROM_LEFT, MPI_COMM_WORLD, &recv_request);
                     MPI_Wait(&recv_request, &status);
-                    /* test begin */
-                    MPI_Test(&recv_request, &flag, &status);
-                    mexPrintf("t = %d (pxPhi_local): %d receives from %d, cur_l_from_left(%d) recv_request flag: %d\n", t, taskId, taskId - (leftBound + 1), cur_l_from_left, flag);
-                    /* test end */
+//                     /* test begin */
+//                     MPI_Test(&recv_request, &flag, &status);
+//                     mexPrintf("t = %d (pxPhi_local): %d receives from %d, cur_l_from_left(%d) recv_request flag: %d\n", t, taskId, taskId - (leftBound + 1), cur_l_from_left, flag);
+//                     /* test end */
                     MPI_Irecv(pxPhi_local + nz * (l - cur_l_from_left - offset_l_from_left), nz * cur_l_from_left, MPI_DOUBLE,
                             taskId - (leftBound + 1), RIGHT_FROM_LEFT, MPI_COMM_WORLD, &recv_request);
                     MPI_Wait(&recv_request, &status);
-                    /* test begin */
-                    MPI_Test(&recv_request, &flag, &status);
-                    mexPrintf("t = %d (pxPhi_local): %d receives from %d, pxPhi_local recv_request flag: %d\n", t, taskId, taskId - (leftBound + 1), flag);
-                    /* test end */
+//                     /* test begin */
+//                     MPI_Test(&recv_request, &flag, &status);
+//                     mexPrintf("t = %d (pxPhi_local): %d receives from %d, pxPhi_local recv_request flag: %d\n", t, taskId, taskId - (leftBound + 1), flag);
+//                     /* test end */
                     rem_l_from_left -= cur_l_from_left;
                     offset_l_from_left += cur_l_from_left;
                 }
@@ -540,8 +536,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
             }
         }
         
+        /* test begin */
         mexPrintf("!!!!!!!!!!(pxPhi_local Finished) t = %d, taskId = %d, rem_l_to_left = %d, rem_l_from_right = %d, rem_l_to_right = %d, rem_l_from_left = %d, leftBound = %d, rightBound = %d\n",
                 t, taskId, rem_l_to_left, rem_l_from_right, rem_l_to_right, rem_l_from_left, leftBound, rightBound);
+        /* test end */
         
         /* zA(izl, :) = diffOperator(fdm(:, ixi, 2), coeff, dz, 1) + zPhi(izl, :); */
         memcpy(pCurFdm_diffIn_zA_local, pCurFdm_local + l * (nz+2*l), sizeof(double) * recvcount_block_nx * (nz+2*l));
@@ -630,15 +628,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         /* transfer of ghost cell values */
         if (numProcesses > 1)
         {
-//             if ((taskId >= rem_nx) && (taskId < rem_nx + l/avg_nx) && (recvcount_block_nx < l))
-//                 rem_l_to_left = l-1;
-//             else
-                rem_l_to_left = l;
+            rem_l_to_left = l;
             rem_l_from_right = l;
-//             if ((taskId >= rem_nx - l/avg_nx) && (taskId < rem_nx) && (recvcount_block_nx <= l))
-//                 rem_l_to_right = l+1;
-//             else
-                rem_l_to_right = l;
+            rem_l_to_right = l;
             rem_l_from_left = l;
             offset_l_from_right = 0;
             offset_l_from_left = 0;
@@ -647,25 +639,27 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
             
             while ( (rem_l_to_left > 0) || (rem_l_from_right > 0) || (rem_l_to_right > 0) || (rem_l_from_left > 0) )
             {
-                mexPrintf("t = %d (pCurFdm_local): taskId: %d, rem_l_to_left = %d, rem_l_from_right = %d, rem_l_to_right = %d, rem_l_from_left = %d, leftBound = %d\n", t, taskId, rem_l_to_left, rem_l_from_right, rem_l_to_right, rem_l_from_left, leftBound);
+//                 /* test begin */
+//                 mexPrintf("t = %d (pCurFdm_local): taskId: %d, rem_l_to_left = %d, rem_l_from_right = %d, rem_l_to_right = %d, rem_l_from_left = %d, leftBound = %d\n", t, taskId, rem_l_to_left, rem_l_from_right, rem_l_to_right, rem_l_from_left, leftBound);
+//                 /* test end */
                 if ( (taskId > leftBound) && (rem_l_to_left > 0) )
                 {
                     cur_l_to_left = (rem_l_to_left <= recvcount_block_nx) ? rem_l_to_left : recvcount_block_nx;
                     MPI_Isend(&cur_l_to_left, 1, MPI_INT, taskId - (leftBound + 1), RIGHT_TO_LEFT, MPI_COMM_WORLD, &send_request);
                     MPI_Wait(&send_request, &status);
-                    /* test begin */
-                    MPI_Test(&send_request, &flag, &status);
-                    mexPrintf("t = %d (pCurFdm_local): %d sends to %d, cur_l_to_left(%d) send_request flag: %d\n", t, taskId, taskId - (leftBound + 1), cur_l_to_left, flag);
-                    /* test end */
+//                     /* test begin */
+//                     MPI_Test(&send_request, &flag, &status);
+//                     mexPrintf("t = %d (pCurFdm_local): %d sends to %d, cur_l_to_left(%d) send_request flag: %d\n", t, taskId, taskId - (leftBound + 1), cur_l_to_left, flag);
+//                     /* test end */
                     MPI_Isend(pCurFdm_local + (nz+2*l) * l, (nz+2*l) * cur_l_to_left, MPI_DOUBLE,
                             taskId - (leftBound + 1), RIGHT_TO_LEFT, MPI_COMM_WORLD, &send_request);
                     MPI_Wait(&send_request, &status);
-                    /* test begin */
-                    MPI_Test(&send_request, &flag, &status);
-                    mexPrintf("t = %d (pCurFdm_local): %d sends to %d, pCurFdm_local send_request flag: %d\n", t, taskId, taskId - (leftBound + 1), flag);
-                    /* test end */
+//                     /* test begin */
+//                     MPI_Test(&send_request, &flag, &status);
+//                     mexPrintf("t = %d (pCurFdm_local): %d sends to %d, pCurFdm_local send_request flag: %d\n", t, taskId, taskId - (leftBound + 1), flag);
+//                     /* test end */
                     rem_l_to_left -= cur_l_to_left;
-                    if ((taskId >= rem_nx) && (taskId < rem_nx + l/avg_nx) && (rem_l_to_left < avg_nx) && (recvcount_block_nx < l))
+                    if ((recvcount_block_nx < l) && (rem_l_to_left <= avg_nx) && (taskId >= rem_nx) && (taskId < rem_nx + (l+1)/(avg_nx+1)))
                         rem_l_to_left--;
                 }
                 else
@@ -677,17 +671,17 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                 {
                     MPI_Irecv(&cur_l_from_right, 1, MPI_INT, taskId + (leftBound + 1), LEFT_FROM_RIGHT, MPI_COMM_WORLD, &recv_request);
                     MPI_Wait(&recv_request, &status);
-                    /* test begin */
-                    MPI_Test(&recv_request, &flag, &status);
-                    mexPrintf("t = %d (pCurFdm_local): %d receives from %d, cur_l_from_right(%d) recv_request flag: %d\n", t, taskId, taskId + (leftBound + 1), cur_l_from_right, flag);
-                    /* test end */
+//                     /* test begin */
+//                     MPI_Test(&recv_request, &flag, &status);
+//                     mexPrintf("t = %d (pCurFdm_local): %d receives from %d, cur_l_from_right(%d) recv_request flag: %d\n", t, taskId, taskId + (leftBound + 1), cur_l_from_right, flag);
+//                     /* test end */
                     MPI_Irecv(pCurFdm_local + (nz+2*l) * (recvcount_block_nx+l + offset_l_from_right), (nz+2*l) * cur_l_from_right, MPI_DOUBLE,
                             taskId + (leftBound + 1), LEFT_FROM_RIGHT, MPI_COMM_WORLD, &recv_request);
                     MPI_Wait(&recv_request, &status);
-                    /* test begin */
-                    MPI_Test(&recv_request, &flag, &status);
-                    mexPrintf("t = %d (pCurFdm_local): %d receives from %d, pCurFdm_local recv_request flag: %d\n", t, taskId, taskId + (leftBound + 1), flag);
-                    /* test end */
+//                     /* test begin */
+//                     MPI_Test(&recv_request, &flag, &status);
+//                     mexPrintf("t = %d (pCurFdm_local): %d receives from %d, pCurFdm_local recv_request flag: %d\n", t, taskId, taskId + (leftBound + 1), flag);
+//                     /* test end */
                     rem_l_from_right -= cur_l_from_right;
                     offset_l_from_right += cur_l_from_right;
                 }
@@ -701,19 +695,19 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                     cur_l_to_right = (rem_l_to_right <= recvcount_block_nx) ? rem_l_to_right : recvcount_block_nx;
                     MPI_Isend(&cur_l_to_right, 1, MPI_INT, taskId + (leftBound + 1), LEFT_TO_RIGHT, MPI_COMM_WORLD, &send_request);
                     MPI_Wait(&send_request, &status);
-                    /* test begin */
-                    MPI_Test(&send_request, &flag, &status);
-                    mexPrintf("t = %d (pCurFdm_local): %d sends to %d, cur_l_to_right(%d) send_request flag: %d\n", t, taskId, taskId + (leftBound + 1), cur_l_to_right, flag);
-                    /* test end */
+//                     /* test begin */
+//                     MPI_Test(&send_request, &flag, &status);
+//                     mexPrintf("t = %d (pCurFdm_local): %d sends to %d, cur_l_to_right(%d) send_request flag: %d\n", t, taskId, taskId + (leftBound + 1), cur_l_to_right, flag);
+//                     /* test end */
                     MPI_Isend(pCurFdm_local + (nz+2*l) * (l + recvcount_block_nx - cur_l_to_right), (nz+2*l) * cur_l_to_right, MPI_DOUBLE,
                             taskId + (leftBound + 1), LEFT_TO_RIGHT, MPI_COMM_WORLD, &send_request);
                     MPI_Wait(&send_request, &status);
-                    /* test begin */
-                    MPI_Test(&send_request, &flag, &status);
-                    mexPrintf("t = %d (pCurFdm_local): %d sends to %d, pCurFdm_local send_request flag: %d\n", t, taskId, taskId + (leftBound + 1), flag);
-                    /* test end */
+//                     /* test begin */
+//                     MPI_Test(&send_request, &flag, &status);
+//                     mexPrintf("t = %d (pCurFdm_local): %d sends to %d, pCurFdm_local send_request flag: %d\n", t, taskId, taskId + (leftBound + 1), flag);
+//                     /* test end */
                     rem_l_to_right -= cur_l_to_right;
-                    if ((taskId >= rem_nx - l/avg_nx) && (taskId < rem_nx) && (rem_l_to_right < avg_nx) && (recvcount_block_nx <= l))
+                    if ((recvcount_block_nx <= l) && (rem_l_to_right < avg_nx) && (taskId >= rem_nx - (l+1)/(avg_nx+1)) && (taskId < rem_nx))
                         rem_l_to_right++;
                 }
                 else
@@ -749,12 +743,16 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
             }
         }
         
+        /* test begin */
         mexPrintf("!!!!!!!!!!(pCurFdm_local Finished) t = %d, taskId = %d, rem_l_to_left = %d, rem_l_from_right = %d, rem_l_to_right = %d, rem_l_from_left = %d, leftBound = %d, rightBound = %d\n",
                 t, taskId, rem_l_to_left, rem_l_from_right, rem_l_to_right, rem_l_from_left, leftBound, rightBound);
+        /* test end */
         
     }
     
+    /* test begin */
     mexPrintf("===== Finished Time Iteration ===== taskId: %d\n", taskId);
+    /* test end */
     
     /* test begin */
     /*
@@ -775,7 +773,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     MPI_Gatherv(pSnapshot_local, recvcount_block_nx, type_ztPlane_local_resized,
             pSnapshot, sendcounts_block_nx, displs_block_nx, type_ztPlane_global_resized, 0, MPI_COMM_WORLD);
     
+    /* test begin */
     mexPrintf("===== Finished Data Gathering ===== taskId: %d\n", taskId);
+    /* test end */
     
     /* free datatype */
     if (taskId == 0)
@@ -821,6 +821,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     
     /* shut down MPI */
     MPI_Finalize();
+    
+    /* test begin */
+    mexPrintf("===== MPI Finalized ===== taskId: %d\n", taskId);
+    /* test end */
     
     /* output arrays */
     DATA_OUT = mxCreateNumericMatrix(0, 0, mxDOUBLE_CLASS, mxREAL);
