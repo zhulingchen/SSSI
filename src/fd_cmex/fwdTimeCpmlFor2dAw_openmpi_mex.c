@@ -440,17 +440,18 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                     break;
                 if ( (taskId > leftBound) && (rem_l_to_left > 0) )
                 {
+                    /* receive number of currently required ghost cell columns from left */
                     MPI_Irecv(&rem_l_to_left, 1, MPI_INT, taskId - (leftBound + 1), RIGHT_FROM_LEFT, MPI_COMM_WORLD, &recv_request);
                     MPI_Wait(&recv_request, &status);
-                    
+                    /* determine number of ghost cell columns and send it to left */
                     cur_l_to_left = (rem_l_to_left <= recvcount_block_nx) ? rem_l_to_left : recvcount_block_nx;
                     MPI_Isend(&cur_l_to_left, 1, MPI_INT, taskId - (leftBound + 1), RIGHT_TO_LEFT, MPI_COMM_WORLD, &send_request);
                     MPI_Wait(&send_request, &status);
-                    
+                    /* send data to left */
                     MPI_Isend(pxPhi_local + nz * l, nz * cur_l_to_left, MPI_DOUBLE,
                             taskId - (leftBound + 1), RIGHT_TO_LEFT, MPI_COMM_WORLD, &send_request);
                     MPI_Wait(&send_request, &status);
-                    
+                    /* number of remaining ghost cell columns not sent yet */
                     rem_l_to_left -= cur_l_to_left;
                 }
                 else
@@ -460,17 +461,19 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                 
                 if ( (taskId < rightBound) && (stop_flag_from_right == 0) )
                 {
+                    /* send number of currently required ghost cell columns to right */
                     MPI_Isend(&rem_l_from_right, 1, MPI_INT, taskId + (leftBound + 1), LEFT_TO_RIGHT, MPI_COMM_WORLD, &send_request);
                     MPI_Wait(&send_request, &status);
                     if (rem_l_from_right > 0)
                     {
+                        /* receive number of ghost cell columns sent from right */
                         MPI_Irecv(&cur_l_from_right, 1, MPI_INT, taskId + (leftBound + 1), LEFT_FROM_RIGHT, MPI_COMM_WORLD, &recv_request);
                         MPI_Wait(&recv_request, &status);
-                        
+                        /* receive data from right */
                         MPI_Irecv(pxPhi_local + nz * (recvcount_block_nx+l + offset_l_from_right), nz * cur_l_from_right, MPI_DOUBLE,
                                 taskId + (leftBound + 1), LEFT_FROM_RIGHT, MPI_COMM_WORLD, &recv_request);
                         MPI_Wait(&recv_request, &status);
-                        
+                        /* number of remaining ghost cell columns not received yet */
                         rem_l_from_right -= cur_l_from_right;
                         offset_l_from_right += cur_l_from_right;
                     }
@@ -486,18 +489,20 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                 
                 if ( (taskId < rightBound) && (stop_flag_to_right == 0) )
                 {
+                    /* receive number of currently required ghost cell columns from right */
                     MPI_Irecv(&rem_l_to_right, 1, MPI_INT, taskId + (leftBound + 1), LEFT_FROM_RIGHT, MPI_COMM_WORLD, &recv_request);
                     MPI_Wait(&recv_request, &status);
                     if (rem_l_to_right > 0)
                     {
+                        /* determine number of ghost cell columns and send it to right */
                         cur_l_to_right = (rem_l_to_right <= recvcount_block_nx) ? rem_l_to_right : recvcount_block_nx;
                         MPI_Isend(&cur_l_to_right, 1, MPI_INT, taskId + (leftBound + 1), LEFT_TO_RIGHT, MPI_COMM_WORLD, &send_request);
                         MPI_Wait(&send_request, &status);
-                        
+                        /* send data to right */
                         MPI_Isend(pxPhi_local + nz * (l + recvcount_block_nx - cur_l_to_right), nz * cur_l_to_right, MPI_DOUBLE,
                                 taskId + (leftBound + 1), LEFT_TO_RIGHT, MPI_COMM_WORLD, &send_request);
                         MPI_Wait(&send_request, &status);
-                        
+                        /* number of remaining ghost cell columns not sent yet */
                         rem_l_to_right -= cur_l_to_right;
                     }
                     else /* rem_l_to_right == 0 */
@@ -512,17 +517,19 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                 
                 if ( (taskId > leftBound) && (stop_flag_from_left == 0) )
                 {
+                    /* send number of currently required ghost cell columns to left */
                     MPI_Isend(&rem_l_from_left, 1, MPI_INT, taskId - (leftBound + 1), RIGHT_TO_LEFT, MPI_COMM_WORLD, &send_request);
                     MPI_Wait(&send_request, &status);
                     if (rem_l_from_left > 0)
                     {
+                        /* receive number of ghost cell columns sent from left */
                         MPI_Irecv(&cur_l_from_left, 1, MPI_INT, taskId - (leftBound + 1), RIGHT_FROM_LEFT, MPI_COMM_WORLD, &recv_request);
                         MPI_Wait(&recv_request, &status);
-                        
+                        /* receive data from left */
                         MPI_Irecv(pxPhi_local + nz * (l - cur_l_from_left - offset_l_from_left), nz * cur_l_from_left, MPI_DOUBLE,
                                 taskId - (leftBound + 1), RIGHT_FROM_LEFT, MPI_COMM_WORLD, &recv_request);
                         MPI_Wait(&recv_request, &status);
-                        
+                        /* number of remaining ghost cell columns not received yet */
                         rem_l_from_left -= cur_l_from_left;
                         offset_l_from_left += cur_l_from_left;
                     }
@@ -646,17 +653,18 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                     break;
                 if ( (taskId > leftBound) && (rem_l_to_left > 0) )
                 {
+                    /* receive number of currently required ghost cell columns from left */
                     MPI_Irecv(&rem_l_to_left, 1, MPI_INT, taskId - (leftBound + 1), RIGHT_FROM_LEFT, MPI_COMM_WORLD, &recv_request);
                     MPI_Wait(&recv_request, &status);
-                    
+                    /* determine number of ghost cell columns and send it to left */
                     cur_l_to_left = (rem_l_to_left <= recvcount_block_nx) ? rem_l_to_left : recvcount_block_nx;
                     MPI_Isend(&cur_l_to_left, 1, MPI_INT, taskId - (leftBound + 1), RIGHT_TO_LEFT, MPI_COMM_WORLD, &send_request);
                     MPI_Wait(&send_request, &status);
-                    
+                    /* send data to left */
                     MPI_Isend(pCurFdm_local + (nz+2*l) * l, (nz+2*l) * cur_l_to_left, MPI_DOUBLE,
                             taskId - (leftBound + 1), RIGHT_TO_LEFT, MPI_COMM_WORLD, &send_request);
                     MPI_Wait(&send_request, &status);
-                    
+                    /* number of remaining ghost cell columns not sent yet */
                     rem_l_to_left -= cur_l_to_left;
                 }
                 else
@@ -666,17 +674,19 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                 
                 if ( (taskId < rightBound) && (stop_flag_from_right == 0) )
                 {
+                    /* send number of currently required ghost cell columns to right */
                     MPI_Isend(&rem_l_from_right, 1, MPI_INT, taskId + (leftBound + 1), LEFT_TO_RIGHT, MPI_COMM_WORLD, &send_request);
                     MPI_Wait(&send_request, &status);
                     if (rem_l_from_right > 0)
                     {
+                        /* receive number of ghost cell columns sent from right */
                         MPI_Irecv(&cur_l_from_right, 1, MPI_INT, taskId + (leftBound + 1), LEFT_FROM_RIGHT, MPI_COMM_WORLD, &recv_request);
                         MPI_Wait(&recv_request, &status);
-                        
+                        /* receive data from right */
                         MPI_Irecv(pCurFdm_local + (nz+2*l) * (recvcount_block_nx+l + offset_l_from_right), (nz+2*l) * cur_l_from_right, MPI_DOUBLE,
                                 taskId + (leftBound + 1), LEFT_FROM_RIGHT, MPI_COMM_WORLD, &recv_request);
                         MPI_Wait(&recv_request, &status);
-                        
+                        /* number of remaining ghost cell columns not received yet */
                         rem_l_from_right -= cur_l_from_right;
                         offset_l_from_right += cur_l_from_right;
                     }
@@ -692,18 +702,20 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                 
                 if ( (taskId < rightBound) && (stop_flag_to_right == 0) )
                 {
+                    /* receive number of currently required ghost cell columns from right */
                     MPI_Irecv(&rem_l_to_right, 1, MPI_INT, taskId + (leftBound + 1), LEFT_FROM_RIGHT, MPI_COMM_WORLD, &recv_request);
                     MPI_Wait(&recv_request, &status);
                     if (rem_l_to_right > 0)
                     {
+                        /* determine number of ghost cell columns and send it to right */
                         cur_l_to_right = (rem_l_to_right <= recvcount_block_nx) ? rem_l_to_right : recvcount_block_nx;
                         MPI_Isend(&cur_l_to_right, 1, MPI_INT, taskId + (leftBound + 1), LEFT_TO_RIGHT, MPI_COMM_WORLD, &send_request);
                         MPI_Wait(&send_request, &status);
-                        
+                        /* send data to right */
                         MPI_Isend(pCurFdm_local + (nz+2*l) * (l + recvcount_block_nx - cur_l_to_right), (nz+2*l) * cur_l_to_right, MPI_DOUBLE,
                                 taskId + (leftBound + 1), LEFT_TO_RIGHT, MPI_COMM_WORLD, &send_request);
                         MPI_Wait(&send_request, &status);
-                        
+                        /* number of remaining ghost cell columns not sent yet */
                         rem_l_to_right -= cur_l_to_right;
                     }
                     else /* rem_l_to_right == 0 */
@@ -718,17 +730,19 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                 
                 if ( (taskId > leftBound) && (stop_flag_from_left == 0) )
                 {
+                    /* send number of currently required ghost cell columns to left */
                     MPI_Isend(&rem_l_from_left, 1, MPI_INT, taskId - (leftBound + 1), RIGHT_TO_LEFT, MPI_COMM_WORLD, &send_request);
                     MPI_Wait(&send_request, &status);
                     if (rem_l_from_left > 0)
                     {
+                        /* receive number of ghost cell columns sent from left */
                         MPI_Irecv(&cur_l_from_left, 1, MPI_INT, taskId - (leftBound + 1), RIGHT_FROM_LEFT, MPI_COMM_WORLD, &recv_request);
                         MPI_Wait(&recv_request, &status);
-                        
+                        /* receive data from left */
                         MPI_Irecv(pCurFdm_local + (nz+2*l) * (l - cur_l_from_left - offset_l_from_left), (nz+2*l) * cur_l_from_left, MPI_DOUBLE,
                                 taskId - (leftBound + 1), RIGHT_FROM_LEFT, MPI_COMM_WORLD, &recv_request);
                         MPI_Wait(&recv_request, &status);
-                        
+                        /* number of remaining ghost cell columns not received yet */
                         rem_l_from_left -= cur_l_from_left;
                         offset_l_from_left += cur_l_from_left;
                     }
