@@ -1,9 +1,9 @@
-% MAINFWD3DAW simulates wave propagation with 3-d acoustic wave in time
-% domain with absorbing boundary condition (ABC) called Nonsplit
+% MAINWAVETIMECPMLFOR3DAW simulates wave propagation with 3-d acoustic wave
+% in time domain with absorbing boundary condition (ABC) called Nonsplit
 % Convolutional-PML (CPML)
 %
-% This matlab source file is free for use in academic research. All rights
-% reserved.
+% This matlab source file is free for use in academic research.
+% All rights reserved.
 %
 % Lingchen Zhu (zhulingchen@gmail.com), Entao Liu (liuentao@gmail.com)
 % Center for Signal and Information Processing, Center for Energy & Geo

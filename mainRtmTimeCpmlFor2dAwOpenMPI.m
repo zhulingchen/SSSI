@@ -1,3 +1,15 @@
+% MAINRTMTIMECPMLFOR2DAWOPENMPI simulates Kirchoff migration and reverse
+% time migration (RTM) with 2-d acoustic wave in time domain with absorbing
+% boundary condition (ABC) called Nonsplit Convolutional-PML (CPML) using
+% OpenMPI to achieve high-performance parallel processing
+%
+% This matlab source file is free for use in academic research.
+% All rights reserved.
+%
+% Lingchen Zhu (zhulingchen@gmail.com)
+% Center for Signal and Information Processing, Center for Energy & Geo Processing
+% Georgia Institute of Technology
+
 close all;
 clear;
 clc;
