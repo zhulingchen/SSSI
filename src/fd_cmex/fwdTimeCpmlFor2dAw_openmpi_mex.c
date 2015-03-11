@@ -32,10 +32,11 @@
 #define DT_IN           prhs[6]
 
 /* output arguments */
-#define DATA_OUT        plhs[0]
-#define SNAPSHOT_OUT    plhs[1]
-#define TASKID_OUT      plhs[2]     /* rank (task ID) of the calling process to return */
-/* #define TEST_OUT        plhs[3] */     /* out argument for test */
+#define TASKID_OUT          plhs[0]     /* rank (task ID) of the calling process to return */
+#define DATA_OUT            plhs[1]
+#define SNAPSHOT_OUT        plhs[2]
+#define SNAPSHOT_LOCAL_OUT  plhs[3]
+/* #define TEST_OUT        plhs[4] */     /* out argument for test */
 
 /* MPI-related macros */
 #define RIGHT_TO_LEFT   1
@@ -794,6 +795,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     MPI_Type_free(&type_trace_local);
     MPI_Type_free(&type_trace_local_resized);
     /* free dynamic array */
+    mxFree(pCoeff);
     mxFree(sendcounts_block_nx);
     mxFree(displs_block_nx);
     mxFree(sendcounts_band_nx);
@@ -821,10 +823,14 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     mxFree(pzA_diffIn_local);
     mxFree(pxA_diffIn_local);
     mxFree(pData_local);
-    mxFree(pSnapshot_local);
+    /* mxFree(pSnapshot_local); */
     
     /* shut down MPI */
     MPI_Finalize();
+    
+    /* output taskId */
+    TASKID_OUT = mxCreateNumericMatrix(1, 1, mxUINT8_CLASS, mxREAL);
+    *((int*)mxGetData(TASKID_OUT)) = taskId;
     
     /* output arrays */
     DATA_OUT = mxCreateNumericMatrix(0, 0, mxDOUBLE_CLASS, mxREAL);
@@ -845,7 +851,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         mxSetPr(SNAPSHOT_OUT, pSnapshot);
         mxSetDimensions(SNAPSHOT_OUT, pDimsSnapshot, 3);
         
-        
         /* test begin */
         /*
          * mxSetPr(TEST_OUT, pTestOut);
@@ -858,9 +863,11 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
          */
         /* test end */
     }
-    TASKID_OUT = mxCreateNumericMatrix(1, 1, mxUINT8_CLASS, mxREAL);
-    *((int*)mxGetData(TASKID_OUT)) = taskId;
+    SNAPSHOT_LOCAL_OUT = mxCreateNumericMatrix(0, 0, mxDOUBLE_CLASS, mxREAL);
+    pDimsSnapshot[0] = nz;
+    pDimsSnapshot[1] = recvcount_block_nx;
+    pDimsSnapshot[2] = nt;
+    mxSetPr(SNAPSHOT_LOCAL_OUT, pSnapshot_local);
+    mxSetDimensions(SNAPSHOT_LOCAL_OUT, pDimsSnapshot, 3);
     
-    /* free dynamic array */
-    mxFree(pCoeff);
 }
