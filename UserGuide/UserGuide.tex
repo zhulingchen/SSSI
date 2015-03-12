@@ -208,7 +208,7 @@ sampling interval $dt$, and peak location $t_0$ as inputs. The Figure \ref{fig:r
 
 
 \subsection{Finite Difference Method on Standard Grid}
-Currently, there are several popular method to solve the wave equation numerically, such as pseudo-spectral method, Finite Difference Method (FDM), Finite Elements Method (FEM) method, etc. Each method has its pros and cons. Concretely, the pseudo-spectral method, which is based on Fourier transform in spatial domain, provides accurate and efficient solutions for the smoothly varied media but not for sharply varied media \cite{KreOli1972,For1975,For1987}. The FDM \cite{AlfKelAO1974,Dab1986} adopted by S3I is widely used for its ease to implement and high accuracy and efficiency. However, the FDM is incapable to provide accurate solution for media with complex geometry structure and rugged topography. The FEM usually provides more accurate results than FDM with a higher computational and storage expense \cite{Kur1984}. 
+Currently, there are several popular method to solve the wave equation numerically, such as pseudo-spectral method, Finite Difference Method (FDM), Finite Elements Method (FEM) method, etc. Each method has its pros and cons. Concretely, the pseudo-spectral method, which is based on Fourier transform in spatial domain, provides accurate and efficient solutions for the smoothly varied media but not for sharply varied media \cite{Kreiss:1972aa,Fornberg:1975aa,Fornberg:1987aa}. The FDM \cite{Alford:1974aa,Dablain:1986aa} adopted by S3I is widely used for its ease to implement and high accuracy and efficiency. However, the FDM is incapable to provide accurate solution for media with complex geometry structure and rugged topography. The FEM usually provides more accurate results than FDM with a higher computational and storage expense \cite{Kurt:1984aa}. 
 
 In order to solve the wave equation with FDM, the continuous functions and models are represented by their values at grid points and and derivatives are approximated by linear combination of these values. For instance, in a 2D region we use the uniformly distributed grid points $(z_i)_{0\le i \le I-1 }$, $(x_j)_{0\le j \le J-1}$, and $(t_n)_{0\le n \le N-1}$ given by $z_i = i\Delta z$, $x_j = j\Delta x$ and $t_n=n\Delta t$. Instead of solving the wave equation in a continuous domain (both in space and time) analytically, the FDM provides for an approximated solution on these grid points.  
 
@@ -702,7 +702,7 @@ The RTM result of Marmousi model is illustrated with Figure \ref{fig:RTM}. Moreo
 
 
 \section{Least Square Reverse Time Migration (LS-RTM)}
-Generally speaking, RTM is a reliable method of imaging complex structures. However, there are still some distortions caused by RTM crosstalk artifacts. Mathematically, the migration operator is just the adjoint of the forward modeling operator, it does not minimize the mismatch of the observed and simulated traces. Least Square RTM (LSRTM) introduced by \cite{Nemeth:1999aa} derives an imaging condition by formulating migration as an inverse problem based on a least-squares misfit function. The implementation of LSRTM can either be in time domain or frequency domain.
+Generally speaking, RTM is a reliable method of imaging complex structures. However, there are still some distortions caused by RTM crosstalk artifacts. Mathematically, the migration operator is just the adjoint of the forward modeling operator, it does not minimize the mismatch of the observed and simulated traces. Least Square RTM (LSRTM) introduced by \cite{Nemeth:1999aa} derives an imaging condition by formulating migration as an inverse problem based on a least-squares misfit function. The implementation of LSRTM can either be in time domain or frequency domain\cite{Ren:2013aa}.
 
 Denote by $m(\bx)=1/c^2(\bx)$ the model which is the square slowness at point $\bx$. 
 We consider the decomposition of model $m$ into a smooth model (initial guess) and a perturbation:
@@ -721,7 +721,7 @@ and $\delta P$. The $P_0(\bx; \bx_s, \omega)$ is determined by the smooth model 
 \cL( m_0) P_0(\bx; \bx_s, \omega)=F_s(\omega),
 \end{equation} 
 where operator $\cL( m_0)=(-\omega^2 m_0(\bx)-\Delta)$ and the $F_s(\omega)$ is the source function at source location $\bx_s$. 
-Using Born approximation \cite{Tar1988}, the scattered filed can be approximated by  
+Using Born approximation \cite{Tarantola:1988aa}, the scattered filed can be approximated by  
 \begin{equation}
 \cL( m_0)\delta P(\bx;\bx_s,\omega) =\omega^2 \delta m P_0(\bx;\bx_s,\omega).
 \end{equation}
@@ -789,7 +789,7 @@ In the LSRTM, since we do not update the incident model $\bm_0$, the Green's fun
 
 
 \section{Full Waveform Inversion (FWI) in Frequency Domain}
-The migration operator requires an incident model (usually a smoothed version of the true model) as an input. However, in complex media, building an accurate smooth model is challenging. In contrast, the starting model of FWI (see \cite{Virieux:2009aa} as an overview) can be very rough, since in each iteration the updated model will be a new starting point for the following iteration. However, the Green's function should also be updated in order to converge fast. In the frequency domain, the formulation is similar to the LSRTM. The only thing different is we will update the incident model as well as the Green's functions over iterations. Applying the same approach, the cost function $J(\delta \bm)$ can be optimized by conjugate-gradient or quasi-Newton in the model domain or in a sparse domain \cite{SchVdB2009} , see \path{mainAdjointFwiFreqCpmlFor2dAw.m} and \path{mainPQNFwiFreqCpmlFor2dAw.m}.
+The migration operator requires an incident model (usually a smoothed version of the true model) as an input. However, in complex media, building an accurate smooth model is challenging. In contrast, the starting model of FWI (see \cite{Virieux:2009aa} as an overview) can be very rough, since in each iteration the updated model will be a new starting point for the following iteration. However, the Green's function should also be updated in order to converge fast. In the frequency domain, the formulation is similar to the LSRTM. The only thing different is we will update the incident model as well as the Green's functions over iterations. Applying the same approach, the cost function $J(\delta \bm)$ can be optimized by conjugate-gradient or quasi-Newton in the model domain or in a sparse domain using Projected Quasi-Newton (PQN) algorithm\cite{Schmidt:2009aa}, see \path{mainAdjointFwiFreqCpmlFor2dAw.m} and \path{mainPQNFwiFreqCpmlFor2dAw.m}.
 
 \begin{algorithm}[H]
 \begin{algorithmic}[1]
@@ -831,7 +831,7 @@ S3I have the following advantages over the Linux/Unix based packages:
 \begin{enumerate}
 \item Rich functions and toolboxes in MATLAB, e.g. data visualization, data I/O, signal processing, and parallel computing.
 \item Ease of coding and debugging for further development.
-\item Cross-platform: windows/Linux/Unix.
+\item Cross-platform: Windows/Linux/Unix.
 \item Easy to use: GUI, simple MATLAB script manipulations, no shell scripting.
 \item Available code reuse: data formatting, spare transforms, advanced optimization algorithms.
 \end{enumerate}
@@ -857,7 +857,7 @@ explains their uses.
 
 \noindent F\\
 \path{./fd_cmex}~~~C Mex-files for finite difference. Run \path{make.m} to compile\\
-\path{./fd_matlab}~~~m files for finite difference, which is not used in default\\
+\path{./fd_matlab}~~~Matlab source files for finite difference, which is not used but only a reference in default\\
 \path{fctForAw.m}~~~Performs the FCT method to alleviate numerical grid dispersion for acoustic wave\\
 \path{fctForEw.m}~~~Performs the FCT method to alleviate numerical grid dispersion for elastic wave\\
 \path{freqSolver.m}~~~Solves the 2D acoustic wave equation in frequency domain with Enguist-Majda absorbing boundary conditions\\
@@ -877,7 +877,7 @@ explains their uses.
 \path{misfitFuncModel.m}~~~Calculate the least-square misfit function with respect to the perturbation model $\delta \bm$. Used in FWI.\\
 
 \noindent P\\
-\path{./PQN}~~~the PQN package for optimization\\
+\path{./PQN}~~~the Projected Quasi-Newton (PQN) package for optimization (thanks to Mark Schmidt, Ewout van den Berg, Michael Friedlander, Kevin Murphy from University of British Columbia, Canada)\\
 \path{plotTrace.m}~~~Plots seismic traces with filled wiggles.\\
 
 \noindent R\\
@@ -894,9 +894,9 @@ explains their uses.
 \path{wiggle.m}~~~displays seismic data as wiggle plus filled lobes\\
 
 
-\noindent S\\
-\path{Seg2FileReader.m}~~~Reads SEG2 files.\\
-\path{SegYFileReader.m}~~~Reads SEG Y files.\\
+%\noindent S\\
+%\path{Seg2FileReader.m}~~~Reads SEG2 files\\
+%\path{SegYFileReader.m}~~~Reads SEGY files\\
 
 
 \noindent 
