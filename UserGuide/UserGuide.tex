@@ -512,9 +512,9 @@ where $n_{x_p}$ is x-axis length of the local partition assigned to node $p$ and
 Parallel forward and backward acoustic wave propagation is implemented in \path{src/fd_cmex/fwdTimeCpmlFor2dAw_openmpi_mex.c} and \path{src/fd_cmex/rvsTimeCpmlFor2dAw_openmpi_mex.c}, respectively. In order to evaluate the performance, a MATLAB wrapper interface \path{test_mpi_FwdWaveTimeCpmlFor2dAw.m} sets up simulation parameters. One can call 
 \begin{lstlisting}[basicstyle=\ttfamily,keywordstyle=\color{blue}]
 mpirun -n <NP> matlab -nodisplay -r
-"test_mpi_FwdWaveTimeCpmlFor2dAw"
+"mainRtmTimeCpmlFor2dAwOpenMPI"
 \end{lstlisting}
-to run the parallel forward acoustic wave propagation, where \texttt{<NP>} refers to the number of processors to use.
+in the console to run the parallel forward acoustic wave propagation, where \texttt{<NP>} refers to the number of processors to use.
 
 
 \subsection{Numerical Artifacts and Instabilities}
