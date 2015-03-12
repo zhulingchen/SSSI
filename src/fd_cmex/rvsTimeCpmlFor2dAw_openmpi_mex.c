@@ -1,8 +1,8 @@
 /* ======================================================================
  *
- * fwdTimeCpmlFor2dAw_openmpi_mex.c
+ * rvsTimeCpmlFor2dAw_openmpi_mex.c
  *
- * Simulates 2-d acoustic wave forward propagation using finite difference
+ * Simulates 2-d acoustic wave reverse propagation using finite difference
  * in time domain with partial differential equation (PDE) using Message
  * Passing Interface (MPI) implementation
  *
@@ -24,7 +24,7 @@
 
 /* input arguments */
 #define VM_IN           prhs[0]
-#define SOURCE_IN       prhs[1]
+#define DATA_IN         prhs[1]
 #define DIFFORDER_IN	prhs[2]
 #define BOUNDARY_IN     prhs[3]
 #define DZ_IN           prhs[4]
@@ -33,7 +33,7 @@
 
 /* output arguments */
 #define TASKID_OUT          plhs[0]     /* rank (task ID) of the calling process to return */
-#define DATA_OUT            plhs[1]
+#define MODEL_OUT            plhs[1]
 #define SNAPSHOT_OUT        plhs[2]
 #define SNAPSHOT_LOCAL_OUT  plhs[3]
 /* #define TEST_OUT        plhs[4] */     /* out argument for test */
@@ -49,13 +49,12 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
     /* begin of declaration */
     /* global variables */
-    double *pVelocityModel, *pSource, *pData, *pSnapshot;
+    double *pVelocityModel, *pData, *pModel, *pSnapshot;
     double dz, dx, dt;
     int diffOrder, boundary;
     
     int l, irank, i, j, t;
     mwSize nz, nx, nt;
-    const mwSize *pDimsSource;
     mwSize pDimsSnapshot[3] = {0};
     
     double *pCoeff;
@@ -64,7 +63,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     /*
      * double *pTestOut;
      * mwSize pDimsTestOut[3] = {0};
-     * int *sendcounts_band2_nx, *displs_band2_nx;
      */
     /* test end */
     
@@ -77,6 +75,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     int stop_flag_from_right, stop_flag_to_right, stop_flag_from_left, leftBound, rightBound;
     int block_nx_dampPml;
     int *sendcounts_block_nx, *displs_block_nx, *sendcounts_band_nx, *displs_band_nx;
+    int *sendcounts_band2_nx, *displs_band2_nx;
     MPI_Datatype type_ztPlane_global, type_ztPlane_global_resized, type_ztPlane_local, type_ztPlane_local_resized;
     MPI_Datatype type_trace_local, type_trace_local_resized, type_trace_global, type_trace_global_resized;
     MPI_Request send_request, recv_request;
@@ -84,17 +83,17 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     MPI_Status status;
     
     /* local variables */
-    double *pVelocityModel_local, *pSource_local;
-    double *pOldFdm_local, *pCurFdm_local, *pNewFdm_local;
+    double *pVelocityModel_local, *pData_local, *pSource_local;
+    double *pOldRtm_local, *pCurRtm_local, *pNewRtm_local;
     double *puDampLeft_local, *pvDampLeft_local, *puDampRight_local, *pvDampRight_local, *puDampDown_local, *pvDampDown_local;
     double *pxDampLeft_local, *pxDampRight_local, *pxDamp_local, *pxb_local, *pzDampDown_local, *pzDamp_local, *pzb_local;
     double *pVdtSq_local;
-    double *pCurFdm_diffIn_zPhi_local, *pCurFdm_diffIn_xPhi_local, *pCurFdm_diffIn_zA_local,  *pCurFdm_diffIn_xA_local;
-    double *pCurFdm_diffOut_zPhi_local, *pCurFdm_diffOut_xPhi_local, *pCurFdm_diffOut_zA_local, *pCurFdm_diffOut_xA_local;
+    double *pCurRtm_diffIn_zPhi_local, *pCurRtm_diffIn_xPhi_local, *pCurRtm_diffIn_zA_local,  *pCurRtm_diffIn_xA_local;
+    double *pCurRtm_diffOut_zPhi_local, *pCurRtm_diffOut_xPhi_local, *pCurRtm_diffOut_zA_local, *pCurRtm_diffOut_xA_local;
     double *pzA_diffIn_local, *pxA_diffIn_local;
     double *pzA_diffOut_local, *pxA_diffOut_local;
     double *pzPhi_local, *pxPhi_local, *pzA_local, *pxA_local, *pzPsi_local, *pxPsi_local, *pzP_local, *pxP_local;
-    double *pData_local, *pSnapshot_local;
+    double *pModel_local, *pSnapshot_local;
     /* end of declaration */
     
     if (nrhs < 7)
@@ -102,19 +101,17 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     
     /* load velocity model and source field */
     pVelocityModel = mxGetPr(VM_IN);
-    pSource = mxGetPr(SOURCE_IN);
+    pData = mxGetPr(DATA_IN);
     diffOrder = *mxGetPr(DIFFORDER_IN);
     boundary = *mxGetPr(BOUNDARY_IN);
     dz = *mxGetPr(DZ_IN);
     dx = *mxGetPr(DX_IN);
     dt = *mxGetPr(DT_IN);
     
-    pDimsSource = mxGetDimensions(SOURCE_IN);
-    nz = pDimsSource[0];
-    nx = pDimsSource[1];
-    nt = pDimsSource[2];
-    mxAssert(nz == mxGetM(VM_IN), "Velocity model and source grids should have the same z-axis grids!");
-    mxAssert(nx == mxGetN(VM_IN), "Velocity model and source grids should have the same x-axis grids!");
+    nz = mxGetM(VM_IN);
+    nx = mxGetN(VM_IN);
+    mxAssert(nx == mxGetM(DATA_IN), "Velocity model and input data should have the same x-axis grids!");
+    nt = mxGetN(DATA_IN);
     
     pCoeff = dCoef(diffOrder, "s");
     l = 2 * diffOrder - 1;
@@ -145,12 +142,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     displs_block_nx = (int*)mxCalloc(numProcesses, sizeof(int));
     sendcounts_band_nx = (int*)mxCalloc(numProcesses, sizeof(int));
     displs_band_nx = (int*)mxCalloc(numProcesses, sizeof(int));
-    /* test begin */
-    /*
-     * sendcounts_band2_nx = (int*)mxCalloc(numProcesses, sizeof(int));
-     * displs_band2_nx = (int*)mxCalloc(numProcesses, sizeof(int));
-     */
-    /* test end */
+    sendcounts_band2_nx = (int*)mxCalloc(numProcesses, sizeof(int));
+    displs_band2_nx = (int*)mxCalloc(numProcesses, sizeof(int));
     for (irank = 0; irank < numProcesses; irank++)
     {
         block_nx = (irank < rem_nx) ? (avg_nx + 1) : (avg_nx);
@@ -161,12 +154,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         /* displacements (relative to sendbuf) from which to take the outgoing elements to each process */
         displs_block_nx[irank] = offset_block_nx;
         displs_band_nx[irank] = nz * offset_block_nx;
-        /* test begin */
-        /*
-         * sendcounts_band2_nx[irank] = (nz+2*l) * block_nx;
-         * displs_band2_nx[irank] = (nz+2*l) * offset_block_nx;
-         */
-        /* test end */
+        /* numbers of Z-bands processed by each task */
+        sendcounts_band2_nx[irank] = (nz+2*l) * block_nx;
+        /* displacements (relative to sendbuf) from which to take the outgoing elements to each process */
+        displs_band2_nx[irank] = (nz+2*l) * offset_block_nx;
         offset_block_nx += sendcounts_block_nx[irank];
     }
     recvcount_block_nx = sendcounts_block_nx[taskId];
@@ -203,10 +194,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     MPI_Type_create_resized(type_trace_local, 0, sizeof(double), &type_trace_local_resized);
     MPI_Type_commit(&type_trace_local_resized);
     
-    /* scatter source field */
-    pSource_local = (double*)mxCalloc(nz * recvcount_block_nx * nt, sizeof(double));
-    MPI_Scatterv(pSource, sendcounts_block_nx, displs_block_nx, type_ztPlane_global_resized,
-            pSource_local, recvcount_block_nx, type_ztPlane_local_resized, 0, MPI_COMM_WORLD);
+    /* scatter source (input data) field */
+    pData_local = (double*)mxCalloc(recvcount_block_nx * nt, sizeof(double));
+    MPI_Scatterv(pData, sendcounts_block_nx, displs_block_nx, type_trace_global_resized,
+            pData_local, recvcount_block_nx, type_trace_local_resized, 0, MPI_COMM_WORLD);
     
     /* x-axis damp profile (left), for those tasks whose grids are in left artificial boundary */
     pxDamp_local = (double*)mxCalloc(nz * recvcount_block_nx, sizeof(double));
@@ -348,7 +339,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
      * MPI_Gatherv(pxb_local, nz * recvcount_block_nx, MPI_DOUBLE,
      * pTestOut, sendcounts_band_nx, displs_band_nx, MPI_DOUBLE, 0, MPI_COMM_WORLD);
      * pTestOut = (double*)mxCalloc(nz * nx * nt, sizeof(double));
-     * MPI_Gatherv(pSource_local, recvcount_block_nx, type_ztPlane_local_resized,
+     * MPI_Gatherv(pData_local, recvcount_block_nx, type_ztPlane_local_resized,
      * pTestOut, sendcounts_block_nx, displs_block_nx, type_ztPlane_global_resized, 0, MPI_COMM_WORLD);
      */
     /* test end */
@@ -357,13 +348,13 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
      * 2-D Acoustic Wave Forward-Time Modeling
      * ====================================================================== */
     /* additional arrays for storage intermediate results */
-    /* oldFdm - old finite difference matrix
-     * curFdm - current finite difference matrix
-     * newFdm - new finite difference matrix
+    /* oldRtm - old finite difference matrix
+     * curRtm - current finite difference matrix
+     * newRtm - new finite difference matrix
      */
-    pOldFdm_local = (double*)mxCalloc((nz+2*l) * (recvcount_block_nx+2*l), sizeof(double));
-    pCurFdm_local = (double*)mxCalloc((nz+2*l) * (recvcount_block_nx+2*l), sizeof(double));
-    pNewFdm_local = (double*)mxCalloc((nz+2*l) * (recvcount_block_nx+2*l), sizeof(double));
+    pOldRtm_local = (double*)mxCalloc((nz+2*l) * (recvcount_block_nx+2*l), sizeof(double));
+    pCurRtm_local = (double*)mxCalloc((nz+2*l) * (recvcount_block_nx+2*l), sizeof(double));
+    pNewRtm_local = (double*)mxCalloc((nz+2*l) * (recvcount_block_nx+2*l), sizeof(double));
     
     pzPhi_local = (double*)mxCalloc((nz+2*l) * recvcount_block_nx, sizeof(double));
     pxPhi_local = (double*)mxCalloc(nz * (recvcount_block_nx+2*l), sizeof(double));
@@ -374,14 +365,14 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     pzP_local = (double*)mxCalloc((nz+l) * recvcount_block_nx, sizeof(double));
     pxP_local = (double*)mxCalloc(nz * (recvcount_block_nx+l), sizeof(double));
     
-    pCurFdm_diffIn_zPhi_local = (double*)mxCalloc((nz+l) * recvcount_block_nx, sizeof(double));
-    pCurFdm_diffIn_xPhi_local = (double*)mxCalloc(nz * (recvcount_block_nx+l), sizeof(double));
-    pCurFdm_diffIn_zA_local = (double*)mxCalloc((nz+2*l) * recvcount_block_nx, sizeof(double));
-    pCurFdm_diffIn_xA_local = (double*)mxCalloc(nz * (recvcount_block_nx+2*l), sizeof(double));
+    pCurRtm_diffIn_zPhi_local = (double*)mxCalloc((nz+l) * recvcount_block_nx, sizeof(double));
+    pCurRtm_diffIn_xPhi_local = (double*)mxCalloc(nz * (recvcount_block_nx+l), sizeof(double));
+    pCurRtm_diffIn_zA_local = (double*)mxCalloc((nz+2*l) * recvcount_block_nx, sizeof(double));
+    pCurRtm_diffIn_xA_local = (double*)mxCalloc(nz * (recvcount_block_nx+2*l), sizeof(double));
     pzA_diffIn_local = (double*)mxCalloc((nz+l) * recvcount_block_nx, sizeof(double));
     pxA_diffIn_local = (double*)mxCalloc(nz * (recvcount_block_nx+l), sizeof(double));
     
-    pData_local = (double*)mxCalloc(recvcount_block_nx * nt, sizeof(double));
+    pModel_local = (double*)mxCalloc(recvcount_block_nx * nt, sizeof(double));
     pSnapshot_local = (double*)mxCalloc(nz * recvcount_block_nx * nt, sizeof(double));
     
     /* finite difference time domain method */
@@ -391,34 +382,41 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
      * izl = (diffOrder-1):(nz+2*l-diffOrder-1); len: nz+l
      * ixl = (diffOrder-1):(recvcount_block_nx+2*l-diffOrder-1); len: recvcount_block_nx+l
      */
-    for (t = 0; t < nt; t++)
+    for (t = nt-1; t >= 0; t--)     /* reverse propagation */
     {
         /* finite difference calculation with PML ABC */
-        /* zPhi(izi, :) = zb .* zPhi(izi, :) + (zb - 1) .* diffOperator(fdm(izl+1, ixi, 2), coeff, dz, 1); */
+        
+        /*source = zeros(nz, nx);*/
+        /*source(1, :) = data(:, it).';*/
+        pSource_local = (double*)mxCalloc(nz * recvcount_block_nx, sizeof(double));
+        for (j = 0; j < recvcount_block_nx; j++)
+            pSource_local[j * nz] = pData_local[t * recvcount_block_nx + j];
+        
+        /* zPhi(izi, :) = zb .* zPhi(izi, :) + (zb - 1) .* diffOperator(rtm(izl+1, ixi, 2), coeff, dz, 1); */
         for (j = l; j < recvcount_block_nx+l; j++)
             for (i = diffOrder; i < nz+2*l-diffOrder+1; i++)
-                pCurFdm_diffIn_zPhi_local[(j - l) * (nz+l) + (i-diffOrder)] = pCurFdm_local[j * (nz+2*l) + i];
-        pCurFdm_diffOut_zPhi_local = diffOperator2d(pCurFdm_diffIn_zPhi_local, nz+l, recvcount_block_nx, pCoeff, diffOrder, dz, 1);
+                pCurRtm_diffIn_zPhi_local[(j - l) * (nz+l) + (i-diffOrder)] = pCurRtm_local[j * (nz+2*l) + i];
+        pCurRtm_diffOut_zPhi_local = diffOperator2d(pCurRtm_diffIn_zPhi_local, nz+l, recvcount_block_nx, pCoeff, diffOrder, dz, 1);
         
         for (j = 0; j < recvcount_block_nx; j++)
             for (i = l; i < nz + l; i++)
                 pzPhi_local[j * (nz+2*l) + i] = pzb_local[j * nz + (i - l)] * pzPhi_local[j * (nz+2*l) + i] +
-                        (pzb_local[j * nz + (i - l)] - 1) * pCurFdm_diffOut_zPhi_local[j * nz + (i - l)];
+                        (pzb_local[j * nz + (i - l)] - 1) * pCurRtm_diffOut_zPhi_local[j * nz + (i - l)];
         
-        mxFree(pCurFdm_diffOut_zPhi_local);
+        mxFree(pCurRtm_diffOut_zPhi_local);
         
-        /* xPhi(:, ixi) = xb .* xPhi(:, ixi) + (xb - 1) .* diffOperator(fdm(izi, ixl+1, 2), coeff, dx, 2); */
+        /* xPhi(:, ixi) = xb .* xPhi(:, ixi) + (xb - 1) .* diffOperator(rtm(izi, ixl+1, 2), coeff, dx, 2); */
         for (j = diffOrder; j < recvcount_block_nx+2*l-diffOrder+1; j++)
             for (i = l; i < nz+l; i++)
-                pCurFdm_diffIn_xPhi_local[(j-diffOrder) * nz + (i - l)] = pCurFdm_local[j * (nz+2*l) + i];
-        pCurFdm_diffOut_xPhi_local = diffOperator2d(pCurFdm_diffIn_xPhi_local, nz, recvcount_block_nx+l, pCoeff, diffOrder, dx, 2);
+                pCurRtm_diffIn_xPhi_local[(j-diffOrder) * nz + (i - l)] = pCurRtm_local[j * (nz+2*l) + i];
+        pCurRtm_diffOut_xPhi_local = diffOperator2d(pCurRtm_diffIn_xPhi_local, nz, recvcount_block_nx+l, pCoeff, diffOrder, dx, 2);
         
         for (j = l; j < recvcount_block_nx + l; j++)
             for (i = 0; i < nz; i++)
                 pxPhi_local[j * nz + i] = pxb_local[(j - l) * nz + i] * pxPhi_local[j * nz + i] +
-                        (pxb_local[(j - l) * nz + i] - 1) * pCurFdm_diffOut_xPhi_local[(j - l) * nz + i];
+                        (pxb_local[(j - l) * nz + i] - 1) * pCurRtm_diffOut_xPhi_local[(j - l) * nz + i];
         
-        mxFree(pCurFdm_diffOut_xPhi_local);
+        mxFree(pCurRtm_diffOut_xPhi_local);
         
         /* transfer of ghost cell values */
         if (numProcesses > 1)
@@ -549,27 +547,27 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
             }
         }
         
-        /* zA(izl, :) = diffOperator(fdm(:, ixi, 2), coeff, dz, 1) + zPhi(izl, :); */
-        memcpy(pCurFdm_diffIn_zA_local, pCurFdm_local + l * (nz+2*l), sizeof(double) * recvcount_block_nx * (nz+2*l));
-        pCurFdm_diffOut_zA_local = diffOperator2d(pCurFdm_diffIn_zA_local, nz+2*l, recvcount_block_nx, pCoeff, diffOrder, dz, 1);
+        /* zA(izl, :) = diffOperator(rtm(:, ixi, 2), coeff, dz, 1) + zPhi(izl, :); */
+        memcpy(pCurRtm_diffIn_zA_local, pCurRtm_local + l * (nz+2*l), sizeof(double) * recvcount_block_nx * (nz+2*l));
+        pCurRtm_diffOut_zA_local = diffOperator2d(pCurRtm_diffIn_zA_local, nz+2*l, recvcount_block_nx, pCoeff, diffOrder, dz, 1);
         
         for (j = 0; j < recvcount_block_nx; j++)
             for (i = diffOrder - 1; i < nz+2*l-diffOrder; i++)
-                pzA_local[j * (nz+2*l) + i] = pCurFdm_diffOut_zA_local[j * (nz+l) + (i - (diffOrder - 1))] + pzPhi_local[j * (nz+2*l) + i];
+                pzA_local[j * (nz+2*l) + i] = pCurRtm_diffOut_zA_local[j * (nz+l) + (i - (diffOrder - 1))] + pzPhi_local[j * (nz+2*l) + i];
         
-        mxFree(pCurFdm_diffOut_zA_local);
+        mxFree(pCurRtm_diffOut_zA_local);
         
-        /* xA(:, ixl) = diffOperator(fdm(izi, :, 2), coeff, dx, 2) + xPhi(:, ixl); */
+        /* xA(:, ixl) = diffOperator(rtm(izi, :, 2), coeff, dx, 2) + xPhi(:, ixl); */
         for (j = 0; j < recvcount_block_nx+2*l; j++)
             for (i = l; i < nz+l; i++)
-                pCurFdm_diffIn_xA_local[j * nz + (i - l)] = pCurFdm_local[j * (nz+2*l) + i];
-        pCurFdm_diffOut_xA_local = diffOperator2d(pCurFdm_diffIn_xA_local, nz, recvcount_block_nx+2*l, pCoeff, diffOrder, dx, 2);
+                pCurRtm_diffIn_xA_local[j * nz + (i - l)] = pCurRtm_local[j * (nz+2*l) + i];
+        pCurRtm_diffOut_xA_local = diffOperator2d(pCurRtm_diffIn_xA_local, nz, recvcount_block_nx+2*l, pCoeff, diffOrder, dx, 2);
         
         for (j = diffOrder - 1; j < recvcount_block_nx+2*l-diffOrder; j++)
             for (i = 0; i < nz; i++)
-                pxA_local[j * nz + i] = pCurFdm_diffOut_xA_local[(j - (diffOrder - 1)) * nz + i] + pxPhi_local[j * nz + i];
+                pxA_local[j * nz + i] = pCurRtm_diffOut_xA_local[(j - (diffOrder - 1)) * nz + i] + pxPhi_local[j * nz + i];
         
-        mxFree(pCurFdm_diffOut_xA_local);
+        mxFree(pCurRtm_diffOut_xA_local);
         
         /* zPsi(izi, :) = zb .* zPsi(izi, :) + (zb - 1) .* diffOperator(zA(izl, :), coeff, dz, 1); */
         for (j = 0; j < recvcount_block_nx; j++)
@@ -608,30 +606,32 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         /* ======================================================================
          * One-step finite difference calculation
          * ====================================================================== */
-        /* fdm(izi, ixi, 3) = vdtSq .* (zP(izi, :) + xP(:, ixi) - source(:, :, it)) + 2 * fdm(izi, ixi, 2) - fdm(izi, ixi, 1); */
+        /* rtm(izi, ixi, 3) = vdtSq .* (zP(izi, :) + xP(:, ixi) - source) + 2 * rtm(izi, ixi, 2) - rtm(izi, ixi, 1); */
         for (j = l; j < recvcount_block_nx + l; j++)
             for (i = l; i < nz + l; i++)
-                pNewFdm_local[j * (nz+2*l) + i] = pVdtSq_local[(j - l) * nz + (i - l)] *
-                        ( pzP_local[(j - l) * (nz+l) + i] + pxP_local[j * nz + (i - l)] - pSource_local[t * (nz * recvcount_block_nx) + (j - l) * nz + (i - l)] ) +
-                        2 * pCurFdm_local[j * (nz+2*l) + i] - pOldFdm_local[j * (nz+2*l) + i];
+                pNewRtm_local[j * (nz+2*l) + i] = pVdtSq_local[(j - l) * nz + (i - l)] *
+                        ( pzP_local[(j - l) * (nz+l) + i] + pxP_local[j * nz + (i - l)] - pSource_local[(j - l) * nz + (i - l)] ) +
+                        2 * pCurRtm_local[j * (nz+2*l) + i] - pOldRtm_local[j * (nz+2*l) + i];
+        
+        mxFree(pSource_local);
         
         /* update finite difference matrices */
-        /* fdm(:, :, 1) = fdm(:, :, 2); */
-        memcpy(pOldFdm_local, pCurFdm_local, sizeof(double) * (nz+2*l) * (recvcount_block_nx+2*l));
+        /* rtm(:, :, 1) = rtm(:, :, 2); */
+        memcpy(pOldRtm_local, pCurRtm_local, sizeof(double) * (nz+2*l) * (recvcount_block_nx+2*l));
         
-        /* fdm(:, :, 2) = fdm(:, :, 3); */
-        memcpy(pCurFdm_local, pNewFdm_local, sizeof(double) * (nz+2*l) * (recvcount_block_nx+2*l));
+        /* rtm(:, :, 2) = rtm(:, :, 3); */
+        memcpy(pCurRtm_local, pNewRtm_local, sizeof(double) * (nz+2*l) * (recvcount_block_nx+2*l));
         
         /* update data */
-        /* data(:, it) = fdm(l, ixi, 2); */
+        /* data(:, it) = rtm(l, ixi, 2); */
         for (i = 0; i < recvcount_block_nx; i++)
-            pData_local[t * recvcount_block_nx + i] = pCurFdm_local[(i + l) * (nz+2*l) + l];
+            pModel_local[t * recvcount_block_nx + i] = pCurRtm_local[(i + l) * (nz+2*l) + l];
         
         /* update snapshot */
-        /* snapshot(:, :, it) = fdm(izi, ixi, 2); */
+        /* snapshot(:, :, it) = rtm(izi, ixi, 2); */
         for (j = 0; j < recvcount_block_nx; j++)
             for (i = 0; i < nz; i++)
-                pSnapshot_local[t * (nz * recvcount_block_nx) + j * nz + i] = pCurFdm_local[(j + l) * (nz+2*l) + (i + l)];
+                pSnapshot_local[t * (nz * recvcount_block_nx) + j * nz + i] = pCurRtm_local[(j + l) * (nz+2*l) + (i + l)];
         
         /* transfer of ghost cell values */
         if (numProcesses > 1)
@@ -662,7 +662,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                     MPI_Isend(&cur_l_to_left, 1, MPI_INT, taskId - (leftBound + 1), RIGHT_TO_LEFT, MPI_COMM_WORLD, &send_request);
                     MPI_Wait(&send_request, &status);
                     /* send data to left */
-                    MPI_Isend(pCurFdm_local + (nz+2*l) * l, (nz+2*l) * cur_l_to_left, MPI_DOUBLE,
+                    MPI_Isend(pCurRtm_local + (nz+2*l) * l, (nz+2*l) * cur_l_to_left, MPI_DOUBLE,
                             taskId - (leftBound + 1), RIGHT_TO_LEFT, MPI_COMM_WORLD, &send_request);
                     MPI_Wait(&send_request, &status);
                     /* number of remaining ghost cell columns not sent yet */
@@ -684,7 +684,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                         MPI_Irecv(&cur_l_from_right, 1, MPI_INT, taskId + (leftBound + 1), LEFT_FROM_RIGHT, MPI_COMM_WORLD, &recv_request);
                         MPI_Wait(&recv_request, &status);
                         /* receive data from right */
-                        MPI_Irecv(pCurFdm_local + (nz+2*l) * (recvcount_block_nx+l + offset_l_from_right), (nz+2*l) * cur_l_from_right, MPI_DOUBLE,
+                        MPI_Irecv(pCurRtm_local + (nz+2*l) * (recvcount_block_nx+l + offset_l_from_right), (nz+2*l) * cur_l_from_right, MPI_DOUBLE,
                                 taskId + (leftBound + 1), LEFT_FROM_RIGHT, MPI_COMM_WORLD, &recv_request);
                         MPI_Wait(&recv_request, &status);
                         /* number of remaining ghost cell columns not received yet */
@@ -713,7 +713,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                         MPI_Isend(&cur_l_to_right, 1, MPI_INT, taskId + (leftBound + 1), LEFT_TO_RIGHT, MPI_COMM_WORLD, &send_request);
                         MPI_Wait(&send_request, &status);
                         /* send data to right */
-                        MPI_Isend(pCurFdm_local + (nz+2*l) * (l + recvcount_block_nx - cur_l_to_right), (nz+2*l) * cur_l_to_right, MPI_DOUBLE,
+                        MPI_Isend(pCurRtm_local + (nz+2*l) * (l + recvcount_block_nx - cur_l_to_right), (nz+2*l) * cur_l_to_right, MPI_DOUBLE,
                                 taskId + (leftBound + 1), LEFT_TO_RIGHT, MPI_COMM_WORLD, &send_request);
                         MPI_Wait(&send_request, &status);
                         /* number of remaining ghost cell columns not sent yet */
@@ -740,7 +740,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                         MPI_Irecv(&cur_l_from_left, 1, MPI_INT, taskId - (leftBound + 1), RIGHT_FROM_LEFT, MPI_COMM_WORLD, &recv_request);
                         MPI_Wait(&recv_request, &status);
                         /* receive data from left */
-                        MPI_Irecv(pCurFdm_local + (nz+2*l) * (l - cur_l_from_left - offset_l_from_left), (nz+2*l) * cur_l_from_left, MPI_DOUBLE,
+                        MPI_Irecv(pCurRtm_local + (nz+2*l) * (l - cur_l_from_left - offset_l_from_left), (nz+2*l) * cur_l_from_left, MPI_DOUBLE,
                                 taskId - (leftBound + 1), RIGHT_FROM_LEFT, MPI_COMM_WORLD, &recv_request);
                         MPI_Wait(&recv_request, &status);
                         /* number of remaining ghost cell columns not received yet */
@@ -763,6 +763,11 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         }
     }
     
+    /* write out final wavefield */
+    /* model = rtm(:, :, 1); */
+    pModel_local = (double*)mxCalloc((nz+2*l) * (recvcount_block_nx+2*l), sizeof(double));
+    memcpy(pModel_local, pOldRtm_local, sizeof(double) * (nz+2*l) * (recvcount_block_nx+2*l));
+    
     /* test begin */
     /*
      * pTestOut = (double*)mxCalloc((nz+2*l) * nx, sizeof(double));
@@ -774,11 +779,14 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     /* gather output */
     if (taskId == 0)
     {
-        pData = (double*)mxCalloc(nx * nt, sizeof(double));
+        pModel = (double*)mxCalloc((nz+2*l) * (nx+2*l), sizeof(double));
         pSnapshot = (double*)mxCalloc(nz * nx * nt, sizeof(double));
     }
-    MPI_Gatherv(pData_local, recvcount_block_nx, type_trace_local_resized,
-            pData, sendcounts_block_nx, displs_block_nx, type_trace_global_resized, 0, MPI_COMM_WORLD);
+     /* MPI_Gatherv(pxb_local, nz * recvcount_block_nx, MPI_DOUBLE,
+     * pTestOut, sendcounts_band_nx, displs_band_nx, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+      */
+    MPI_Gatherv(pModel_local + (nz+2*l) * l, (nz+2*l) * recvcount_block_nx, MPI_DOUBLE,
+            pModel + (nz+2*l) * l, sendcounts_band2_nx, displs_band2_nx, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     MPI_Gatherv(pSnapshot_local, recvcount_block_nx, type_ztPlane_local_resized,
             pSnapshot, sendcounts_block_nx, displs_block_nx, type_ztPlane_global_resized, 0, MPI_COMM_WORLD);
     
@@ -801,10 +809,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     mxFree(sendcounts_band_nx);
     mxFree(displs_band_nx);
     mxFree(pVelocityModel_local);
-    mxFree(pSource_local);
-    mxFree(pOldFdm_local);
-    mxFree(pCurFdm_local);
-    mxFree(pNewFdm_local);
+    mxFree(pData_local);
+    mxFree(pOldRtm_local);
+    mxFree(pCurRtm_local);
+    mxFree(pNewRtm_local);
     mxFree(pxb_local);
     mxFree(pzb_local);
     mxFree(pVdtSq_local);
@@ -816,13 +824,13 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     mxFree(pxPsi_local);
     mxFree(pzP_local);
     mxFree(pxP_local);
-    mxFree(pCurFdm_diffIn_zPhi_local);
-    mxFree(pCurFdm_diffIn_xPhi_local);
-    mxFree(pCurFdm_diffIn_zA_local);
-    mxFree(pCurFdm_diffIn_xA_local);
+    mxFree(pCurRtm_diffIn_zPhi_local);
+    mxFree(pCurRtm_diffIn_xPhi_local);
+    mxFree(pCurRtm_diffIn_zA_local);
+    mxFree(pCurRtm_diffIn_xA_local);
     mxFree(pzA_diffIn_local);
     mxFree(pxA_diffIn_local);
-    mxFree(pData_local);
+    mxFree(pModel_local);
     /* mxFree(pSnapshot_local); */
     
     /* shut down MPI */
@@ -833,7 +841,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     *((int*)mxGetData(TASKID_OUT)) = taskId;
     
     /* output arrays */
-    DATA_OUT = mxCreateNumericMatrix(0, 0, mxDOUBLE_CLASS, mxREAL);
+    MODEL_OUT = mxCreateNumericMatrix(0, 0, mxDOUBLE_CLASS, mxREAL);
     SNAPSHOT_OUT = mxCreateNumericMatrix(0, 0, mxDOUBLE_CLASS, mxREAL);
     /* test begin */
     /* TEST_OUT = mxCreateNumericMatrix(0, 0, mxDOUBLE_CLASS, mxREAL); */
@@ -841,9 +849,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     /* set output arrays and dimensions */
     if (taskId == 0)
     {
-        mxSetPr(DATA_OUT, pData);
-        mxSetM(DATA_OUT, nx);
-        mxSetN(DATA_OUT, nt);
+        mxSetPr(MODEL_OUT, pModel);
+        mxSetM(MODEL_OUT, nz+2*l);
+        mxSetN(MODEL_OUT, nx+2*l);
         
         pDimsSnapshot[0] = nz;
         pDimsSnapshot[1] = nx;
