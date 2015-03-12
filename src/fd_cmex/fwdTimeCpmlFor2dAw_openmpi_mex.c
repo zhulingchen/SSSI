@@ -80,7 +80,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     MPI_Datatype type_ztPlane_global, type_ztPlane_global_resized, type_ztPlane_local, type_ztPlane_local_resized;
     MPI_Datatype type_trace_local, type_trace_local_resized, type_trace_global, type_trace_global_resized;
     MPI_Request send_request, recv_request;
-    int flag;
     MPI_Status status;
     
     /* local variables */
@@ -119,13 +118,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     pCoeff = dCoef(diffOrder, "s");
     l = 2 * diffOrder - 1;
     
-    /* initialize the MPI environment */
-    errorCode = MPI_Init(NULL, NULL);
-    if (errorCode != MPI_SUCCESS)
-    {
-        mexPrintf("MPI System: Error starting MPI program, terminating...\n");
-        MPI_Abort(MPI_COMM_WORLD, errorCode);
-    }
     /* find out number of processes */
     errorCode = MPI_Comm_size(MPI_COMM_WORLD, &numProcesses);
     /* find out process rank  */
@@ -824,9 +816,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     mxFree(pxA_diffIn_local);
     mxFree(pData_local);
     /* mxFree(pSnapshot_local); */
-    
-    /* shut down MPI */
-    MPI_Finalize();
     
     /* output taskId */
     TASKID_OUT = mxCreateNumericMatrix(1, 1, mxUINT8_CLASS, mxREAL);

@@ -69,8 +69,10 @@ sourceTime(zShotGrid, xShotGrid+nBoundary, :) = reshape(wave1dTime, 1, 1, nt);
 %% Generate the shot record
 tic; [dataTrue, snapshotTrue] = fwdTimeCpmlFor2dAw(V, sourceTime, nDiffOrder, nBoundary, dz, dx, dt); toc;
 tic; [model, rtmsnapshotTrue] = rvsTimeCpmlFor2dAw(V, dataTrue, nDiffOrder, nBoundary, dz, dx, dt); toc;
-% tic; [taskId, dataTrue_mpi, snapshotTrue_mpi, snapshotTrue_local] = fwdTimeCpmlFor2dAw_openmpi_mex(V, sourceTime, nDiffOrder, nBoundary, dz, dx, dt); toc;
+mpi_init;
+tic; [taskId, dataTrue_mpi, snapshotTrue_mpi, snapshotTrue_local] = fwdTimeCpmlFor2dAw_openmpi_mex(V, sourceTime, nDiffOrder, nBoundary, dz, dx, dt); toc;
 tic; [taskId, model_mpi, rtmsnapshotTrue_mpi, rtmsnapshotTrue_local] = rvsTimeCpmlFor2dAw_openmpi_mex(V, dataTrue, nDiffOrder, nBoundary, dz, dx, dt); toc;
+mpi_finalize;
 % % save each local snapshot video
 % objVideoModelShots = VideoWriter(sprintf('./snapshotTrue_local_%d.mp4', taskId), 'MPEG-4');
 % open(objVideoModelShots);
@@ -84,10 +86,10 @@ tic; [taskId, model_mpi, rtmsnapshotTrue_mpi, rtmsnapshotTrue_local] = rvsTimeCp
 % end
 % fprintf('Video output complete for taskId %d!\n', taskId);
 if (taskId == 0)
-%     delta = dataTrue - dataTrue_mpi;
-%     fprintf('Forward: Maximum abs difference of data = %d\n', max(abs(delta(:))));
-%     delta = snapshotTrue - snapshotTrue_mpi;
-%     fprintf('Forward: Maximum abs difference of snapshot = %d\n', max(abs(delta(:))));
+    delta = dataTrue - dataTrue_mpi;
+    fprintf('Forward: Maximum abs difference of data = %d\n', max(abs(delta(:))));
+    delta = snapshotTrue - snapshotTrue_mpi;
+    fprintf('Forward: Maximum abs difference of snapshot = %d\n', max(abs(delta(:))));
     delta = model - model_mpi;
     fprintf('Reverse: Maximum abs difference of model = %d\n', max(abs(delta(:))));
     delta = rtmsnapshotTrue - rtmsnapshotTrue_mpi;
