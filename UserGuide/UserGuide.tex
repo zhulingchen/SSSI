@@ -162,8 +162,8 @@ S3I is a free software package: you can redistribute it and/or modify it under t
 \section{Introduction}
 The S3I is designed to provide a package for numerical simulations in exploration geophysics. It targets students as well as professionals in exploration geophysics. The most important purpose is to provide an easy, well organized library to the interested users to learn some popular algorithms and numerical schemes in exploration geophysics rather than the high performance of the computation. Thus, MATLAB is adopted as the coding platform for the readability of the code, ease of data visualization, etc. It is well known that nested for-loops in MATLAB is much slower than the complied languages. In order to have make the S3I efficient, we used C to generate MEX-files for some frequently invoked functions. Currently, the major functions have been implemented in S3I are as follows:
 \begin{itemize}
-\item Acoustic wave simulation for 2D/3D
-\item Elastic wave simulation for 2D
+\item Acoustic wave simulation for 2-D/3-D
+\item Elastic wave simulation for 2-D
 \item Kirchhoff's migration
 \item Reverse Time Migration (RTM)
 \item Least Square RTM
@@ -182,12 +182,12 @@ The seismic method is one of the primary tools in exploration geophysics. In a s
 \begin{equation}\label{eq:aw}
 \frac{1}{v^2(\bx)}\frac{\partial^2 p(\bx, t)}{\partial t^2} + f(\bx, t) = \nabla^2 p(\bx, t),
 \end{equation}
-where $p(\bx)$ is the filed of pressure variation and $\bx=(z,x)$ or $\bx=(z,x,y)$ is the coordinates in the Cartesian coordinate system for the 2D and 3D case, respectively. Following the convention in geophysics, the $z$ direction is pointing downwards. The $v(\bx)$ is the velocity of P-wave at location $\bx$ and$f(\bx,t)$ is the source time function. Moreover, $\Delta$ in \eqref{eq:aw} is the Laplace operator defined as 
+where $p(\bx)$ is the filed of pressure variation and $\bx=(z,x)$ or $\bx=(z,x,y)$ is the coordinates in the Cartesian coordinate system for the 2-D and 3-D case, respectively. Following the convention in geophysics, the $z$ direction is pointing downwards. The $v(\bx)$ is the velocity of P-wave at location $\bx$ and$f(\bx,t)$ is the source time function. Moreover, $\Delta$ in \eqref{eq:aw} is the Laplace operator defined as 
 \begin{equation}
 \Delta: =\left\{
 \begin{aligned}
-\frac{\partial^2}{\partial x^2}+\frac{\partial^2}{\partial z^2}~~~~~~~ & ~~~~\text{for 2D }\\
-\frac{\partial^2}{\partial x^2}+\frac{\partial^2}{\partial y^2}+\frac{\partial^2}{\partial z^2} &~~~~ \text{for 3D}
+\frac{\partial^2}{\partial x^2}+\frac{\partial^2}{\partial z^2}~~~~~~~ & ~~~~\text{for 2-D }\\
+\frac{\partial^2}{\partial x^2}+\frac{\partial^2}{\partial y^2}+\frac{\partial^2}{\partial z^2} &~~~~ \text{for 3-D}
 \end{aligned}
 \right.  
 \end{equation}
@@ -209,7 +209,7 @@ The \path{src/ricker.m} provides a Ricker wavelet generator which requires the p
 \subsection{Finite Difference Method on Standard Grid}
 Currently, there are several popular method to solve the wave equation numerically, such as pseudo-spectral method, Finite Difference Method (FDM), Finite Elements Method (FEM) method, etc. Each method has its pros and cons. Concretely, the pseudo-spectral method, which is based on Fourier transform in spatial domain, provides accurate and efficient solutions for the smoothly varied media but not for sharply varied media \cite{Kreiss:1972aa,Fornberg:1975aa,Fornberg:1987aa}. The FDM \cite{Alford:1974aa,Dablain:1986aa} adopted by S3I is widely used for its ease to implement and high accuracy and efficiency. However, the FDM is incapable to provide accurate solution for media with complex geometry structure and rugged topography. The FEM usually provides more accurate results than FDM with a higher computational and storage expense \cite{Kurt:1984aa}. 
 
-In order to solve the wave equation with FDM, the continuous functions and models are represented by their values at grid points and and derivatives are approximated by linear combination of these values. For instance, in a 2D region we use the uniformly distributed grid points $(z_i)_{0\le i \le I-1 }$, $(x_j)_{0\le j \le J-1}$, and $(t_n)_{0\le n \le N-1}$ given by $z_i = i\Delta z$, $x_j = j\Delta x$ and $t_n=n\Delta t$. Instead of solving the wave equation in a continuous domain (both in space and time) analytically, the FDM provides for an approximated solution on these grid points.  
+In order to solve the wave equation with FDM, the continuous functions and models are represented by their values at grid points and and derivatives are approximated by linear combination of these values. For instance, in a 2-D region we use the uniformly distributed grid points $(z_i)_{0\le i \le I-1 }$, $(x_j)_{0\le j \le J-1}$, and $(t_n)_{0\le n \le N-1}$ given by $z_i = i\Delta z$, $x_j = j\Delta x$ and $t_n=n\Delta t$. Instead of solving the wave equation in a continuous domain (both in space and time) analytically, the FDM provides for an approximated solution on these grid points.  
 
 The estimation of derivatives in \eqref{eq:aw} is crucial in FDM. Let us revisit with the definition of the partial derivative, 
  \begin{equation}
@@ -226,7 +226,7 @@ Assuming the grid spacing $\Delta z$ is small enough, $(p(z+\Delta z, x, t) - p(
   \end{aligned}
   \end{equation}
   
-For simplicity of notation, $p_{i,j}^{(n)}:=  p(i\Delta z, j\Delta x, n\Delta t)$, $f_{i,j}^{(n)} := f(i\Delta z, j\Delta x, n\Delta t)$, $v_{i,j} := v(i\Delta z, j\Delta x)$. Therefore, a finite difference expression of 2D acoustic wave equation can be written as 
+For simplicity of notation, $p_{i,j}^{(n)}:=  p(i\Delta z, j\Delta x, n\Delta t)$, $f_{i,j}^{(n)} := f(i\Delta z, j\Delta x, n\Delta t)$, $v_{i,j} := v(i\Delta z, j\Delta x)$. Therefore, a finite difference expression of 2-D acoustic wave equation can be written as 
   \begin{equation}
     \begin{aligned}
     &\frac{1}{v_{i,j}^2}\frac{p_{i,j}^{(n+1)} - 2p_{i,j}^{(n)} + p_{i,j}^{(n-1)}}{\Delta t^2} - f_{i,j}^{(n)}\\
@@ -346,7 +346,7 @@ Based on the goal of choosing the weights $\{a_k\}_{k=0}^{N-1}$, they should sat
 
 
 \subsection{Absorbing Boundary Conditions (ABC)}
-In real seismic surveys, seismic waves propagate in unbounded half-space media. For the sake of computational efficiency and storage, a seismic survey is only simulated in a truncated region. If no special techniques are applied on the boundary of the simulated region, the recursive formula (e.g. \eqref{eq:stagGrid}) would generate strong reflections which do not physically exist in the real seismic survey. In order to attenuate the reflections, a common method is to impose the absorbing boundary conditions (ABC) \cite{Engquist:1977aa, Clayton:1977aa}. Figure \ref{fig:ABC} illustrates the 2D scenario, when we pad the original truncated velocity model's left, right, bottom boundaries with absorbing boundaries of a certain width (fulfilled by \path{src/extBoundary.m}). ABC will attenuated the wave amplitudes in those absorbing boundaries and keep the waveform unaltered outside of the absorbing boundaries. Throughout the S3I, except specified explicitly, we consider the top of the simulated region to be the surface of the earth, which is a free surface without ABC applied.
+In real seismic surveys, seismic waves propagate in unbounded half-space media. For the sake of computational efficiency and storage, a seismic survey is only simulated in a truncated region. If no special techniques are applied on the boundary of the simulated region, the recursive formula (e.g. \eqref{eq:stagGrid}) would generate strong reflections which do not physically exist in the real seismic survey. In order to attenuate the reflections, a common method is to impose the absorbing boundary conditions (ABC) \cite{Engquist:1977aa, Clayton:1977aa}. Figure \ref{fig:ABC} illustrates the 2-D scenario, when we pad the original truncated velocity model's left, right, bottom boundaries with absorbing boundaries of a certain width (fulfilled by \path{src/extBoundary.m}). ABC will attenuated the wave amplitudes in those absorbing boundaries and keep the waveform unaltered outside of the absorbing boundaries. Throughout the S3I, except specified explicitly, we consider the top of the simulated region to be the surface of the earth, which is a free surface without ABC applied.
 
 \begin{figure}[htbp]
 \centering
@@ -361,7 +361,7 @@ d(u) = e^{-\alpha^2\text{dist}(u)^2}, \mbox{  where  } u=x, z
 \end{equation}
 where $\text{dist}(u)$ is the distance from $u$ to the original boundary in the $u$ direction. 
 
-The source file which implements the acoustic wave propagation with sponge ABC is \path{src/fwdTimeSpongeFor2dAw.m}. Throughout of the source files in the S3I,  we follow the following naming rules: \path{fwd} means forward (\path{rvs} means reverse); \path{Time} means the equation is solved in the time domain (\path{freq} means in frequency domain); \path{For2d} means 2D (\path{For3d} means 3D); and \path{Aw} is short for acoustic wave (\path{Ew} is for elastic wave).  Although the waves are considerably attenuated by ABC, the reflection still can not be completely eliminated. This is the motivation in the S3I we utilize the method called Perfectly Matched Layer as well.
+The source file which implements the acoustic wave propagation with sponge ABC is \path{src/fwdTimeSpongeFor2dAw.m}. Throughout of the source files in the S3I,  we follow the following naming rules: \path{fwd} means forward (\path{rvs} means reverse); \path{Time} means the equation is solved in the time domain (\path{freq} means in frequency domain); \path{For2d} means 2-D (\path{For3d} means 3-D); and \path{Aw} is short for acoustic wave (\path{Ew} is for elastic wave).  Although the waves are considerably attenuated by ABC, the reflection still can not be completely eliminated. This is the motivation in the S3I we utilize the method called Perfectly Matched Layer as well.
 
 
 \subsubsection{Perfectly Matched Layer (PML)}
@@ -516,7 +516,7 @@ To avoid the occurrence of harmful grid dispersion the following criteria for th
 \end{equation}
 where $n$ is the number of sampling points per wavelength, $\lambda_{\min}$ and $V_{\min}$ are the minimal wave length and velocity, and $f_{\max}$ is the maximal frequency. Video clips of acoustic wave propagation with and without numerical grid dispersion can be found at: \url{https://www.youtube.com/watch?v=scBvd3FQ73U} and \url{https://www.youtube.com/watch?v=Q17tieZuhJQ}
 
-To be Courant stable, the time step $\Delta t$ must be less than the time for the wave to travel between two adjacent sampling points with grid spacing $\Delta u$. In 2D scenarios,
+To be Courant stable, the time step $\Delta t$ must be less than the time for the wave to travel between two adjacent sampling points with grid spacing $\Delta u$. In 2-D scenarios,
 \begin{equation}
 \frac{\sqrt{2}V_{\textbf{max}}\Delta t}{\min\{\Delta z, \Delta x\}}\le \epsilon \le 1.
 \end{equation}
@@ -525,7 +525,7 @@ Examples of acoustic wave propagation which are Courant stable and Courant insta
 An approach to alleviate the numerical dispersion is flux-corrected transport (FCT) introduced by \cite{Fei:1995aa}, which is implemented for both acoustic and elastic waves in the S3I (see \path{src/fctForAw.m} and \path{src/fctForEw.m}). In the default simulations of acoustic and elastic waves the FCT correction is turned off, since it can slow down the simulation significantly. If possible, we strongly suggest to modify the sampling rate and $\Delta u$ to avoid the grid dispersion rather than employing FCT.  
 
 
-\subsection{2D Acoustic Wave Equation in Frequency Domain}
+\subsection{2-D Acoustic Wave Equation in Frequency Domain}
 In signal processing, a signal transformed into frequency domain may unveil hidden information in time domain and brings new processing techniques. The acoustic wave equation given in \eqref{eq:aw} which is time dependent can be transformed and solved in frequency domain as well. Taking Fourier transform of \eqref{eq:aw} with respect to $t$ on both sides, we obtain
   \begin{equation}
   \frac{\omega^2}{c^2(z, x)}P_{\omega}(z, x) + \nabla^2 P_{\omega}(z, x) =- F_{\omega}(z, x).
@@ -602,7 +602,7 @@ Let $\bx_r$ be the location of the receiver and $\bx_s$ be the location of the s
 I(\xi)=\int_{\Omega_\xi} W(\xi,\bm,\bh)dt(t=t_d(\xi,
 \bm,\bh),\bm,\bh)d\bm d\bh,
 \end{equation}
-where limited region $\Omega_\xi$ is centered around the location $\xi$ in the $m$ plane, called the migration aperture. $t_d=t_s[\bx,\bs,v(z,x,y)]+t_r[\bx,\bg,v(z,x,y)]$, where $t_s$ is the travel time from the reflector $\xi$ to $\bx_s$ and $t_r$ is the travel time from $\xi$ to $\bx_r$, see Figure \ref{fig:ref}. For reflector $\xi = (z_\xi, x_\xi, y_\xi)$ in 3D and $\xi = (z_\xi, x_\xi)$ in 2D case.
+where limited region $\Omega_\xi$ is centered around the location $\xi$ in the $m$ plane, called the migration aperture. $t_d=t_s[\bx,\bs,v(z,x,y)]+t_r[\bx,\bg,v(z,x,y)]$, where $t_s$ is the travel time from the reflector $\xi$ to $\bx_s$ and $t_r$ is the travel time from $\xi$ to $\bx_r$, see Figure \ref{fig:ref}. For reflector $\xi = (z_\xi, x_\xi, y_\xi)$ in 3-D and $\xi = (z_\xi, x_\xi)$ in 2-D case.
 
 \begin{figure}[htbp]
 \centering
@@ -611,7 +611,7 @@ where limited region $\Omega_\xi$ is centered around the location $\xi$ in the $
 \label{fig:ref}
 \end{figure}
   
-An example of Kirchhoff's migration (see Figure \ref{fig:kirc}) for the fault model (available in the \path{modelData} folder) can be found in \path{mainKircCpmlFor2dAw_fault.m}, which is inherited from an existing package \cite{Kozola:2011aa}. The most important part of Kirchhoff's migration is the computation of travel times $t_s$ and $t_r$. These can be done either with \path{src/ray2d.m} from \cite{Kozola:2011aa} or \path{src/eikonal2d.m} which solves the 2D Eikonal equation using a fast sweeping method \cite{Zhao:2004aa}.
+An example of Kirchhoff's migration (see Figure \ref{fig:kirc}) for the fault model (available in the \path{modelData} folder) can be found in \path{mainKircCpmlFor2dAw_fault.m}, which is inherited from an existing package \cite{Kozola:2011aa}. The most important part of Kirchhoff's migration is the computation of travel times $t_s$ and $t_r$. These can be done either with \path{src/ray2d.m} from \cite{Kozola:2011aa} or \path{src/eikonal2d.m} which solves the 2-D Eikonal equation using a fast sweeping method \cite{Zhao:2004aa}.
 
 \begin{figure}
 \centering
@@ -791,22 +791,22 @@ The appendix provides a list of source code in \path{./src} and briefly explains
 \path{dCoef.m}~~~Computes the coefficients of the finite difference using staggered-grid\\
 
 \noindent E\\
-\path{eikonal2d.m}~~~Computes the travel time by solving the Eikonal equation in 2D rectangular domain for a single source\\
-\path{extBoundary.m}~~~Performs the zero padding around the given 2D or 3D model\\
+\path{eikonal2d.m}~~~Computes the travel time by solving the Eikonal equation in 2-D rectangular domain for a single source\\
+\path{extBoundary.m}~~~Performs the zero padding around the given 2-D or 3-D model\\
 
 \noindent F\\
 \path{./fd_cmex}~~~source files in C language for finite difference. Run \path{make.m} to compile MEX-files for current system architecture\\
 \path{./fd_matlab}~~~source files in Matlab for finite difference, which is not used but only a reference in default\\
 \path{fctForAw.m}~~~Performs the FCT method to alleviate numerical grid dispersion for acoustic wave\\
 \path{fctForEw.m}~~~Performs the FCT method to alleviate numerical grid dispersion for elastic wave\\
-\path{freqSolver.m}~~~Solves the 2D acoustic wave equation in frequency domain with Enguist-Majda absorbing boundary conditions\\
-\path{freqSolverCpml.m}~~~Solves the 2D acoustic wave equation in frequency domain with Nonsplit Convolutional-PML\\
-\path{fwdTimeCpmlFor3dAw.m}~~~Simulates 3D acoustic wave forward propagation in time domain with Convolutional-PML\\
-\path{fwdTimeSpmlFor2dEw.m}~~~Simulates 2D elastic wave forward propagation in time domain with Split-PML\\
-\path{fwdTimeSpongeFor2dAw.m}~~~Simulates 2D acoustic wave forward propagation in time domain with sponge absorbing boundary conditions\\
+\path{freqSolver.m}~~~Solves the 2-D acoustic wave equation in frequency domain with Enguist-Majda absorbing boundary conditions\\
+\path{freqSolverCpml.m}~~~Solves the 2-D acoustic wave equation in frequency domain with Nonsplit Convolutional-PML\\
+\path{fwdTimeCpmlFor3dAw.m}~~~Simulates 3-D acoustic wave forward propagation in time domain with Convolutional-PML\\
+\path{fwdTimeSpmlFor2dEw.m}~~~Simulates 2-D elastic wave forward propagation in time domain with Split-PML\\
+\path{fwdTimeSpongeFor2dAw.m}~~~Simulates 2-D acoustic wave forward propagation in time domain with sponge absorbing boundary conditions\\
 
 \noindent L\\
-\path{layerModelCenerator.m}~~~Generates 2D or 3D layered model\\
+\path{layerModelCenerator.m}~~~Generates 2-D or 3-D layered model\\
 
 \noindent M\\
 \path{migrate.m}~~~Migrates a shot record for a given travel time between source and receiver using a Kirchoff migration algorithm\\
@@ -817,7 +817,7 @@ The appendix provides a list of source code in \path{./src} and briefly explains
 \path{plotTrace.m}~~~Plots seismic traces with filled wiggles\\
 
 \noindent R\\
-\path{ray2d.m}~~~Computes the travel time for 2D model and single point source\\
+\path{ray2d.m}~~~Computes the travel time for 2-D model and single point source\\
 \path{ricker.m}~~~Generates Ricker wavelet for the source time function\\
 \path{rvsTimeSpongeFor2dAw.m}~~~Simulates wave propagation in reverse time with sponge absorbing boundary conditions\\
 
