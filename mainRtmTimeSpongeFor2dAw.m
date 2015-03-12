@@ -1,6 +1,6 @@
-% MAINRTMTIMESPONGEFOR2DAW simulates Kirchoff migration and reverse time
-% migration (RTM) with 2-d acoustic wave in time domain with absorbing
-% boundary condition (ABC) called Sponge
+% MAINRTMTIMESPONGEFOR2DAW simulates reverse time migration (RTM) with 2-d
+% acoustic wave in time domain with spongy absorbing boundary condition
+% (ABC)
 %
 % This matlab source file is free for use in academic research.
 % All rights reserved.

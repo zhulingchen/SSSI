@@ -1,6 +1,6 @@
-% MAINRTMTIMECPMLFOR2DAW simulates Kirchoff migration and reverse time
-% migration (RTM) with 2-d acoustic wave in time domain with absorbing
-% boundary condition (ABC) called Nonsplit Convolutional-PML (CPML)
+% MAINRTMTIMECPMLFOR2DAW simulates reverse time migration (RTM) with 2-d
+% acoustic wave in time domain with absorbing boundary condition (ABC)
+% called Nonsplit Convolutional-PML (CPML)
 %
 % This matlab source file is free for use in academic research.
 % All rights reserved.

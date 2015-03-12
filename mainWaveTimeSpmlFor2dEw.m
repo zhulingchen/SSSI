@@ -1,7 +1,6 @@
-% Numerical simulation of elastic wave equation in 2D nonhomogeneous media
-% with absorbing bounary conditions (left, right, and bottom, not the surface),
-% and FCT (flux-corrected transport) to
-% eliminatge the numerical dispersion.
+% MAINWAVETIMESPMLFOR2DEW simulates 2-d elastic wave propagation in time
+% domain with absorbing boundary condition (ABC) called Split Perfectly
+% Matched Layer (SPML)
 %
 % 2D Elastic wave propagtaion problem
 % Staggered grid

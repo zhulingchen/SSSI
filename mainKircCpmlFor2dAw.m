@@ -36,13 +36,13 @@ addpath(genpath('./src'));
 
 
 %% Read in velocity model data and plot it
-load('./modelData/faultModelData/velocityModelFault.mat'); % velocityModel
+load('./modelData/velocityModel.mat'); % velocityModel
 [nz, nx] = size(velocityModel);
 
 % smooth velocity model using average filter
 % filterSmooth = fspecial('average', 5);
 % velocityModelSmooth = imfilter(velocityModel, filterSmooth, 'replicate');
-load('./modelData/faultModelData/velocityModelFaultSmooth.mat'); % velocityModelSmooth
+load('./modelData/velocityModelSmooth.mat'); % velocityModelSmooth
 
 dx = 10;
 dz = 10;
@@ -133,7 +133,7 @@ f = 20;
 figure(hFig);
 colormap(seismic); %bone
 
-filenameVideoModelShots = './videos/fault_ModelShots.mp4';
+filenameVideoModelShots = './videos/ModelShots.mp4';
 if ~exist(filenameVideoModelShots, 'file')
     objVideoModelShots = VideoWriter(filenameVideoModelShots, 'MPEG-4');
     open(objVideoModelShots);
@@ -168,9 +168,9 @@ for ixs = 1:nShots %21:nx+20 % shot loop
     timeForward = toc;
     fprintf('Generate Forward Timing Record for Shot No. %d at x = %dm, elapsed time = %fs\n', xs-nBoundary, x(xs-nBoundary), timeForward);
     
-    filenameDataTrue = sprintf('./modelData/faultModelData/fault_dataTrue%d.mat', xs-nBoundary);
-    filenameDataSmooth = sprintf('./modelData/faultModelData/fault_dataSmooth%d.mat', xs-nBoundary);
-    filenameSnapshotSmooth = sprintf('./modelData/faultModelData/fault_snapshotSmooth%d.mat', xs-nBoundary);
+    filenameDataTrue = sprintf('./modelData/dataTrue%d.mat', xs-nBoundary);
+    filenameDataSmooth = sprintf('./modelData/dataSmooth%d.mat', xs-nBoundary);
+    filenameSnapshotSmooth = sprintf('./modelData/snapshotSmooth%d.mat', xs-nBoundary);
     
     if ~exist(filenameDataTrue, 'file')
         save(filenameDataTrue, 'dataTrue', '-v7.3');
@@ -238,7 +238,7 @@ end
 figure(hFig);
 colormap(seismic); %bone
 
-filenameVideoModelTravelTime = './videos/fault_ModelTravelTime.mp4';
+filenameVideoModelTravelTime = './videos/ModelTravelTime.mp4';
 if ~exist(filenameVideoModelTravelTime, 'file')
     objVideoModelTravelTime = VideoWriter(filenameVideoModelTravelTime, 'MPEG-4');
     open(objVideoModelTravelTime);
@@ -263,7 +263,7 @@ if exist('objVideoModelTravelTime', 'var')
 end
 
 % save results for later re-use
-filenameTravelTime = './modelData/faultModelData/fault_travelTime.mat';
+filenameTravelTime = './modelData/travelTime.mat';
 if ~exist(filenameTravelTime, 'file')
     save(filenameTravelTime, 'travelTime', '-v7.3')
 end
@@ -274,7 +274,7 @@ end
 figure(hFig);
 colormap(seismic); %bone
 
-filenameVideoModelKirchhoff = './videos/fault_ModelKirchhoff.mp4';
+filenameVideoModelKirchhoff = './videos/ModelKirchhoff.mp4';
 if ~exist(filenameVideoModelKirchhoff, 'file')
     objVideoModelKirchhoff = VideoWriter(filenameVideoModelKirchhoff, 'MPEG-4');
     open(objVideoModelKirchhoff);
@@ -285,7 +285,7 @@ Stacked = zeros(nz, nx);
 for ixs = 1:nShots
     xs = xShotGrid(ixs); % shot position on x
     
-    load(sprintf('./modelData/faultModelData/fault_dataTrue%d.mat', xs)); % data
+    load(sprintf('./modelData/dataTrue%d.mat', xs)); % data
     dataTrue = dataTrue(nBoundary+1:end-nBoundary, :)';
     tic;
     M = migrate(travelTime, xRecGrid, xShotAndRecGrid, dataTrue, dt, nz, xs);
@@ -326,7 +326,7 @@ if exist('objVideoModelKirchhoff', 'var')
     close(objVideoModelKirchhoff);
 end
 
-filenameKirchoffMigStackedMat = './modelData/faultModelData/fault_KirchoffMigStacked.mat';
+filenameKirchoffMigStackedMat = './modelData/KirchoffMigStacked.mat';
 if ~exist(filenameKirchoffMigStackedMat, 'file')
     StackedKirchoffMig = diff(Stacked(1:end-nBoundary, nBoundary+1:end-nBoundary), 2, 1);
     save(filenameKirchoffMigStackedMat, 'StackedKirchoffMig', '-v7.3');

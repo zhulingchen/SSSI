@@ -1,6 +1,6 @@
-% MAINTIMEWAVEPROPAGATION simulates Kirchoff migration and reverse time
-% migration (RTM) with 2-d acoustic wave in time domain with absorbing
-% boundary condition (ABC) called Nonsplit Convolutional-PML (CPML)
+% MAINWAVETIMECPMLFOR2DAW simulates 2-d acoustic wave propagation in time
+% domain with absorbing boundary condition (ABC) called Nonsplit
+% Convolutional-PML (CPML)
 %
 % This matlab source file is free for use in academic research.
 % All rights reserved.
