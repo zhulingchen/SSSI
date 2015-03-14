@@ -182,7 +182,7 @@ The seismic method is one of the primary tools in exploration geophysics. In a s
 \begin{equation}\label{eq:aw}
 \frac{1}{v^2(\bx)}\frac{\partial^2 p(\bx, t)}{\partial t^2} + f(\bx, t) = \nabla^2 p(\bx, t),
 \end{equation}
-where $p(\bx)$ is the filed of pressure variation and $\bx=(z,x)$ or $\bx=(z,x,y)$ is the coordinates in the Cartesian coordinate system for the 2-D and 3-D case, respectively. Following the convention in geophysics, the $z$ direction is pointing downwards. The $v(\bx)$ is the velocity of P-wave at location $\bx$ and$f(\bx,t)$ is the source time function. Moreover, $\Delta$ in \eqref{eq:aw} is the Laplace operator defined as 
+where $p(\bx)$ is the filed of pressure variation and $\bx=(z,x)$ or $\bx=(z,x,y)$ is the coordinates in the Cartesian coordinate system for the 2-D and 3-D case, respectively. Following the convention in geophysics, the $z$ direction is pointing downwards. The $v(\bx)$ is the velocity of P-wave at location $\bx$ and $f(\bx,t)$ is the source time function. Moreover, $\Delta$ in \eqref{eq:aw} is the Laplace operator defined as 
 \begin{equation}
 \Delta: =\left\{
 \begin{aligned}
@@ -622,7 +622,7 @@ An example of Kirchhoff's migration (see Figure \ref{fig:kirc}) for the fault mo
 
 The Eikonal equation is of the form
 \begin{equation}
-|\nabla T(\bx)| c(\bx)= 1, ~~\bx\in \real^2
+|\nabla T(\bx)| v(\bx)= 1, ~~\bx\in \real^2
 \end{equation}
 subject to $T(\bx) = 0$ for a boundary $\Gamma$. In the S3I we consider the source point to be a single grid point $\bx_s$. When we solve the Eikonal equation in a truncated region, $T(\bx)$ gives the time of first arrival in this region. 
 
@@ -658,7 +658,7 @@ The RTM result of Marmousi model is illustrated with Figure \ref{fig:RTM}. Moreo
 \section{Least Square Reverse Time Migration (LS-RTM)}
 Generally speaking, RTM is a reliable method of imaging complex structures. However, there are still some distortions caused by RTM crosstalk artifacts. Mathematically, the migration operator is just the adjoint of the forward modeling operator, it does not minimize the mismatch of the observed and simulated traces. Least Square RTM (LSRTM) introduced by \cite{Nemeth:1999aa} derives an imaging condition by formulating migration as an inverse problem based on a least-squares misfit function. The implementation of LSRTM can either be in time domain or frequency domain\cite{Ren:2013aa}.
 
-Denote by $m(\bx)=1/c^2(\bx)$ the model which is the square slowness at point $\bx$. We consider the decomposition of model $m$ into a smooth model (initial guess) and a perturbation:
+Denote by $m(\bx)=1/v^2(\bx)$ the model which is the square slowness at point $\bx$. We consider the decomposition of model $m$ into a smooth model (initial guess) and a perturbation:
 \begin{equation}
 m(\bx)=m_0(\bx)+\delta m(\bx),
 \end{equation} 
