@@ -161,6 +161,7 @@ if ~isunix
 else
     coeffCurvelet = fdct_wrapping(noisyData, is_real, nbscales, nbangles_coarse);
 end
+coeffCurvelet_thres = cell(1, nbscales);
 
 % Set up thresholds for all scales
 F = ones(nSamples, nRecs);
@@ -185,15 +186,15 @@ end
 % Thresholding
 for s = 1:length(coeffCurvelet)
     for w = 1:length(coeffCurvelet{s})
-        coeffCurvelet{s}{w} = coeffCurvelet{s}{w} .* (abs(coeffCurvelet{s}{w}) > thres_curvelet{s}{w});
+        coeffCurvelet_thres{s}{w} = coeffCurvelet{s}{w} .* (abs(coeffCurvelet{s}{w}) > thres_curvelet{s}{w});
     end
 end
 
 % Reconstruction
 if ~isunix
-    cleanData_curvelet = real(ifdct_wrapping(coeffCurvelet, is_real));
+    cleanData_curvelet = real(ifdct_wrapping(coeffCurvelet_thres, is_real));
 else
-    cleanData_curvelet = real(ifdct_wrapping(coeffCurvelet, is_real, nbscales, nbangles_coarse));
+    cleanData_curvelet = real(ifdct_wrapping(coeffCurvelet_thres, is_real, nbscales, nbangles_coarse));
 end
 save(fullfile(dataFileDir, [dataFileName, '_cleanData_curvelet.mat']), 'cleanData_curvelet', '-v7.3');
 
@@ -205,6 +206,34 @@ title(sprintf('Denoised Seismic Data (Curvelet), PSNR = %.2fdB', psnrCleanData_c
 saveas(hFigCleanedDataCurvelet, fullfile(dataFileDir, [dataFileName, '_cleanData_curvelet']), 'fig');
 fprintf('------------------------------------------------------------\n');
 fprintf('Denoised Seismic Data (Curvelet), PSNR = %.2fdB, SSIM = %.4f\n', psnrCleanData_curvelet, ssimCleanData_curvelet);
+
+
+% Curvelet denoising using BPDN with SPG-L1 optimization toolbox
+close all;
+% lasso: min ||fdctFunc(x, 1) - b||_2^2 s.t. ||x||_1 < \tau
+% bpdn:  min ||x||_1  s.t.  ||fdctFunc(x, 1) - b|| <= \sigma
+[vecCoeffCurvelet, sCurvelet] = curvelet2vec(coeffCurvelet);
+fdctFunc = @(x, mode) fdct(x, sCurvelet, is_real, nbscales, nbangles_coarse, nSamples, nRecs, mode);
+b = fdctFunc(vecCoeffCurvelet, 1);
+% tau = norm(vecCoeffCurvelet, 1);
+gain = 1;
+sigSpThres = sigma * sqrt(nSamples * nRecs) * gain;
+opts = spgSetParms('verbosity', 1, 'optTol', 1e-6);
+% vc_spg = spg_lasso(fdctFunc, b, tau, opts);
+vc_spg = spg_bpdn(fdctFunc, b, sigSpThres, opts);
+
+coeffCurvelet_spg = vec2curvelet(vc_spg, sCurvelet);
+cleanData_curvelet_spg = ifdct_wrapping(coeffCurvelet_spg, is_real, nbscales, nbangles_coarse);
+cleanData_curvelet_spg = real(cleanData_curvelet_spg);
+
+% Plot figures and PSNR output
+hFigCleanedDataCurvelet_spg = figure; imagesc(cleanData_curvelet_spg); colormap(gray); axis off; truesize;
+psnrCleanData_curvelet_spg = 20*log10(sqrt(numel(cleanData_curvelet_spg)) / norm(dataTrue(:) - cleanData_curvelet_spg(:), 2));
+ssimCleanData_curvelet_spg = ssim(cleanData_curvelet_spg, dataTrue);
+title(sprintf('Denoised Seismic Data (Curvelet, BPDN), PSNR = %.2fdB', psnrCleanData_curvelet_spg));
+saveas(hFigCleanedDataCurvelet_spg, fullfile(dataFileDir, [dataFileName, '_cleanData_curvelet_spg']), 'fig');
+fprintf('------------------------------------------------------------\n');
+fprintf('Denoised Seismic Data (Curvelet, BPDN), PSNR = %.2fdB, SSIM = %.4f\n', psnrCleanData_curvelet_spg, ssimCleanData_curvelet_spg);
 
 
 %% Parameters for dictionary learning using sparse K-SVD
