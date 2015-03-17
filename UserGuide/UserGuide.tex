@@ -155,22 +155,22 @@
 \section{Requirements and License}
 The S3I is a MATLAB\textsuperscript{\textregistered} based package. Besides MATLAB (2012a or later version recommend), you may also need a C++ compiler (e.g. gcc or Microsoft C/C++ compiler) to generate the MEX-files if none of the provided MEX-files is compatible with your system architecture. In order to run parallel computing, MPI is also required and here we recommend OpenMPI.
 
-S3I is a free software package: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.0 of the License only. This S3I package is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY. If you find any glitches or bugs within it, please contact the authors. We appreciate you contributions. 
+S3I is a free software package: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 2.0 of the License only. This S3I package is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY. If you find any glitches or bugs within it, please contact the authors. We appreciate your contributions. 
 
 
 
 \section{Introduction}
-The S3I is designed to provide a package for numerical simulations in exploration geophysics. It targets students as well as professionals in exploration geophysics. The most important purpose is to provide an easy, well organized library to the interested users to learn some popular algorithms and numerical schemes in exploration geophysics rather than the high performance of the computation. Thus, MATLAB is adopted as the coding platform for the readability of the code, ease of data visualization, etc. It is well known that nested for-loops in MATLAB is much slower than the complied languages. In order to have make the S3I efficient, we used C to generate MEX-files for some frequently invoked functions. Currently, the major functions have been implemented in S3I are as follows:
+The S3I is designed to provide a package for numerical simulations in exploration geophysics. It targets students as well as professionals in exploration geophysics. The most important purpose is to provide an easy, well organized library to the interested users to learn some popular algorithms and numerical schemes in exploration geophysics rather than the high performance of the computation. Thus, MATLAB is adopted as the coding platform for the readability of the code, ease of data visualization, etc. It is well known that nested for-loops in MATLAB is much slower than the complied languages. In order to make the S3I efficient, we use C to generate MEX-files for some frequently invoked functions. Currently, the major functions have been implemented in S3I are as follows:
 \begin{itemize}
-\item Acoustic wave simulation for 2-D/3-D
-\item Elastic wave simulation for 2-D
+\item Acoustic wave simulation for 2D/3D
+\item Elastic wave simulation for 2D
 \item Kirchhoff's migration
 \item Reverse Time Migration (RTM)
 \item Least Square RTM
 \item Full Waveform Inversion (FWI)
 \end{itemize}
 
-With this user guide, the user may easily and quickly start using the S3I for appropriate applications. An exhaustive review of numerical simulation of wave equation and seismic imaging is out of the scope of this user guide. Therefore, only necessary equations are showed and explained to keep the contents concise. The Interested user is referred to according references for more details.  
+With this user guide, the user may easily and quickly start using the S3I for appropriate applications. An exhaustive review of numerical simulation of wave equation and seismic imaging is out of the scope of this user guide. Therefore, only necessary equations are showed and explained to keep the contents concise. The Interested user is referred to the references for more details.  
 
 
 
@@ -178,21 +178,21 @@ With this user guide, the user may easily and quickly start using the S3I for ap
 
 
 \subsection{Acoustics Wave Equation}
-The seismic method is one of the primary tools in exploration geophysics. In a seismic survey, man-made vibration sources (e.g. dynamite, viborseis trucks, and air guns) are fired off. Then the wave propagates through the subsurface geological media. The wave filed which contains direct wave, reflection, and refraction, will be recorded by the array of receivers (e.g. geophones and hydrophones). In order to simulate this physical process with computers, it is crucial to solve wave equations accurately and efficiently with numerical methods. The real earth is an elastic media, such that the seismic waves contain both P-wave and S-wave components. For simplicity, we some times only consider the P-wave field, which is described by an acoustic wave equation. It is verified by borehole data that the media density variations are not the main source of reflected waves \cite{Hood:1981aa}. Therefore, we usually assume a constant density of the media. Then the acoustic wave equation can be written as
+The seismic method is one of the primary tools in exploration geophysics. In a seismic survey, man-made vibration sources (e.g. dynamite, viborseis trucks, and air guns) are fired off. Then the wave propagates through the subsurface geological media. The wave filed which contains direct wave, reflection, and refraction, will be recorded by the array of receivers (e.g. geophones and hydrophones). In order to simulate this physical process with computers, it is crucial to solve wave equations accurately and efficiently with numerical methods. The real earth is an elastic media, such that the seismic waves contain both P-wave and S-wave components. For simplicity, we sometimes only consider the P-wave field, which is described by an acoustic wave equation. It is verified by borehole data that the media density variations are not the main source of reflected waves \cite{Hood:1981aa}. Therefore, we usually assume a constant density of the media. Then the acoustic wave equation can be written as
 \begin{equation}\label{eq:aw}
 \frac{1}{v^2(\bx)}\frac{\partial^2 p(\bx, t)}{\partial t^2} + f(\bx, t) = \nabla^2 p(\bx, t),
 \end{equation}
-where $p(\bx)$ is the filed of pressure variation and $\bx=(z,x)$ or $\bx=(z,x,y)$ is the coordinates in the Cartesian coordinate system for the 2-D and 3-D case, respectively. Following the convention in geophysics, the $z$ direction is pointing downwards. The $v(\bx)$ is the velocity of P-wave at location $\bx$ and $f(\bx,t)$ is the source time function. Moreover, $\Delta$ in \eqref{eq:aw} is the Laplace operator defined as 
+where $p(\bx)$ is the filed of pressure variation and $\bx=(z,x)$ or $\bx=(z,x,y)$ is the coordinates in the Cartesian coordinate system for the 2D and 3D case, respectively. Following the convention in geophysics, the $z$ direction is pointing downwards. The $v(\bx)$ is the velocity of P-wave at location $\bx$ and $f(\bx,t)$ is the source time function. Moreover, $\Delta$ in \eqref{eq:aw} is the Laplace operator defined as 
 \begin{equation}
 \Delta: =\left\{
 \begin{aligned}
-\frac{\partial^2}{\partial x^2}+\frac{\partial^2}{\partial z^2}~~~~~~~ & ~~~~\text{for 2-D }\\
-\frac{\partial^2}{\partial x^2}+\frac{\partial^2}{\partial y^2}+\frac{\partial^2}{\partial z^2} &~~~~ \text{for 3-D}
+\frac{\partial^2}{\partial x^2}+\frac{\partial^2}{\partial z^2}~~~~~~~ & ~~~~\text{for 2D }\\
+\frac{\partial^2}{\partial x^2}+\frac{\partial^2}{\partial y^2}+\frac{\partial^2}{\partial z^2} &~~~~ \text{for 3D}
 \end{aligned}
 \right.  
 \end{equation}
 
-The Ricker wavelet is a widely used for seismic source time function whose amplitude $A(t)$ with the peak frequency $\sff$ at time $t$ is computed as:
+The Ricker wavelet is widely used for seismic source time function whose amplitude $A(t)$ with the peak frequency $\sff$ at time $t$ is computed as:
 \begin{equation}
 A(t)=(1-2\pi^2 \sff^2 t^2)e^{-\pi^2 \sff^2 t^2}.
 \end{equation}
@@ -207,9 +207,9 @@ The \path{src/ricker.m} provides a Ricker wavelet generator which requires the p
 
 
 \subsection{Finite Difference Method on Standard Grid}
-Currently, there are several popular method to solve the wave equation numerically, such as pseudo-spectral method, Finite Difference Method (FDM), Finite Elements Method (FEM) method, etc. Each method has its pros and cons. Concretely, the pseudo-spectral method, which is based on Fourier transform in spatial domain, provides accurate and efficient solutions for the smoothly varied media but not for sharply varied media \cite{Kreiss:1972aa,Fornberg:1975aa,Fornberg:1987aa}. The FDM \cite{Alford:1974aa,Dablain:1986aa} adopted by S3I is widely used for its ease to implement and high accuracy and efficiency. However, the FDM is incapable to provide accurate solution for media with complex geometry structure and rugged topography. The FEM usually provides more accurate results than FDM with a higher computational and storage expense \cite{Kurt:1984aa}. 
+Currently, there are several popular methods to solve the wave equation numerically, such as pseudo-spectral method, Finite Difference Method (FDM), Finite Elements Method (FEM) method, etc. Each method has its pros and cons. Concretely, the pseudo-spectral method, which is based on Fourier transform in spatial domain, provides accurate and efficient solutions for the smoothly varied media but not for sharply varied media \cite{Kreiss:1972aa,Fornberg:1975aa,Fornberg:1987aa}. The FDM \cite{Alford:1974aa,Dablain:1986aa} adopted by S3I is widely used for its ease to implement, high accuracy, and efficiency. However, the FDM is incapable to provide accurate solution for media with complex geometry structure and rugged topography. The FEM usually provides more accurate results than FDM with a higher computational and storage expense \cite{Kurt:1984aa}. 
 
-In order to solve the wave equation with FDM, the continuous functions and models are represented by their values at grid points and and derivatives are approximated by linear combination of these values. For instance, in a 2-D region we use the uniformly distributed grid points $(z_i)_{0\le i \le I-1 }$, $(x_j)_{0\le j \le J-1}$, and $(t_n)_{0\le n \le N-1}$ given by $z_i = i\Delta z$, $x_j = j\Delta x$ and $t_n=n\Delta t$. Instead of solving the wave equation in a continuous domain (both in space and time) analytically, the FDM provides for an approximated solution on these grid points.  
+In order to solve the wave equation with FDM, the continuous functions and models are represented by their values at grid points and and derivatives are approximated by linear combination of these values. For instance, in a 2D region we use the uniformly distributed grid points $(z_i)_{0\le i \le I-1 }$, $(x_j)_{0\le j \le J-1}$, and $(t_n)_{0\le n \le N-1}$ given by $z_i = i\Delta z$, $x_j = j\Delta x$ and $t_n=n\Delta t$. Instead of solving the wave equation in a continuous domain (both in space and time) analytically, the FDM provides an approximated solution on these grid points.  
 
 The estimation of derivatives in \eqref{eq:aw} is crucial in FDM. Let us revisit with the definition of the partial derivative, 
  \begin{equation}
@@ -226,7 +226,7 @@ Assuming the grid spacing $\Delta z$ is small enough, $(p(z+\Delta z, x, t) - p(
   \end{aligned}
   \end{equation}
   
-For simplicity of notation, $p_{i,j}^{(n)}:=  p(i\Delta z, j\Delta x, n\Delta t)$, $f_{i,j}^{(n)} := f(i\Delta z, j\Delta x, n\Delta t)$, $v_{i,j} := v(i\Delta z, j\Delta x)$. Therefore, a finite difference expression of 2-D acoustic wave equation can be written as 
+For simplicity of notation, $p_{i,j}^{(n)}:=  p(i\Delta z, j\Delta x, n\Delta t)$, $f_{i,j}^{(n)} := f(i\Delta z, j\Delta x, n\Delta t)$, $v_{i,j} := v(i\Delta z, j\Delta x)$. Therefore, a finite difference expression of 2D acoustic wave equation can be written as 
   \begin{equation}
     \begin{aligned}
     &\frac{1}{v_{i,j}^2}\frac{p_{i,j}^{(n+1)} - 2p_{i,j}^{(n)} + p_{i,j}^{(n-1)}}{\Delta t^2} - f_{i,j}^{(n)}\\
@@ -242,7 +242,7 @@ Simple algebraic manipulations lead to a recursive expression of the wave equati
     &+ 2p_{i,j}^{(n)}-p_{i,j}^{(n-1)} + v_{i,j}^2\Delta t^2 f_{i,j}^{(n)}.
     \end{aligned}
   \end{equation}
-  In \eqref{eq:stagGrid}, all values of $p$ are computed on integer grid points as illustrated in Figure \subref*{fig:stanG}. The FDM on standard grid is an easy-to-understand numerical scheme, which serves as an excellent explanatory example. However, S3I used another scheme, which will discuss momentarily, for its better accuracy.  
+  In \eqref{eq:stagGrid}, all values of $p$ are computed on integer grid points as illustrated in Figure \subref*{fig:stanG}. The FDM on standard grid is an easy-to-understand numerical scheme, which serves as an excellent explanatory example. However, the S3I applied another scheme, which will discuss momentarily, for its better accuracy.  
   
 \begin{figure}[htbp]
 \centering
@@ -342,11 +342,11 @@ Based on the goal of choosing the weights $\{a_k\}_{k=0}^{N-1}$, they should sat
   &\vdots
   \end{aligned}
 \end{equation*}
-\path{src/dCoef.m} gives a solution for the above system of arbitrary $N$. Moreover, the finite difference operator on staggered grid is fulfilled by \path{src/diffOperator.m} which can perform arbitrarily high order of approximation. The default value of \texttt{nDiffOrder = 3}, which generates 6-th order of approximation of the spatial derivatives, is usually good enough.
+\path{src/dCoef.m} gives a solution for the above system of arbitrary $N$. Moreover, the finite difference operator on staggered grid is fulfilled by \path{src/diffOperator.m} which can perform arbitrarily high order of approximation. The default value of \path{nDiffOrder = 3}, which generates 6-th order of approximation of the spatial derivatives, is usually good enough.
 
 
 \subsection{Absorbing Boundary Conditions (ABC)}
-In real seismic surveys, seismic waves propagate in unbounded half-space media. For the sake of computational efficiency and storage, a seismic survey is only simulated in a truncated region. If no special techniques are applied on the boundary of the simulated region, the recursive formula (e.g. \eqref{eq:stagGrid}) would generate strong reflections which do not physically exist in the real seismic survey. In order to attenuate the reflections, a common method is to impose the absorbing boundary conditions (ABC) \cite{Engquist:1977aa, Clayton:1977aa}. Figure \ref{fig:ABC} illustrates the 2-D scenario, when we pad the original truncated velocity model's left, right, bottom boundaries with absorbing boundaries of a certain width (fulfilled by \path{src/extBoundary.m}). ABC will attenuated the wave amplitudes in those absorbing boundaries and keep the waveform unaltered outside of the absorbing boundaries. Throughout the S3I, except specified explicitly, we consider the top of the simulated region to be the surface of the earth, which is a free surface without ABC applied.
+In real seismic surveys, seismic waves propagate in unbounded half-space media. For the sake of computational efficiency and storage, a seismic survey is only simulated in a truncated region. If no special techniques are applied on the boundary of the simulated region, the recursive formula (e.g. \eqref{eq:stagGrid}) would generate strong reflections which do not physically exist in the real seismic survey. In order to attenuate the reflections, a common method is to impose the absorbing boundary conditions (ABC) \cite{Engquist:1977aa, Clayton:1977aa}. Figure \ref{fig:ABC} illustrates the 2D scenario, when we pad the original truncated velocity model's left, right, and bottom boundaries with absorbing boundaries of a certain width (fulfilled by \path{src/extBoundary.m}). ABC will attenuate the wave amplitudes in those absorbing boundaries and keep the waveform unaltered outside of the absorbing boundaries. Throughout the S3I, except specified explicitly, we consider the top of the simulated region to be the surface of the earth, which is a free surface without ABC applied.
 
 \begin{figure}[htbp]
 \centering
@@ -380,7 +380,11 @@ Equivalently,
 \includegraphics[width=0.7\textwidth]{Fig/SpongeABC.pdf}
 \caption{The damping profile $d(u)$}
 \end{figure}
-In homogeneous media, the acoustic wave equation has a solution $A \exp(-j (\bk \cdot \bx -\omega t))$, where $A$ represents the amplitude and polarization of the plane wave. The $\bk = k_x \hx + k_y \hy +k_z \hz$ denotes the wave vector, which indicates the direction of wave propagation of the plane wave. $\bx = x\hx +y\hy +z \hz$ is the position vector. By substitution  in \eqref{eq:replace}, we can derive another solution of the acoustic equation
+In homogeneous media, the acoustic wave equation has a solution
+ \begin{equation}
+ A \exp(-j (\bk \cdot \bx -\omega t))
+ \end{equation}
+  where $A$ represents the amplitude and polarization of the plane wave. The $\bk = k_x \hx + k_y \hy +k_z \hz$ denotes the wave vector, which indicates the direction of wave propagation of the plane wave. $\bx = x\hx +y\hy +z \hz$ is the position vector. By substitution  in \eqref{eq:replace}, we can derive another solution of the acoustic equation
 \begin{equation}
 \begin{aligned}
 &A\exp(-j(k_x \tilde{x} + k_y y + k_z z -\omega t))=\\
@@ -525,7 +529,7 @@ Examples of acoustic wave propagation which are Courant stable and Courant insta
 An approach to alleviate the numerical dispersion is flux-corrected transport (FCT) introduced by \cite{Fei:1995aa}, which is implemented for both acoustic and elastic waves in the S3I (see \path{src/fctForAw.m} and \path{src/fctForEw.m}). In the default simulations of acoustic and elastic waves the FCT correction is turned off, since it can slow down the simulation significantly. If possible, we strongly suggest to modify the sampling rate and $\Delta u$ to avoid the grid dispersion rather than employing FCT.  
 
 
-\subsection{2-D Acoustic Wave Equation in Frequency Domain}
+\subsection{2D Acoustic Wave Equation in Frequency Domain}
 In signal processing, a signal transformed into frequency domain may unveil hidden information in time domain and brings new processing techniques. The acoustic wave equation given in \eqref{eq:aw} which is time dependent can be transformed and solved in frequency domain as well. Taking Fourier transform of \eqref{eq:aw} with respect to $t$ on both sides, we obtain
   \begin{equation}
   \frac{\omega^2}{c^2(z, x)}P_{\omega}(z, x) + \nabla^2 P_{\omega}(z, x) =- F_{\omega}(z, x).
@@ -592,7 +596,7 @@ In the real media, the seismic waves are in the form of elastic waves which are 
 
 
 \section{Migration}
-The goal of seismic imaging is to recover the subsurface structures with the recorded seismic data. This imaging process is typically computationally intense. Migration is one of the most important approaches. In the S3I we implemented a few common migration algorithms, such as Kirchhoff's migration, Reverse Time Migration (RTM), Least square RTM (LSRTM). All methods we implemented in the S3I are prestack.  
+The goal of seismic imaging is to recover the subsurface structures with the recorded seismic data. This imaging process is typically computationally intense. Migration is one of the most important approaches. In the S3I we implemented a few common migration algorithms, such as Kirchhoff's migration, Reverse Time Migration (RTM), and Least square RTM (LSRTM). All methods we implemented in the S3I are prestack.  
 
 
 \subsection{Kirchhoff's Migration}
@@ -602,7 +606,7 @@ Let $\bx_r$ be the location of the receiver and $\bx_s$ be the location of the s
 I(\xi)=\int_{\Omega_\xi} W(\xi,\bm,\bh)dt(t=t_d(\xi,
 \bm,\bh),\bm,\bh)d\bm d\bh,
 \end{equation}
-where limited region $\Omega_\xi$ is centered around the location $\xi$ in the $m$ plane, called the migration aperture. $t_d=t_s[\bx,\bs,v(z,x,y)]+t_r[\bx,\bg,v(z,x,y)]$, where $t_s$ is the travel time from the reflector $\xi$ to $\bx_s$ and $t_r$ is the travel time from $\xi$ to $\bx_r$, see Figure \ref{fig:ref}. For reflector $\xi = (z_\xi, x_\xi, y_\xi)$ in 3-D and $\xi = (z_\xi, x_\xi)$ in 2-D case.
+where limited region $\Omega_\xi$ is centered around the location $\xi$ in the $m$ plane, called the migration aperture. $t_d=t_s[\bx,\bs,v(z,x,y)]+t_r[\bx,\bg,v(z,x,y)]$, where $t_s$ is the travel time from the reflector $\xi$ to $\bx_s$ and $t_r$ is the travel time from $\xi$ to $\bx_r$, see Figure \ref{fig:ref}. For reflector $\xi = (z_\xi, x_\xi, y_\xi)$ in 3-D and $\xi = (z_\xi, x_\xi)$ in 2D case.
 
 \begin{figure}[htbp]
 \centering
@@ -611,7 +615,7 @@ where limited region $\Omega_\xi$ is centered around the location $\xi$ in the $
 \label{fig:ref}
 \end{figure}
   
-An example of Kirchhoff's migration (see Figure \ref{fig:kirc}) for the fault model (available in the \path{modelData} folder) can be found in \path{mainKircCpmlFor2dAw_fault.m}, which is inherited from an existing package \cite{Kozola:2011aa}. The most important part of Kirchhoff's migration is the computation of travel times $t_s$ and $t_r$. These can be done either with \path{src/ray2d.m} from \cite{Kozola:2011aa} or \path{src/eikonal2d.m} which solves the 2-D Eikonal equation using a fast sweeping method \cite{Zhao:2004aa}.
+An example of Kirchhoff's migration (see Figure \ref{fig:kirc}) for the fault model or Marmousi model (available in the \path{modelData} folder) can be found in \path{mainKircCpmlFor2dAw.m}, which is inherited from an existing package \cite{Kozola:2011aa}. The most important part of Kirchhoff's migration is the computation of travel times $t_s$ and $t_r$. These can be done either with \path{src/ray2d.m} from \cite{Kozola:2011aa} or \path{src/eikonal2d.m} which solves the 2-D Eikonal equation using a fast sweeping method \cite{Zhao:2004aa}.
 
 \begin{figure}
 \centering
@@ -727,7 +731,7 @@ Then
 \begin{equation}
 \delta \bm^{k+1}=\delta \bm^{k} - \bH^{-1} \bg_k(\delta \bm^k),
 \end{equation}
-where the initial value $\delta \bm^0=\bL^* \delta \bP$ can be obtained using RTM with an imaging condition that maps into the model domain. In the LSRTM, since we do not update the incident model $\bm_0$, the Green's functions and Hessian only need to be computed once and stored for use in the later iteration. Its implementation can be easily modified with the source code for FWI in the next section.
+where the initial value $\delta \bm^0=\bL^* \delta \bP$ can be obtained using RTM with an imaging condition that maps into the model domain. In the LSRTM, since we do not update the incident model $\bm_0$, the Green's functions and Hessian only need to be computed once and stored for use in the later iteration. Its implementation can be easily modified from the source code for FWI in the next section.
 
 
 
