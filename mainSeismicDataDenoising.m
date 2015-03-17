@@ -72,9 +72,19 @@ dataTrue = bsxfun(@times, bsxfun(@minus, dataTrue, meanData), 1./abs(maxData - m
 
 
 %% Prepare noisy data
+% sampling rate
+ts = 9.9e-3;
+fs = 1/ts;
+% generate colored noise
+forder = 10;
+fp1 = 1;   % first passband frequency
+fp2 = 10;   % second passband frequency
+d = fdesign.bandpass('N,Fp1,Fp2,Ap', forder, fp1, fp2, .5, fs);
+Hd = design(d, 'cheby1');
 sigma = 0.1;
 noise = sigma * randn(size(dataTrue));
-noisyData = dataTrue + noise;
+noise_filtered = filter(Hd, noise);
+noisyData = dataTrue + noise_filtered;
 save(fullfile(dataFileDir, [dataFileName, '_noisyData.mat']), 'noisyData', '-v7.3');
 trainData = noisyData;
 
@@ -223,7 +233,11 @@ opts = spgSetParms('verbosity', 1, 'optTol', 1e-6);
 vc_spg = spg_bpdn(fdctFunc, b, sigSpThres, opts);
 
 coeffCurvelet_spg = vec2curvelet(vc_spg, sCurvelet);
-cleanData_curvelet_spg = ifdct_wrapping(coeffCurvelet_spg, is_real, nbscales, nbangles_coarse);
+if ~isunix
+    cleanData_curvelet_spg = ifdct_wrapping(coeffCurvelet_spg, is_real);
+else
+    cleanData_curvelet_spg = ifdct_wrapping(coeffCurvelet_spg, is_real, nbscales, nbangles_coarse);
+end
 cleanData_curvelet_spg = real(cleanData_curvelet_spg);
 
 % Plot figures and PSNR output
