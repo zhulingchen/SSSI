@@ -77,8 +77,8 @@ ts = 9.9e-3;
 fs = 1/ts;
 % generate colored noise
 forder = 10;
-fp1 = 1;   % first passband frequency
-fp2 = 10;   % second passband frequency
+fp1 = 10;   % first passband frequency
+fp2 = 30;   % second passband frequency
 d = fdesign.bandpass('N,Fp1,Fp2,Ap', forder, fp1, fp2, .5, fs);
 Hd = design(d, 'cheby1');
 sigma = 0.1;
@@ -227,7 +227,7 @@ fdctFunc = @(x, mode) fdct(x, sCurvelet, is_real, nbscales, nbangles_coarse, nSa
 b = fdctFunc(vecCoeffCurvelet, 1);
 % tau = norm(vecCoeffCurvelet, 1);
 gain = 1;
-sigSpThres = sigma * sqrt(nSamples * nRecs) * gain;
+sigSpThres = sqrt((fp2 - fp1) / (fs/2)) * sigma * sqrt(nSamples * nRecs) * gain;
 opts = spgSetParms('verbosity', 1, 'optTol', 1e-6);
 % vc_spg = spg_lasso(fdctFunc, b, tau, opts);
 vc_spg = spg_bpdn(fdctFunc, b, sigSpThres, opts);
@@ -255,7 +255,7 @@ gain = 1;                                   % noise gain (default value 1.15)
 trainBlockSize = 16;                        % for each dimension
 trainBlockNum = 5000;                       % number of training blocks in the training set
 trainIter = 20;
-sigSpThres = sigma * trainBlockSize * gain; % pre-defined l2-norm error for BPDN
+sigSpThres = sqrt((fp2 - fp1) / (fs/2)) * sigma * trainBlockSize * gain; % pre-defined l2-norm error for BPDN
 atomSpThres = 50;                          % a self-determind value to control the sparsity of matrix A
 
 
