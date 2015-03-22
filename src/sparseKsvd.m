@@ -10,7 +10,7 @@ function [A, X, errLasso, errBpdn] = sparseKsvd(Y, baseSynOp, baseAnaOp, A0, tra
 %      BPDN:    min  |X_i|_1             s.t. |Y_i-B*A*X_i|_2 <= tau    for all i
 %               A,X
 % or
-%      Lasso:   min  |Y_i-B*A*X_i|_2     s.t. |X_i|_1 <= tau             for all i
+%      Lasso:   min  |Y_i-B*A*X_i|_2     s.t. |X_i|_1 <= tau            for all i
 %               A,X
 %
 %

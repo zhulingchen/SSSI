@@ -78,7 +78,7 @@ fs = 1/ts;
 % generate colored noise
 forder = 10;
 fp1 = 10;   % first passband frequency
-fp2 = 30;   % second passband frequency
+fp2 = 30;    % second passband frequency
 d = fdesign.bandpass('N,Fp1,Fp2,Ap', forder, fp1, fp2, .5, fs);
 Hd = design(d, 'cheby1');
 sigma = 0.1;
@@ -220,8 +220,8 @@ fprintf('Denoised Seismic Data (Curvelet), PSNR = %.2fdB, SSIM = %.4f\n', psnrCl
 
 % Curvelet denoising using BPDN with SPG-L1 optimization toolbox
 close all;
-% lasso: min ||fdctFunc(x, 1) - b||_2^2 s.t. ||x||_1 < \tau
 % bpdn:  min ||x||_1  s.t.  ||fdctFunc(x, 1) - b|| <= \sigma
+% lasso: min ||fdctFunc(x, 1) - b||_2^2 s.t. ||x||_1 < \tau
 [vecCoeffCurvelet, sCurvelet] = curvelet2vec(coeffCurvelet);
 fdctFunc = @(x, mode) fdct(x, sCurvelet, is_real, nbscales, nbangles_coarse, nSamples, nRecs, mode);
 b = fdctFunc(vecCoeffCurvelet, 1);

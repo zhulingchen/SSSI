@@ -50,21 +50,24 @@ end
 
 dz = 10;
 dx = 10;
-x = (1:nx)*dx;
-z = (1:nz)*dz;
+z = (1:nz) * dz;
+x = (1:nx) * dx;
 
 vpmin = min(vp(:));
 vpmax = max(vp(:));
 vsmin = min(vs(:));
 vsmax = max(vs(:));
 
-dt = 0.75*(dz/vpmax/sqrt(2));
-nt = round(sqrt((dx*nx)^2 + (dz*nz)^2)*2/vpmin/dt + 1);
+dt = 0.5*(min([dx, dz])/vpmax/sqrt(2));
+nt = round(sqrt((dx*nx)^2 + (dz*nz)^2)*2/vsmin/dt + 1);
 t  = (0:nt-1).*dt;
 
 % shot position
-zShot = 1 * dz;
-xShot = 1 * dx;
+zShot = 50 * dz;
+xShot = 20 * dx;
+
+% number of approximation order for differentiator operator
+nDiffOrder = 3;
 
 hFig = figure;
 set(hFig, 'Position', [200, 200, 1000, 500]);
@@ -81,10 +84,10 @@ hold off;
 colormap(seismic);
 
 
-%% *************** Check the Stability Condition **********
+%% *************** Check the Stability Condition ***************
 
-if dt*sqrt(vpmax^2/dx^2+vsmax^2/dz^2)>1
-    error('Bad Parameters setup. Finite difference grid is not stable.');
+if dt > min([dx, dz])/(norm(dCoef(nDiffOrder, 's'), 1) * sqrt(2) * vpmax)
+    error('The temporal discretization does not satisfy the Courant-Friedrichs-Lewy sampling criterion to ensure the stability of the FD code!');
 end
 
 
@@ -94,10 +97,6 @@ nBoundary = 20;
 VP = extBoundary(vp, nBoundary, 2);
 VS = extBoundary(vs, nBoundary, 2);
 
-[nz, nx] = size(VP);          % update nz, nx for the extended model
-
-% number of approximation order for differentiator operator
-nDiffOrder = 3;
 
 %% Generate Ricker wavelet as source function
 f = 20;               % peak frequency
@@ -105,12 +104,12 @@ sourceTime = zeros([size(VP), nt]);
 wave1dTime = ricker(f, nt, dt);
 sourceTime(zShot/dz, xShot/dx + nBoundary, :) = reshape(wave1dTime, 1, 1, nt);
 
+
 %% Generate shots and save to file and video
 tic;
-[dataVzp, dataVxp, dataVzs, dataVxs] = fwdTimeSpmlFor2dEw(VP, VS, sourceTime, nDiffOrder, nBoundary, dz, dx, dt);
+[snapshotVzp, snapshotVxp, snapshotVzs, snapshotVxs] = fwdTimeSpmlFor2dEw(VP, VS, sourceTime, nDiffOrder, nBoundary, dz, dx, dt);
 timeForward = toc;
 fprintf('Generate Forward Timing Record. elapsed time = %fs\n', timeForward);
-
 
 
 %% Video output
@@ -122,13 +121,13 @@ end
 
 for it=1:nt
     subplot(2, 3, 2);
-    imagesc(dataVxp(1:end-nBoundary, (nBoundary+1):(100+nBoundary),it));
+    imagesc(snapshotVxp(1:end-nBoundary, nBoundary+1:end-nBoundary, it));
     xlabel('Distance (m)'); ylabel('Depth (m)');
     title(sprintf('P-wave (x-axis component), t = %.3f', t(it)));
     caxis([-0.05 0.5]);
     
     subplot(2, 3, 3);
-    imagesc(dataVzp(1:end-nBoundary, (nBoundary+1):(100+nBoundary),it));
+    imagesc(snapshotVzp(1:end-nBoundary, nBoundary+1:end-nBoundary, it));
     xlabel('Distance (m)'); ylabel('Depth (m)');
     title(sprintf('P-wave (z-axis component), t = %.3f', t(it)));
     caxis([-0.05 0.5]);
@@ -142,13 +141,13 @@ for it=1:nt
     title(sprintf('Input source waveform'));
     
     subplot(2, 3, 5);
-    imagesc(dataVxs(1:end-nBoundary, (nBoundary+1):(100+nBoundary),it));
+    imagesc(snapshotVxs(1:end-nBoundary, nBoundary+1:end-nBoundary, it));
     xlabel('Distance (m)'); ylabel('Depth (m)');
     title(sprintf('S-wave (x-axis component), t = %.3f', t(it)));
     caxis([-0.05 0.5]);
     
     subplot(2, 3, 6);
-    imagesc(dataVzs(1:end-nBoundary, (nBoundary+1):(100+nBoundary),it));
+    imagesc(snapshotVzs(1:end-nBoundary, nBoundary+1:end-nBoundary, it));
     xlabel('Distance (m)'); ylabel('Depth (m)');
     title(sprintf('S-wave (z-axis component), t = %.3f', t(it)));
     caxis([-0.05 0.5]);

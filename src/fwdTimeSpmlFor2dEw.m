@@ -1,4 +1,4 @@
-function [dataVzp, dataVxp, dataVzs, dataVxs] = fwdTimeSpmlFor2dEw(vp, vs, source, nDiffOrder, nBoundary, dz, dx, dt)
+function [snapshotVzp, snapshotVxp, snapshotVzs, snapshotVxs] = fwdTimeSpmlFor2dEw(vp, vs, source, nDiffOrder, nBoundary, dz, dx, dt)
 %
 % FWDTIMESPMLFOR2DEW Simulate 2-d elastic wave forward propagation using
 % finite difference in time domain with the partial differential equations
@@ -20,10 +20,10 @@ function [dataVzp, dataVxp, dataVzs, dataVxs] = fwdTimeSpmlFor2dEw(vp, vs, sourc
 %% Initialize storage
 [nz, nx, nt] = size(source);
 
-dataVzp = zeros(nz, nx, nt);
-dataVxp = zeros(nz, nx, nt);
-dataVzs = zeros(nz, nx, nt);
-dataVxs = zeros(nz, nx, nt);
+snapshotVzp = zeros(nz, nx, nt);
+snapshotVxp = zeros(nz, nx, nt);
+snapshotVzs = zeros(nz, nx, nt);
+snapshotVxs = zeros(nz, nx, nt);
 
 coeff = dCoef(nDiffOrder, 's');
 iz = 1+nDiffOrder:nz+nDiffOrder;      % interior z
@@ -57,8 +57,6 @@ Vzp = zeros(nz+2*nDiffOrder, nx+2*nDiffOrder, 3);
 Vzs = zeros(nz+2*nDiffOrder, nx+2*nDiffOrder, 3);
 Vz = zeros(nz+2*nDiffOrder, nx+2*nDiffOrder, 3);
 
-dataVx = zeros(nz, nx, nt);
-dataVz = zeros(nz, nx, nt);
 
 %% 2-D Elastic Wave Forward-Time Modeling
 
@@ -126,12 +124,9 @@ for it = 1:nt
     Vz(iz, ix, 1) = Vz(iz, ix, 2); Vz(iz, ix, 2) = Vz(iz, ix, 3);
     
     %% P-wave and S-wave components of x-axis and z-axis velocity wavefield
-    dataVxp(:, :, it) = Vxp(iz, ix, 2);
-    dataVzp(:, :, it) = Vzp(iz, ix, 2);
-    dataVxs(:, :, it) = Vxs(iz, ix, 2);
-    dataVzs(:, :, it) = Vzs(iz, ix, 2);
-    
-    dataVx(:, :, it) = Vx(iz, ix, 2);
-    dataVz(:, :, it) = Vz(iz, ix, 2);
+    snapshotVxp(:, :, it) = Vxp(iz, ix, 2);
+    snapshotVzp(:, :, it) = Vzp(iz, ix, 2);
+    snapshotVxs(:, :, it) = Vxs(iz, ix, 2);
+    snapshotVzs(:, :, it) = Vzs(iz, ix, 2);
     
 end  % time loop ends
