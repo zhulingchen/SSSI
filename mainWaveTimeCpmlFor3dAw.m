@@ -12,6 +12,8 @@
 close all;
 clear;
 clc;
+
+
 %% Seismic Migration Example - Fault Model
 % in time domain
 % modified by Lingchen Zhu
@@ -31,24 +33,24 @@ addpath(genpath('./src'));
 
 
 %% Read in velocity model data and plot it
-nz = 100;
-nx = 10;
-ny = 10;
+nz = 60;
+nx = 30;
+ny = 40;
 dz = 10;
 dx = 10;
 dy = 10;
 
 % velocity model
-% velocityModel = 2500*ones(nz,nx,ny);
-load('./modelData/homo3DP.mat');
+% velocityModel = 2500 * ones(nz, nx, ny);
+load('./modelData/cake3DP.mat');
 
 % smooth velocity model using average filter
 % filterSmooth = fspecial('average', 5);
 % velocityModelSmooth = imfilter(velocityModel, filterSmooth, 'replicate');
 x = (1:nx) * dx;
-z = (1:nz) * dz;
 y = (1:ny) * dy;
-nBoundary = 20;
+z = (1:nz) * dz;
+nBoundary = 5;
 
 %% Create shot gathers
 % Use the velocity model to simulate a seismic survey.  The wave equations
@@ -75,17 +77,15 @@ f = 20;
 %% Generate shots and save to file and video
 
 % shot position
-xs = 5+nBoundary;
-ys = 5+nBoundary;
-zs = 1;
+xs = 15 + nBoundary;
+ys = 20 + nBoundary;
+zs = 30;
 
 % generate shot signal
 source = zeros([size(V), nt]);
 % source(1, xs, 1) = 1; % impulse input
-rw1d = ricker(f, nt, dt);
-for i=1:length(rw1d)
-    source(zs, xs, ys, i) = rw1d(i);
-end
+wave1dTime = ricker(f, nt, dt);
+source(zs, xs, ys, :) = reshape(wave1dTime, 1, 1, 1, nt);
 
 % generate shot record
 tic;
@@ -94,63 +94,63 @@ nDiffOrder = 2;
 timeForward = toc;
 fprintf('Generate Forward Timing Record for Shot at x = %dm, y = %dm, z = %dm, time = %fs\n', (xs-nBoundary) * dx, (ys-nBoundary) * dy, zs * dz, timeForward);
 
-start_t = 1;
+%% output
+figure;
+% plot velocity model
+subplot(2, 2, 1);
+slice(x, y, z, permute(velocityModel, [3, 2, 1]), ...
+    round(linspace(x(2), x(end-1), 5)), ...
+    round(linspace(y(2), y(end-1), 5)), ...
+    round(linspace(z(2), z(end-1), 10)));
+xlabel('X - Easting (m)');
+ylabel('Y - Northing (m)');
+zlabel('Z - Depth (m)');
+title('Velocity Model');
+set(gca, 'ZDir', 'reverse');
+shading interp;
+colormap(seismic);
+hold on;
+plot3((xs-nBoundary) * dx, (ys-nBoundary) * dy, zs * dz, 'w*');
+hold off;
 
-for it = start_t:nt
-    % plot velocity model
-    subplot(2, 2, 1);
-    slice(x, y, z, permute(velocityModel, [2, 3, 1]), ...
-        round(linspace(x(2), x(end-1), 5)), ...
-        round(linspace(y(2), y(end-1), 5)), ...
-        round(linspace(z(2), z(end-1), 10)));
-    xlabel('Easting (m)');
-    ylabel('Northing (m)');
-    zlabel('Depth (m)');
-    title('Velocity Model');
-    set(gca, 'ZDir', 'reverse');
-    shading interp;
-    colormap(seismic);
-    hold on;
-    plot3((xs-nBoundary) * dx, (ys-nBoundary) * dy, zs * dz, 'w*');
-    hold off;
-    
+for it = 1:nt
     % plot source function in time domain
     subplot(2, 2, 2);
-    plot([1:nt], rw1d); hold on;
-    plot(it, rw1d(it), 'r*'); hold off;
+    plot([1:nt], wave1dTime); hold on;
+    plot(it, wave1dTime(it), 'r*'); hold off;
     xlim([1, nt]);
     xlabel('Time'); ylabel('Amplitude');
-    colormap(seismic);
+    title(sprintf('Input source waveform'));
     
     % plot received data traces
     subplot(2, 2, 3);
     dataDisplay = zeros(nx, ny, nt);
-    dataDisplay(:, :, 1:it) = dataTrue((1:nx)+nBoundary, (1:ny)+nBoundary, 1:it);
-    slice(x, y, t, dataDisplay, ...
+    dataDisplay(:, :, 1:it) = dataTrue(nBoundary+1:end-nBoundary, nBoundary+1:end-nBoundary, 1:it);
+    slice(x, y, t, permute(dataDisplay, [2, 1, 3]), ...
         round(linspace(x(2), x(end-1), 5)), ...
         round(linspace(y(2), y(end-1), 5)), ...
         t);
-    xlabel('Easting (m)');
-    ylabel('Northing (m)');
+    xlabel('X - Easting (m)');
+    ylabel('Y - Northing (m)');
     zlabel('Time (s)');
     title('Shot Record');
     set(gca, 'ZDir', 'reverse');
     shading interp;
-    caxis([-0.1 0.1]);
+    caxis([-0.1, 0.1]);
     
     % plot wave propagation snapshots
     subplot(2, 2, 4);
-    slice(x, y, z, permute(snapshotTrue(1:end-nBoundary, nBoundary+1:end-nBoundary, nBoundary+1:end-nBoundary, it), [2, 3, 1]), ...
+    slice(x, y, z, permute(snapshotTrue(1:end-nBoundary, nBoundary+1:end-nBoundary, nBoundary+1:end-nBoundary, it), [3, 2, 1]), ...
         round(linspace(x(2), x(end-1), 5)), ...
         round(linspace(y(2), y(end-1), 5)), ...
         z);
-    xlabel('Easting (m)');
-    ylabel('Northing (m)');
-    zlabel('Depth (m)');
+    xlabel('X - Easting (m)');
+    ylabel('Y - Northing (m)');
+    zlabel('Z - Depth (m)');
     title(sprintf('Wave Propagation t = %.3fs', t(it)));
     set(gca, 'ZDir', 'reverse');
     shading interp;
-    caxis([-0.14 1]);
+    caxis([-0.14, 1]);
     
     drawnow;
-end %shot loop
+end

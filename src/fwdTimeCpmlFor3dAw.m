@@ -39,39 +39,33 @@ function [data, snapshot] = fwdTimeCpmlFor3dAw(v, source, nDiffOrder, nBoundary,
 data = zeros(nx, ny, nt);
 coeff = dCoef(nDiffOrder, 's');
 k = 2 * nDiffOrder - 1;
-fdm = zeros(nz+2*k, nx+2*k, ny+2*k, 3);  % fdm(:, :, 1) - past; fdm(:, :, 2) - present; fdm(:, :, 3) - future
+fdm = zeros(nz+2*k, nx+2*k, ny+2*k, 3);  % fdm(:, :, :, 1) - past; fdm(:, :, :, 2) - present; fdm(:, :, :, 3) - future
 
 
-%% Absorbing boundary condition (ABC): Nonsplit Convolutional-PML (CPML)
-ixb = 1:nBoundary;          % index of x outside left boundary
+%% Absorbing boundary condition (ABC): PML damping profile
+ixb  = 1:nBoundary;         % index of x outside left boundary
 ixb2 = nx-nBoundary+ixb;    % index of x outside right boundary
 iyb  = 1:nBoundary;         % index of y outside front boundary
 iyb2 = ny-nBoundary+iyb;    % index of y outside rear boundary
 izb  = 1:nz-nBoundary;      % index of z inside down boundary
 izb2 = nz-nBoundary+ixb;    % index of z outside down boundary
 
-
 xDampLeft0 = dampPml(repmat(fliplr(ixb), nz, 1), v(:, ixb, 1), nBoundary);
-xDampLeft  = repmat(xDampLeft0,1,1,ny);
+xDampLeft = repmat(xDampLeft0, 1, 1, ny);
 xDampRight0 = dampPml(repmat(ixb, nz, 1), v(:, ixb2, 1), nBoundary);
-xDampRight = repmat(xDampRight0,1,1,ny);
-xDamp = cat(2, xDampLeft, zeros(nz, nx-2*nBoundary,ny), xDampRight);
+xDampRight = repmat(xDampRight0, 1, 1, ny);
+xDamp = cat(2, xDampLeft, zeros(nz, nx-2*nBoundary, ny), xDampRight);
 xb = exp(-xDamp * dt);
 
-yDampFront  = zeros(nz,nx,nBoundary);
-for i=1:nBoundary
-    yDampFront(:,:,i) = (nBoundary-i+1)*ones(nz,nx);
-end
-yDampRear  = zeros(nz,nx,nBoundary);
-for i=1:nBoundary
-    yDampRear(:,:,i) = i*ones(nz,nx);
-end
-yDamp=cat(3, yDampFront, zeros(nz, nx, ny-2*nBoundary), yDampRear);
+yDampFront0 = dampPml(repmat(reshape(fliplr(iyb), 1, 1, nBoundary), 1, nx, 1), v(1, :, iyb), nBoundary);
+yDampFront = repmat(yDampFront0, nz, 1, 1);
+yDampRear0 = dampPml(repmat(reshape(iyb, 1, 1, nBoundary), 1, nx, 1), v(1, :, iyb2), nBoundary);
+yDampRear = repmat(yDampRear0, nz, 1, 1);
+yDamp = cat(3, yDampFront, zeros(nz, nx, ny-2*nBoundary), yDampRear);
 yb = exp(-yDamp * dt);
 
-
 zDampDown0 = dampPml(repmat(ixb.', 1, nx), v(izb2, :, 1), nBoundary);
-zDampDown = repmat(zDampDown0,1,1,ny);
+zDampDown = repmat(zDampDown0, 1, 1, ny);
 zDamp = cat(1, zeros(nz-nBoundary, nx, ny), zDampDown);
 zb = exp(-zDamp * dt);
 
@@ -135,7 +129,7 @@ for it = 1:nt
     yP(:, :, iyi) = diffOperator(yA(:, :, iyl), coeff, dy, 3) + yPsi(:, :, iyi);
     
     
-    fdm(izi, ixi, iyi, 3) = vdtSq .* (zP(izi, :, :) + xP(:, ixi, :)  + yP(:, :, iyi) - source(:, :, :, it)) + 2 * fdm(izi, ixi, iyi, 2) - fdm(izi, ixi, iyi, 1);
+    fdm(izi, ixi, iyi, 3) = vdtSq .* (zP(izi, :, :) + xP(:, ixi, :) + yP(:, :, iyi) - source(:, :, :, it)) + 2 * fdm(izi, ixi, iyi, 2) - fdm(izi, ixi, iyi, 1);
     
     % *******************************************************************
     % FCT elimination of numerical dispersion. Needed for high frequency

@@ -40,7 +40,7 @@ k = 2 * nDiffOrder - 1;
 fdm = zeros(nz+2*k, nx+2*k, 3);  % fdm(:, :, 1) - past; fdm(:, :, 2) - present; fdm(:, :, 3) - future
 
 
-%% Absorbing boundary condition (ABC): Nonsplit Convolutional-PML (CPML)
+%% Absorbing boundary condition (ABC): PML damping profile
 ixb = 1:nBoundary;          % index of x outside left boundary
 ixb2 = nx-nBoundary+ixb;    % index of x outside right boundary
 izb  = 1:nz-nBoundary;      % index of z inside down boundary

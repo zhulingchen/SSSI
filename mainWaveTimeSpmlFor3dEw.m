@@ -19,7 +19,6 @@ close all;
 clear;
 clc;
 
-
 addpath(genpath('./modelData'));
 addpath(genpath('./src'));
 
@@ -27,9 +26,9 @@ addpath(genpath('./src'));
 %% Model Parameters setup
 % vp = P-wave velocity, vs = S-wave velocity
 
-load('./modelData/homo3DP.mat');
+load('./modelData/cake3DP.mat');
 vp = velocityModel;
-load('./modelData/homo3DS.mat');
+load('./modelData/cake3DS.mat');
 vs = velocityModel;
 
 % dimension check
@@ -88,14 +87,13 @@ plot3(xShot, yShot, zShot, 'w*');
 hold off;
 
 
-%% *************** Check the Stability Condition ***************
-
+%% Check the condition of stability
 if dt > min([dx, dy, dz])/(norm(dCoef(nDiffOrder, 's'), 1) * sqrt(3) * vpmax)
     error('The temporal discretization does not satisfy the Courant-Friedrichs-Lewy sampling criterion to ensure the stability of the FD code!');
 end
 
 
-%% add region around model (vp and vs) for applying absorbing boundary conditions
+%% Add region around model (vp and vs) for applying absorbing boundary conditions
 nBoundary = 20;
 
 VP = extBoundary(vp, nBoundary, 3);
@@ -109,7 +107,7 @@ wave1dTime = ricker(f, nt, dt);
 sourceTime(zShot/dz, xShot/dx + nBoundary, yShot/dy + nBoundary, :) = reshape(wave1dTime, 1, 1, 1, nt);
 
 
-%% Generate shots and save to file and video
+%% Generate shots
 tic;
 [snapshotVzp, snapshotVxp, snapshotVyp, snapshotVzs, snapshotVxs, snapshotVys] = fwdTimeSpmlFor3dEw(VP, VS, sourceTime, nDiffOrder, nBoundary, dz, dx, dy, dt);
 timeForward = toc;

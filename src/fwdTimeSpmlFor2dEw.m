@@ -29,7 +29,7 @@ coeff = dCoef(nDiffOrder, 's');
 iz = 1+nDiffOrder:nz+nDiffOrder;      % interior z
 ix = 1+nDiffOrder:nx+nDiffOrder;      % interior x
 
-%% Absorbing boundary condition (ABC): Split PML (SPML)
+%% Absorbing boundary condition (ABC): PML damping profile
 ixb = 1:nBoundary;          % index of x outside left boundary
 ixb2 = nx-nBoundary+ixb;    % index of x outside right boundary
 izb  = 1:nz-nBoundary;      % index of z inside down boundary

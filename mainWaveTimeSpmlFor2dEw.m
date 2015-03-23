@@ -25,7 +25,6 @@ close all;
 clear;
 clc;
 
-
 addpath(genpath('./modelData'));
 addpath(genpath('./src'));
 
@@ -84,14 +83,13 @@ hold off;
 colormap(seismic);
 
 
-%% *************** Check the Stability Condition ***************
-
+%% Check the condition of stability
 if dt > min([dx, dz])/(norm(dCoef(nDiffOrder, 's'), 1) * sqrt(2) * vpmax)
     error('The temporal discretization does not satisfy the Courant-Friedrichs-Lewy sampling criterion to ensure the stability of the FD code!');
 end
 
 
-%% add region around model (vp and vs) for applying absorbing boundary conditions
+%% Add region around model (vp and vs) for applying absorbing boundary conditions
 nBoundary = 20;
 
 VP = extBoundary(vp, nBoundary, 2);
@@ -105,7 +103,7 @@ wave1dTime = ricker(f, nt, dt);
 sourceTime(zShot/dz, xShot/dx + nBoundary, :) = reshape(wave1dTime, 1, 1, nt);
 
 
-%% Generate shots and save to file and video
+%% Generate shots
 tic;
 [snapshotVzp, snapshotVxp, snapshotVzs, snapshotVxs] = fwdTimeSpmlFor2dEw(VP, VS, sourceTime, nDiffOrder, nBoundary, dz, dx, dt);
 timeForward = toc;
@@ -161,4 +159,3 @@ end
 if exist('objVideo2dEw', 'var')
     close(objVideo2dEw);
 end
-%************************************************************
