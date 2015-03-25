@@ -30,6 +30,8 @@ load('./modelData/cake3DP.mat');
 vp = velocityModel;
 load('./modelData/cake3DS.mat');
 vs = velocityModel;
+% vp = 2500 * ones(30, 30, 30);
+% vs = vp / sqrt(2);
 
 % dimension check
 if (ndims(vp) ~= ndims(vs))
@@ -39,7 +41,7 @@ if (any(size(vp) ~= size(vs)))
     error('Dimension of P-wave and S-wave velocity models are not the same!');
 end
 
-[nz, nx, ny] = size(velocityModel);
+[nz, nx, ny] = size(vp);
 
 dz = 10;
 dx = 10;
@@ -58,33 +60,16 @@ nt = round(sqrt((dx*nx)^2 + (dy*ny)^2 + (dz*nz)^2)*2/vsmin/dt + 1);
 t  = (0:nt-1)*dt;
 
 % shot position
-zShot = 1 * dz;
-xShot = 5 * dx;
-yShot = 5 * dy;
+zShot = 30 * dz;
+xShot = 15 * dx;
+yShot = 20 * dy;
 
 % number of approximation order for differentiator operator
 nDiffOrder = 3;
 
 hFig = figure;
-set(hFig, 'Position', [200, 200, 1000, 500]);
+set(hFig, 'Position', [100, 200, 1250, 500]);
 set(hFig, 'PaperPositionMode', 'auto');
-
-% plot velocity model
-subplot(2, 3, 1);
-slice(x, y, z, permute(vp, [2, 3, 1]), ...
-    round(linspace(x(2), x(end-1), 5)), ...
-    round(linspace(y(2), y(end-1), 5)), ...
-    round(linspace(z(2), z(end-1), 10)));
-xlabel('Easting (m)');
-ylabel('Northing (m)');
-zlabel('Depth (m)');
-title('Velocity Model');
-set(gca, 'ZDir', 'reverse');
-shading interp;
-colormap(seismic);
-hold on;
-plot3(xShot, yShot, zShot, 'w*');
-hold off;
 
 
 %% Check the condition of stability
@@ -94,7 +79,7 @@ end
 
 
 %% Add region around model (vp and vs) for applying absorbing boundary conditions
-nBoundary = 20;
+nBoundary = 5;
 
 VP = extBoundary(vp, nBoundary, 3);
 VS = extBoundary(vs, nBoundary, 3);
@@ -114,6 +99,144 @@ timeForward = toc;
 fprintf('Generate Forward Timing Record. elapsed time = %fs\n', timeForward);
 
 
+%% output
+% plot velocity model
+subplot(2, 4, 1);
+slice(x, y, z, permute(vp, [3, 2, 1]), ...
+    round(linspace(x(2), x(end-1), 5)), ...
+    round(linspace(y(2), y(end-1), 5)), ...
+    round(linspace(z(2), z(end-1), 10)));
+xlabel('Easting (m)');
+ylabel('Northing (m)');
+zlabel('Depth (m)');
+title('Velocity Model');
+set(gca, 'ZDir', 'reverse');
+shading interp;
+colormap(seismic);
+hold on;
+plot3(xShot, yShot, zShot, 'w*');
+hold off;
 
+% slice_x = round(linspace(x(2), x(end-1), 3));
+% slice_y = round(linspace(y(2), y(end-1), 3));
+% slice_z = round(linspace(z(2), z(end-1), 3));
 
+slice_x = median(x);
+slice_y = median(y);
+slice_z = median(z);
 
+for it = 1:nt
+    % plot P-wave propagation snapshots
+    subplot(2, 4, 2);
+    slice(x, y, z, permute(snapshotVzp(1:end-nBoundary, nBoundary+1:end-nBoundary, nBoundary+1:end-nBoundary, it), [3, 2, 1]), ...
+        slice_x, slice_y, slice_z);
+    xlabel('X - Easting (m)');
+    ylabel('Y - Northing (m)');
+    zlabel('Z - Depth (m)');
+    title(sprintf('P-wave (z-axis component), t = %.3fs', t(it)));
+    set(gca, 'ZDir', 'reverse');
+    shading interp;
+    caxis([-0.005, 0.05]);
+    
+    subplot(2, 4, 3);
+    slice(x, y, z, permute(snapshotVxp(1:end-nBoundary, nBoundary+1:end-nBoundary, nBoundary+1:end-nBoundary, it), [3, 2, 1]), ...
+        slice_x, slice_y, slice_z);
+    xlabel('X - Easting (m)');
+    ylabel('Y - Northing (m)');
+    zlabel('Z - Depth (m)');
+    title(sprintf('P-wave (x-axis component), t = %.3fs', t(it)));
+    set(gca, 'ZDir', 'reverse');
+    shading interp;
+    caxis([-0.005, 0.05]);
+    
+    subplot(2, 4, 4);
+    slice(x, y, z, permute(snapshotVyp(1:end-nBoundary, nBoundary+1:end-nBoundary, nBoundary+1:end-nBoundary, it), [3, 2, 1]), ...
+        slice_x, slice_y, slice_z);
+    xlabel('X - Easting (m)');
+    ylabel('Y - Northing (m)');
+    zlabel('Z - Depth (m)');
+    title(sprintf('P-wave (y-axis component), t = %.3fs', t(it)));
+    set(gca, 'ZDir', 'reverse');
+    shading interp;
+    caxis([-0.005, 0.05]);
+
+%     subplot(2, 4, 2);
+%     imagesc(squeeze(snapshotVzp(zShot/dz, nBoundary+1:end-nBoundary, nBoundary+1:end-nBoundary, it)));
+%     xlabel('Distance (m)'); ylabel('Depth (m)');
+%     title(sprintf('P-wave (z-axis component), t = %.3f', t(it)));
+%     caxis([-0.005, 0.05]);
+%     
+%     subplot(2, 4, 3);
+%     imagesc(squeeze(snapshotVxp(zShot/dz, nBoundary+1:end-nBoundary, nBoundary+1:end-nBoundary, it)));
+%     xlabel('Distance (m)'); ylabel('Depth (m)');
+%     title(sprintf('P-wave (x-axis component), t = %.3f', t(it)));
+%     caxis([-0.005, 0.05]);
+%     
+%     subplot(2, 4, 4);
+%     imagesc(squeeze(snapshotVyp(zShot/dz, nBoundary+1:end-nBoundary, nBoundary+1:end-nBoundary, it)));
+%     xlabel('Distance (m)'); ylabel('Depth (m)');
+%     title(sprintf('P-wave (y-axis component), t = %.3f', t(it)));
+%     caxis([-0.005, 0.05]);
+
+    % plot source function in time domain
+    subplot(2, 4, 5);
+    plot([1:nt], wave1dTime); hold on;
+    plot(it, wave1dTime(it), 'r*'); hold off;
+    xlim([1, nt]);
+    xlabel('Time'); ylabel('Amplitude');
+    title(sprintf('Input source waveform'));
+    
+    % plot S-wave propagation snapshots
+    subplot(2, 4, 6);
+    slice(x, y, z, permute(snapshotVzs(1:end-nBoundary, nBoundary+1:end-nBoundary, nBoundary+1:end-nBoundary, it), [3, 2, 1]), ...
+        slice_x, slice_y, slice_z);
+    xlabel('X - Easting (m)');
+    ylabel('Y - Northing (m)');
+    zlabel('Z - Depth (m)');
+    title(sprintf('S-wave (z-axis component), t = %.3fs', t(it)));
+    set(gca, 'ZDir', 'reverse');
+    shading interp;
+    caxis([-0.005, 0.05]);
+    
+    subplot(2, 4, 7);
+    slice(x, y, z, permute(snapshotVxs(1:end-nBoundary, nBoundary+1:end-nBoundary, nBoundary+1:end-nBoundary, it), [3, 2, 1]), ...
+        slice_x, slice_y, slice_z);
+    xlabel('X - Easting (m)');
+    ylabel('Y - Northing (m)');
+    zlabel('Z - Depth (m)');
+    title(sprintf('S-wave (x-axis component), t = %.3fs', t(it)));
+    set(gca, 'ZDir', 'reverse');
+    shading interp;
+    caxis([-0.005, 0.05]);
+    
+    subplot(2, 4, 8);
+    slice(x, y, z, permute(snapshotVys(1:end-nBoundary, nBoundary+1:end-nBoundary, nBoundary+1:end-nBoundary, it), [3, 2, 1]), ...
+        slice_x, slice_y, slice_z);
+    xlabel('X - Easting (m)');
+    ylabel('Y - Northing (m)');
+    zlabel('Z - Depth (m)');
+    title(sprintf('S-wave (y-axis component), t = %.3fs', t(it)));
+    set(gca, 'ZDir', 'reverse');
+    shading interp;
+    caxis([-0.005, 0.05]);
+
+%     subplot(2, 4, 6);
+%     imagesc(squeeze(snapshotVzs(zShot/dz, nBoundary+1:end-nBoundary, nBoundary+1:end-nBoundary, it)));
+%     xlabel('Distance (m)'); ylabel('Depth (m)');
+%     title(sprintf('S-wave (z-axis component), t = %.3f', t(it)));
+%     caxis([-0.005, 0.05]);
+%     
+%     subplot(2, 4, 7);
+%     imagesc(squeeze(snapshotVxs(zShot/dz, nBoundary+1:end-nBoundary, nBoundary+1:end-nBoundary, it)));
+%     xlabel('Distance (m)'); ylabel('Depth (m)');
+%     title(sprintf('S-wave (x-axis component), t = %.3f', t(it)));
+%     caxis([-0.005, 0.05]);
+%     
+%     subplot(2, 4, 8);
+%     imagesc(squeeze(snapshotVys(zShot/dz, nBoundary+1:end-nBoundary, nBoundary+1:end-nBoundary, it)));
+%     xlabel('Distance (m)'); ylabel('Depth (m)');
+%     title(sprintf('S-wave (y-axis component), t = %.3f', t(it)));
+%     caxis([-0.005, 0.05]);
+    
+    drawnow;
+end

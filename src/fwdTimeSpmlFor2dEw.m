@@ -43,11 +43,14 @@ zDampDown = dampPml(repmat(ixb.', 1, nx), vp(izb2, :), nBoundary);
 zDamp = [zeros(nz-nBoundary, nx); zDampDown];
 
 %% additional arrays for storage
-A_perp = zeros(nz+2*nDiffOrder, nx+2*nDiffOrder, 3);
-A_para = zeros(nz+2*nDiffOrder, nx+2*nDiffOrder, 3);
-B_perp = zeros(nz+2*nDiffOrder, nx+2*nDiffOrder, 3);
-B_para = zeros(nz+2*nDiffOrder, nx+2*nDiffOrder, 3);
+% A is the divergence of the displacement vector S = (w, u).'
+A_z = zeros(nz+2*nDiffOrder, nx+2*nDiffOrder, 3);
+A_x = zeros(nz+2*nDiffOrder, nx+2*nDiffOrder, 3);
 A = zeros(nz+2*nDiffOrder, nx+2*nDiffOrder, 3);
+% B is the curl of the displacement vector S = (w, u).', whose direction
+% points to the y-axis
+B_z = zeros(nz+2*nDiffOrder, nx+2*nDiffOrder, 3);
+B_x = zeros(nz+2*nDiffOrder, nx+2*nDiffOrder, 3);
 B = zeros(nz+2*nDiffOrder, nx+2*nDiffOrder, 3);
 
 Vxp = zeros(nz+2*nDiffOrder, nx+2*nDiffOrder, 3);
@@ -66,53 +69,52 @@ vsSq = vs.^2;
 vsSq = padarray(vsSq, [nDiffOrder, nDiffOrder], 'replicate');
 
 for it = 1:nt
-    A_perp(iz, ix, 2) = (1 - 0.5 * zDamp * dt) ./ (1 + 0.5 * zDamp * dt) .* A_perp(iz, ix, 1) ...
-        + dt ./ (1 + 0.5 * zDamp * dt) .* diffOperator(Vz(1:end-1, ix, 2), coeff, dz, 1);
     
-    A_para(iz, ix, 2) = (1 - 0.5 * xDamp * dt) ./ (1 + 0.5 * xDamp * dt) .* A_para(iz, ix, 1) ...
+    A_x(iz, ix, 2) = (1 - 0.5 * xDamp * dt) ./ (1 + 0.5 * xDamp * dt) .* A_x(iz, ix, 1) ...
         + dt ./ (1 + 0.5 * xDamp * dt) .* diffOperator(Vx(iz, 2:end, 2), coeff, dx, 2);
     
-    B_perp(iz, ix, 2) = (1 - 0.5 * zDamp * dt) ./ (1 + 0.5 * zDamp * dt) .* B_perp(iz, ix, 1)...
+    A_z(iz, ix, 2) = (1 - 0.5 * zDamp * dt) ./ (1 + 0.5 * zDamp * dt) .* A_z(iz, ix, 1) ...
+        + dt ./ (1 + 0.5 * zDamp * dt) .* diffOperator(Vz(1:end-1, ix, 2), coeff, dz, 1);
+    
+    A(iz, ix, 2) = A_x(iz, ix, 2) + A_z(iz, ix, 2);
+    
+    B_z(iz, ix, 2) = (1 - 0.5 * zDamp * dt) ./ (1 + 0.5 * zDamp * dt) .* B_z(iz, ix, 1)...
         + dt ./ (1 + 0.5 * zDamp * dt) .* diffOperator(Vx(2:end, ix, 2), coeff, dz, 1);
     
-    B_para(iz, ix, 2) = (1 - 0.5 * xDamp * dt) ./ (1 + 0.5 * xDamp * dt) .* B_para(iz, ix, 1)...
+    B_x(iz, ix, 2) = (1 - 0.5 * xDamp * dt) ./ (1 + 0.5 * xDamp * dt) .* B_x(iz, ix, 1)...
         - dt ./ (1 + 0.5 * xDamp * dt) .* diffOperator(Vz(iz, 1:end-1, 2), coeff, dx, 2);
     
-    A(iz, ix, 2) = A_perp(iz, ix, 2) + A_para(iz, ix, 2);
-    
-    B(iz, ix, 2) = B_perp(iz, ix, 2) + B_para(iz, ix, 2);
+    B(iz, ix, 2) = B_z(iz, ix, 2) + B_x(iz, ix, 2);
     
     Vzp(iz, ix, 3) = (1 - 0.5 * zDamp * dt) ./ (1 + 0.5 * zDamp * dt) .* Vzp(iz, ix, 2) ...
         + 0.25 .* (vpSq(iz+1, ix) + vpSq(iz+1, ix+1) + vpSq(iz, ix) + vpSq(iz, ix+1)) * dt ./ (1 + 0.5 * zDamp * dt) ...
-        .* diffOperator(A(2:end, ix, 2), coeff, dz, 1) ...
-        + source(:, :, it);      % source term
+        .* diffOperator(A(2:end, ix, 2), coeff, dz, 1);
     
     Vxp(iz, ix, 3) = (1 - 0.5 * xDamp * dt) ./ (1 + 0.5 * xDamp * dt) .* Vxp(iz, ix, 2) ...
         + vpSq(iz, ix) * dt ./ (1 + 0.5 * xDamp * dt) ...
         .* diffOperator(A(iz, 1:end-1, 2), coeff, dx, 2);
     
     Vzs(iz, ix, 3) = (1 - 0.5 * xDamp * dt) ./ (1 + 0.5 * xDamp * dt) .* Vzs(iz, ix, 2) ...
-        - 0.25 .* (vsSq(iz, ix) + vsSq(iz, ix-1) + vsSq(iz-1, ix) + vsSq(iz-1, ix-1)) * dt ./ (1 + 0.5 * xDamp * dt) ...
+        - vsSq(iz, ix) * dt ./ (1 + 0.5 * xDamp * dt) ...
         .* diffOperator(B(iz, 2:end, 2), coeff, dx, 2) ...
         + source(:, :, it);      % source term
     
     Vxs(iz, ix, 3) = (1 - 0.5 * zDamp * dt) ./ (1 + 0.5 * zDamp * dt) .* Vxs(iz, ix, 2)...
-        + vsSq(iz, ix) * dt ./ (1 + 0.5 * zDamp * dt) ...
-        .* diffOperator(B(1:end-1, ix, 2), coeff, dz, 1);
+        + 0.25 .* (vsSq(iz, ix) + vsSq(iz, ix-1) + vsSq(iz-1, ix) + vsSq(iz-1, ix-1)) * dt ./ (1 + 0.5 * zDamp * dt) ...
+        .* diffOperator(B(1:end-1, ix, 2), coeff, dz, 1) ...
+        + source(:, :, it);      % source term
     
     
     %% velocity wavefield of each direction is composed by its P-wave and S-wave components
     Vx(iz, ix, 3) = Vxp(iz, ix, 3) + Vxs(iz, ix, 3);
-    
     Vz(iz, ix, 3) = Vzp(iz, ix, 3) + Vzs(iz, ix, 3);
     
     %% update the wavefield
-    A_perp(iz, ix, 1) = A_perp(iz, ix, 2); A_perp(iz, ix, 2) = A_perp(iz, ix, 3);
-    A_para(iz, ix, 1) = A_para(iz, ix, 2); A_para(iz, ix, 2) = A_para(iz, ix, 3);
-    B_perp(iz, ix, 1) = B_perp(iz, ix, 2); B_perp(iz, ix, 2) = B_perp(iz, ix, 3);
-    B_para(iz, ix, 1) = B_para(iz, ix, 2); B_para(iz, ix, 2) = B_para(iz, ix, 3);
-    
+    A_z(iz, ix, 1) = A_z(iz, ix, 2); A_z(iz, ix, 2) = A_z(iz, ix, 3);
+    A_x(iz, ix, 1) = A_x(iz, ix, 2); A_x(iz, ix, 2) = A_x(iz, ix, 3);
     A(iz, ix, 1) = A(iz, ix, 2); A(iz, ix, 2) = A(iz, ix, 3);
+    B_z(iz, ix, 1) = B_z(iz, ix, 2); B_z(iz, ix, 2) = B_z(iz, ix, 3);
+    B_x(iz, ix, 1) = B_x(iz, ix, 2); B_x(iz, ix, 2) = B_x(iz, ix, 3);
     B(iz, ix, 1) = B(iz, ix, 2); B(iz, ix, 2) = B(iz, ix, 3);
     
     Vxp(iz, ix, 1) = Vxp(iz, ix, 2); Vxp(iz, ix, 2) = Vxp(iz, ix, 3);
@@ -123,7 +125,7 @@ for it = 1:nt
     Vx(iz, ix, 1) = Vx(iz, ix, 2); Vx(iz, ix, 2) = Vx(iz, ix, 3);
     Vz(iz, ix, 1) = Vz(iz, ix, 2); Vz(iz, ix, 2) = Vz(iz, ix, 3);
     
-    %% P-wave and S-wave components of x-axis and z-axis velocity wavefield
+    %% P-wave and S-wave snapshots of x-axis and z-axis velocity wavefield
     snapshotVxp(:, :, it) = Vxp(iz, ix, 2);
     snapshotVzp(:, :, it) = Vzp(iz, ix, 2);
     snapshotVxs(:, :, it) = Vxs(iz, ix, 2);

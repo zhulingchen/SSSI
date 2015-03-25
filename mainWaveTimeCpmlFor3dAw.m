@@ -89,7 +89,7 @@ source(zs, xs, ys, :) = reshape(wave1dTime, 1, 1, 1, nt);
 
 % generate shot record
 tic;
-nDiffOrder = 2;
+nDiffOrder = 3;
 [dataTrue, snapshotTrue] = fwdTimeCpmlFor3dAw(V, source, nDiffOrder, nBoundary, dz, dx, dy, dt);
 timeForward = toc;
 fprintf('Generate Forward Timing Record for Shot at x = %dm, y = %dm, z = %dm, time = %fs\n', (xs-nBoundary) * dx, (ys-nBoundary) * dy, zs * dz, timeForward);
@@ -112,6 +112,14 @@ colormap(seismic);
 hold on;
 plot3((xs-nBoundary) * dx, (ys-nBoundary) * dy, zs * dz, 'w*');
 hold off;
+
+% slice_x = round(linspace(x(2), x(end-1), 3));
+% slice_y = round(linspace(y(2), y(end-1), 3));
+% slice_z = round(linspace(z(2), z(end-1), 3));
+
+slice_x = median(x);
+slice_y = median(y);
+slice_z = median(z);
 
 for it = 1:nt
     % plot source function in time domain
@@ -141,9 +149,7 @@ for it = 1:nt
     % plot wave propagation snapshots
     subplot(2, 2, 4);
     slice(x, y, z, permute(snapshotTrue(1:end-nBoundary, nBoundary+1:end-nBoundary, nBoundary+1:end-nBoundary, it), [3, 2, 1]), ...
-        round(linspace(x(2), x(end-1), 5)), ...
-        round(linspace(y(2), y(end-1), 5)), ...
-        z);
+        slice_x, slice_y, slice_z);
     xlabel('X - Easting (m)');
     ylabel('Y - Northing (m)');
     zlabel('Z - Depth (m)');

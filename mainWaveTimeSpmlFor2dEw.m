@@ -72,16 +72,6 @@ hFig = figure;
 set(hFig, 'Position', [200, 200, 1000, 500]);
 set(hFig, 'PaperPositionMode', 'auto');
 
-% plot the velocity model
-subplot(2,3,1);
-imagesc(x, z, vp);
-xlabel('Distance (m)'); ylabel('Depth (m)');
-title('Velocity Model');
-hold on;
-hShotPos = plot(xShot, zShot, 'w*');
-hold off;
-colormap(seismic);
-
 
 %% Check the condition of stability
 if dt > min([dx, dz])/(norm(dCoef(nDiffOrder, 's'), 1) * sqrt(2) * vpmax)
@@ -117,17 +107,28 @@ if ~exist(filenameVideo2dEw, 'file')
     open(objVideo2dEw);
 end
 
-for it=1:nt
+% plot the velocity model
+subplot(2,3,1);
+imagesc(x, z, vp);
+xlabel('Distance (m)'); ylabel('Depth (m)');
+title('Velocity Model');
+hold on;
+hShotPos = plot(xShot, zShot, 'w*');
+hold off;
+colormap(seismic);
+
+for it = 1:nt
+    % plot P-wave propagation snapshots    
     subplot(2, 3, 2);
-    imagesc(snapshotVxp(1:end-nBoundary, nBoundary+1:end-nBoundary, it));
-    xlabel('Distance (m)'); ylabel('Depth (m)');
-    title(sprintf('P-wave (x-axis component), t = %.3f', t(it)));
-    caxis([-0.05 0.5]);
-    
-    subplot(2, 3, 3);
     imagesc(snapshotVzp(1:end-nBoundary, nBoundary+1:end-nBoundary, it));
     xlabel('Distance (m)'); ylabel('Depth (m)');
     title(sprintf('P-wave (z-axis component), t = %.3f', t(it)));
+    caxis([-0.05 0.5]);
+    
+    subplot(2, 3, 3);
+    imagesc(snapshotVxp(1:end-nBoundary, nBoundary+1:end-nBoundary, it));
+    xlabel('Distance (m)'); ylabel('Depth (m)');
+    title(sprintf('P-wave (x-axis component), t = %.3f', t(it)));
     caxis([-0.05 0.5]);
     
     % plot shot function
@@ -138,16 +139,17 @@ for it=1:nt
     xlabel('Time'); ylabel('Amplitude');
     title(sprintf('Input source waveform'));
     
+    % plot S-wave propagation snapshots
     subplot(2, 3, 5);
-    imagesc(snapshotVxs(1:end-nBoundary, nBoundary+1:end-nBoundary, it));
-    xlabel('Distance (m)'); ylabel('Depth (m)');
-    title(sprintf('S-wave (x-axis component), t = %.3f', t(it)));
-    caxis([-0.05 0.5]);
-    
-    subplot(2, 3, 6);
     imagesc(snapshotVzs(1:end-nBoundary, nBoundary+1:end-nBoundary, it));
     xlabel('Distance (m)'); ylabel('Depth (m)');
     title(sprintf('S-wave (z-axis component), t = %.3f', t(it)));
+    caxis([-0.05 0.5]);
+    
+    subplot(2, 3, 6);
+    imagesc(snapshotVxs(1:end-nBoundary, nBoundary+1:end-nBoundary, it));
+    xlabel('Distance (m)'); ylabel('Depth (m)');
+    title(sprintf('S-wave (x-axis component), t = %.3f', t(it)));
     caxis([-0.05 0.5]);
     
     if exist('objVideo2dEw', 'var')
