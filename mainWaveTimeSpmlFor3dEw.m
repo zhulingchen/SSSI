@@ -73,8 +73,8 @@ set(hFig, 'PaperPositionMode', 'auto');
 
 
 %% Check the condition of stability
-if dt > min([dx, dy, dz])/(norm(dCoef(nDiffOrder, 's'), 1) * sqrt(3) * vpmax)
-    error('The temporal discretization does not satisfy the Courant-Friedrichs-Lewy sampling criterion to ensure the stability of the FD code!');
+if (dt > min([dx, dy, dz])/(norm(dCoef(nDiffOrder, 's'), 1) * sqrt(3) * vpmax))
+    error('The temporal discretization does not satisfy the Courant-Friedrichs-Lewy sampling criterion to ensure the stability of the finite difference method!');
 end
 
 
