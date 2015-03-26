@@ -101,7 +101,7 @@ fprintf('Generate Forward Timing Record. elapsed time = %fs\n', timeForward);
 
 
 %% Video output
-filenameVideo2dEw = './videos/ElasticWave.mp4';
+filenameVideo2dEw = './videos/Wave_2D_Elastic.mp4';
 if ~exist(filenameVideo2dEw, 'file')
     objVideo2dEw = VideoWriter(filenameVideo2dEw, 'MPEG-4');
     open(objVideo2dEw);
@@ -158,6 +158,7 @@ for it = 1:nt
     drawnow;
 end
 
+% close the VideoWriter object
 if exist('objVideo2dEw', 'var')
     close(objVideo2dEw);
 end

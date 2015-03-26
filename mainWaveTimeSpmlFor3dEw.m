@@ -99,7 +99,13 @@ timeForward = toc;
 fprintf('Generate Forward Timing Record. elapsed time = %fs\n', timeForward);
 
 
-%% output
+%% Video output
+filenameVideo3dEw = './videos/Wave_3D_Elastic.mp4';
+if ~exist(filenameVideo3dEw, 'file')
+    objVideo3dEw = VideoWriter(filenameVideo3dEw, 'MPEG-4');
+    open(objVideo3dEw);
+end
+
 % plot velocity model
 subplot(2, 4, 1);
 slice(x, y, z, permute(vp, [3, 2, 1]), ...
@@ -238,5 +244,13 @@ for it = 1:nt
 %     title(sprintf('S-wave (y-axis component), t = %.3f', t(it)));
 %     caxis([-0.005, 0.05]);
     
+    if exist('objVideo3dEw', 'var')
+        writeVideo(objVideo3dEw, im2frame(hardcopy(hFig, '-dzbuffer', '-r0')));
+    end
     drawnow;
+end
+
+% close the VideoWriter object
+if exist('objVideo3dEw', 'var')
+    close(objVideo3dEw);
 end
