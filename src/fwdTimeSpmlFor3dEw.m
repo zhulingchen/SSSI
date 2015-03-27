@@ -152,25 +152,28 @@ for it = 1:nt
         - 0.25 * (vsSq(iz-1, ix-1, iy) + vsSq(iz-1, ix, iy) + vsSq(iz, ix, iy) + vsSq(iz, ix-1, iy)) * dt ./ (1 + 0.5 * yDamp * dt) .* diffOperator(B3(iz, ix, 1:end-1, 2), coeff, dy, 3);
     
     Vxs_z(iz, ix, iy, 3) = (1 - 0.5 * zDamp * dt) ./ (1 + 0.5 * zDamp * dt) .* Vxs_z(iz, ix, iy, 2) ...
-        + 0.25 * (vsSq(iz-1, ix-1, iy) + vsSq(iz-1, ix, iy) + vsSq(iz, ix, iy) + vsSq(iz, ix-1, iy)) * dt ./ (1 + 0.5 * zDamp * dt) .* diffOperator(B2(1:end-1, ix, iy, 2), coeff, dz, 1);
+        + 0.25 * (vsSq(iz-1, ix-1, iy) + vsSq(iz-1, ix, iy) + vsSq(iz, ix, iy) + vsSq(iz, ix-1, iy)) * dt ./ (1 + 0.5 * zDamp * dt) .* diffOperator(B2(1:end-1, ix, iy, 2), coeff, dz, 1) ...
+        + dt ./ (1 + 0.5 * zDamp * dt) .* source(:, :, :, it);	% source term
     
-    Vxs(iz, ix, iy, 3) = Vxs_y(iz, ix, iy, 3) + Vxs_z(iz, ix, iy, 3) + source(:, :, :, it);      % source term
+    Vxs(iz, ix, iy, 3) = Vxs_y(iz, ix, iy, 3) + Vxs_z(iz, ix, iy, 3);
     
     Vys_x(iz, ix, iy, 3) = (1 - 0.5 * xDamp * dt) ./ (1 + 0.5 * xDamp * dt) .* Vys_x(iz, ix, iy, 2) ...
         + 0.25 * (vsSq(iz-1, ix, iy) + vsSq(iz-1, ix, iy+1) + vsSq(iz, ix, iy+1) + vsSq(iz, ix, iy)) * dt ./ (1 + 0.5 * xDamp * dt) .* diffOperator(B3(iz, 2:end, iy, 2), coeff, dx, 2);
     
     Vys_z(iz, ix, iy, 3) = (1 - 0.5 * zDamp * dt) ./ (1 + 0.5 * zDamp * dt) .* Vys_z(iz, ix, iy, 2) ...
-        - 0.25 * (vsSq(iz-1, ix, iy) + vsSq(iz-1, ix, iy+1) + vsSq(iz, ix, iy+1) + vsSq(iz, ix, iy)) * dt ./ (1 + 0.5 * zDamp * dt) .* diffOperator(B1(1:end-1, ix, iy, 2), coeff, dz, 1);
+        - 0.25 * (vsSq(iz-1, ix, iy) + vsSq(iz-1, ix, iy+1) + vsSq(iz, ix, iy+1) + vsSq(iz, ix, iy)) * dt ./ (1 + 0.5 * zDamp * dt) .* diffOperator(B1(1:end-1, ix, iy, 2), coeff, dz, 1) ...
+        + dt ./ (1 + 0.5 * zDamp * dt) .* source(:, :, :, it);  % source term
     
-    Vys(iz, ix, iy, 3) = Vys_x(iz, ix, iy, 3) + Vys_z(iz, ix, iy, 3) + source(:, :, :, it);      % source term
+    Vys(iz, ix, iy, 3) = Vys_x(iz, ix, iy, 3) + Vys_z(iz, ix, iy, 3);
     
     Vzs_x(iz, ix, iy, 3) = (1 - 0.5 * xDamp * dt) ./ (1 + 0.5 * xDamp * dt) .* Vzs_x(iz, ix, iy, 2) ...
         - vsSq(iz, ix, iy) * dt ./ (1 + 0.5 * xDamp * dt) .* diffOperator(B2(iz, 2:end, iy, 2), coeff, dx, 2);
     
     Vzs_y(iz, ix, iy, 3) = (1 - 0.5 * yDamp * dt) ./ (1 + 0.5 * yDamp * dt) .* Vzs_y(iz, ix, iy, 2) ...
-        + vsSq(iz, ix, iy) * dt ./ (1 + 0.5 * yDamp * dt) .* diffOperator(B1(iz, ix, 1:end-1, 2), coeff, dy, 3);
+        + vsSq(iz, ix, iy) * dt ./ (1 + 0.5 * yDamp * dt) .* diffOperator(B1(iz, ix, 1:end-1, 2), coeff, dy, 3) ...
+        + dt ./ (1 + 0.5 * yDamp * dt) .* source(:, :, :, it);	% source term
     
-    Vzs(iz, ix, iy, 3) = Vzs_x(iz, ix, iy, 3) + Vzs_y(iz, ix, iy, 3) + source(:, :, :, it);      % source term
+    Vzs(iz, ix, iy, 3) = Vzs_x(iz, ix, iy, 3) + Vzs_y(iz, ix, iy, 3);
     
     %% velocity wavefield of each direction is composed by its P-wave and S-wave components
     Vx(iz, ix, iy, 3) = Vxp(iz, ix, iy, 3) + Vxs(iz, ix, iy, 3);
@@ -217,6 +220,4 @@ for it = 1:nt
     snapshotVzs(:, :, :, it) = Vzs(iz, ix, iy, 2);
     
 end
-
-
 

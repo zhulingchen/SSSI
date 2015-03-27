@@ -605,34 +605,40 @@ for ixs = 1:nShots
             
             if (exist('vs', 'var'))
                 % display elastic wavefields
-                imagesc(x, z, snapshotVxp(1:end-nBoundary, nBoundary+1:end-nBoundary, it), 'Parent', handles.axes_out1, [-0.15, 1]);
+                imagesc(x, z, snapshotVxp(1:end-nBoundary, nBoundary+1:end-nBoundary, it), 'Parent', handles.axes_out1);
                 xlabel(handles.axes_out1, 'Distance (m)'); ylabel(handles.axes_out1, 'Depth (m)');
                 title(handles.axes_out1, sprintf('P-wave (x-axis component) t = %.3fs', t(it)));
+                caxis(handles.axes_out1, [-2e-5, 1e-4]);
                 
-                imagesc(x, z, snapshotVzp(1:end-nBoundary, nBoundary+1:end-nBoundary, it), 'Parent', handles.axes_out2, [-0.15, 1]);
+                imagesc(x, z, snapshotVzp(1:end-nBoundary, nBoundary+1:end-nBoundary, it), 'Parent', handles.axes_out2);
                 xlabel(handles.axes_out2, 'Distance (m)'); ylabel(handles.axes_out2, 'Depth (m)');
                 title(handles.axes_out2, sprintf('P-wave (z-axis component) t = %.3fs', t(it)));
+                caxis(handles.axes_out2, [-2e-5, 1e-4]);
                 
-                imagesc(x, z, snapshotVxs(1:end-nBoundary, nBoundary+1:end-nBoundary, it), 'Parent', handles.axes_out4, [-0.15, 1]);
+                imagesc(x, z, snapshotVxs(1:end-nBoundary, nBoundary+1:end-nBoundary, it), 'Parent', handles.axes_out4);
                 xlabel(handles.axes_out4, 'Distance (m)'); ylabel(handles.axes_out4, 'Depth (m)');
                 title(handles.axes_out4, sprintf('S-wave (x-axis component) t = %.3fs', t(it)));
+                caxis(handles.axes_out4, [-2e-5, 1e-4]);
                 
-                imagesc(x, z, snapshotVzs(1:end-nBoundary, nBoundary+1:end-nBoundary, it), 'Parent', handles.axes_out5, [-0.15, 1]);
+                imagesc(x, z, snapshotVzs(1:end-nBoundary, nBoundary+1:end-nBoundary, it), 'Parent', handles.axes_out5);
                 xlabel(handles.axes_out5, 'Distance (m)'); ylabel(handles.axes_out5, 'Depth (m)');
                 title(handles.axes_out5, sprintf('S-wave (z-axis component) t = %.3fs', t(it)));
+                caxis(handles.axes_out5, [-2e-5, 1e-4]);
             else
                 % display acoustic wavefields
                 % plot received data traces
                 dataDisplay = zeros(nt, nx);
                 dataDisplay(1:it, rx) = dataTrue(rx+nBoundary, 1:it).';
-                imagesc(x, t, dataDisplay, 'Parent', handles.axes_out1, [-0.1 0.1]);
+                imagesc(x, t, dataDisplay, 'Parent', handles.axes_out1);
                 xlabel(handles.axes_out1, 'Distance (m)'); ylabel(handles.axes_out1, 'Time (s)');
                 title(handles.axes_out1, 'Shot Record');
+                caxis(handles.axes_out1, [-0.1 0.1]);
                 
                 % plot wave propagation snapshots
-                imagesc(x, z, snapshotTrue(1:end-nBoundary, nBoundary+1:end-nBoundary, it), 'Parent', handles.axes_out2, [-0.15, 1]);
+                imagesc(x, z, snapshotTrue(1:end-nBoundary, nBoundary+1:end-nBoundary, it), 'Parent', handles.axes_out2);
                 xlabel(handles.axes_out2, 'Distance (m)'); ylabel(handles.axes_out2, 'Depth (m)');
                 title(handles.axes_out2, sprintf('Wave Propagation t = %.3fs', t(it)));
+                caxis(handles.axes_out2, [-0.15, 1]);
             end
         else            % 3D case
             % source function title
@@ -648,7 +654,7 @@ for ixs = 1:nShots
                 title(handles.axes_out1, sprintf('P-wave (z-axis component), t = %.3fs', t(it)));
                 set(handles.axes_out1, 'ZDir', 'reverse');
                 shading(handles.axes_out1, 'interp');
-                caxis(handles.axes_out1, [-0.005, 0.05]);
+                caxis(handles.axes_out1, [-2e-5, 1e-4]);
                 
                 slice(handles.axes_out2, x, y, z, permute(snapshotVxp(1:end-nBoundary, nBoundary+1:end-nBoundary, nBoundary+1:end-nBoundary, it), [3, 2, 1]), ...
                     slice_x, slice_y, slice_z);
@@ -658,7 +664,7 @@ for ixs = 1:nShots
                 title(handles.axes_out2, sprintf('P-wave (x-axis component), t = %.3fs', t(it)));
                 set(handles.axes_out2, 'ZDir', 'reverse');
                 shading(handles.axes_out2, 'interp');
-                caxis(handles.axes_out2, [-0.005, 0.05]);
+                caxis(handles.axes_out2, [-2e-5, 1e-4]);
                 
                 slice(handles.axes_out3, x, y, z, permute(snapshotVyp(1:end-nBoundary, nBoundary+1:end-nBoundary, nBoundary+1:end-nBoundary, it), [3, 2, 1]), ...
                     slice_x, slice_y, slice_z);
@@ -668,7 +674,7 @@ for ixs = 1:nShots
                 title(handles.axes_out3, sprintf('P-wave (y-axis component), t = %.3fs', t(it)));
                 set(handles.axes_out3, 'ZDir', 'reverse');
                 shading(handles.axes_out3, 'interp');
-                caxis(handles.axes_out3, [-0.005, 0.05]);
+                caxis(handles.axes_out3, [-2e-5, 1e-4]);
                 
                 slice(handles.axes_out4, x, y, z, permute(snapshotVzs(1:end-nBoundary, nBoundary+1:end-nBoundary, nBoundary+1:end-nBoundary, it), [3, 2, 1]), ...
                     slice_x, slice_y, slice_z);
@@ -678,7 +684,7 @@ for ixs = 1:nShots
                 title(handles.axes_out4, sprintf('S-wave (z-axis component), t = %.3fs', t(it)));
                 set(handles.axes_out4, 'ZDir', 'reverse');
                 shading(handles.axes_out4, 'interp');
-                caxis(handles.axes_out4, [-0.005, 0.05]);
+                caxis(handles.axes_out4, [-2e-5, 1e-4]);
                 
                 slice(handles.axes_out5, x, y, z, permute(snapshotVxs(1:end-nBoundary, nBoundary+1:end-nBoundary, nBoundary+1:end-nBoundary, it), [3, 2, 1]), ...
                     slice_x, slice_y, slice_z);
@@ -688,7 +694,7 @@ for ixs = 1:nShots
                 title(handles.axes_out5, sprintf('S-wave (x-axis component), t = %.3fs', t(it)));
                 set(handles.axes_out5, 'ZDir', 'reverse');
                 shading(handles.axes_out5, 'interp');
-                caxis(handles.axes_out5, [-0.005, 0.05]);
+                caxis(handles.axes_out5, [-2e-5, 1e-4]);
                 
                 slice(handles.axes_out6, x, y, z, permute(snapshotVys(1:end-nBoundary, nBoundary+1:end-nBoundary, nBoundary+1:end-nBoundary, it), [3, 2, 1]), ...
                     slice_x, slice_y, slice_z);
@@ -698,7 +704,7 @@ for ixs = 1:nShots
                 title(handles.axes_out6, sprintf('S-wave (y-axis component), t = %.3fs', t(it)));
                 set(handles.axes_out6, 'ZDir', 'reverse');
                 shading(handles.axes_out6, 'interp');
-                caxis(handles.axes_out6, [-0.005, 0.05]);
+                caxis(handles.axes_out6, [-2e-5, 1e-4]);
                 
             else
                 % display acoustic wavefields

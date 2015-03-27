@@ -142,7 +142,7 @@ for it = 1:nt
     title(sprintf('P-wave (z-axis component), t = %.3fs', t(it)));
     set(gca, 'ZDir', 'reverse');
     shading interp;
-    caxis([-0.005, 0.05]);
+    caxis([-2e-5, 1e-4]);
     
     subplot(2, 4, 3);
     slice(x, y, z, permute(snapshotVxp(1:end-nBoundary, nBoundary+1:end-nBoundary, nBoundary+1:end-nBoundary, it), [3, 2, 1]), ...
@@ -153,7 +153,7 @@ for it = 1:nt
     title(sprintf('P-wave (x-axis component), t = %.3fs', t(it)));
     set(gca, 'ZDir', 'reverse');
     shading interp;
-    caxis([-0.005, 0.05]);
+    caxis([-2e-5, 1e-4]);
     
     subplot(2, 4, 4);
     slice(x, y, z, permute(snapshotVyp(1:end-nBoundary, nBoundary+1:end-nBoundary, nBoundary+1:end-nBoundary, it), [3, 2, 1]), ...
@@ -164,25 +164,25 @@ for it = 1:nt
     title(sprintf('P-wave (y-axis component), t = %.3fs', t(it)));
     set(gca, 'ZDir', 'reverse');
     shading interp;
-    caxis([-0.005, 0.05]);
+    caxis([-2e-5, 1e-4]);
 
 %     subplot(2, 4, 2);
 %     imagesc(squeeze(snapshotVzp(zShot/dz, nBoundary+1:end-nBoundary, nBoundary+1:end-nBoundary, it)));
 %     xlabel('Distance (m)'); ylabel('Depth (m)');
 %     title(sprintf('P-wave (z-axis component), t = %.3f', t(it)));
-%     caxis([-0.005, 0.05]);
+%     caxis([-2e-5, 1e-4]);
 %     
 %     subplot(2, 4, 3);
 %     imagesc(squeeze(snapshotVxp(zShot/dz, nBoundary+1:end-nBoundary, nBoundary+1:end-nBoundary, it)));
 %     xlabel('Distance (m)'); ylabel('Depth (m)');
 %     title(sprintf('P-wave (x-axis component), t = %.3f', t(it)));
-%     caxis([-0.005, 0.05]);
+%     caxis([-2e-5, 1e-4]);
 %     
 %     subplot(2, 4, 4);
 %     imagesc(squeeze(snapshotVyp(zShot/dz, nBoundary+1:end-nBoundary, nBoundary+1:end-nBoundary, it)));
 %     xlabel('Distance (m)'); ylabel('Depth (m)');
 %     title(sprintf('P-wave (y-axis component), t = %.3f', t(it)));
-%     caxis([-0.005, 0.05]);
+%     caxis([-2e-5, 1e-4]);
 
     % plot source function in time domain
     subplot(2, 4, 5);
@@ -202,7 +202,7 @@ for it = 1:nt
     title(sprintf('S-wave (z-axis component), t = %.3fs', t(it)));
     set(gca, 'ZDir', 'reverse');
     shading interp;
-    caxis([-0.005, 0.05]);
+    caxis([-2e-5, 1e-4]);
     
     subplot(2, 4, 7);
     slice(x, y, z, permute(snapshotVxs(1:end-nBoundary, nBoundary+1:end-nBoundary, nBoundary+1:end-nBoundary, it), [3, 2, 1]), ...
@@ -213,7 +213,7 @@ for it = 1:nt
     title(sprintf('S-wave (x-axis component), t = %.3fs', t(it)));
     set(gca, 'ZDir', 'reverse');
     shading interp;
-    caxis([-0.005, 0.05]);
+    caxis([-2e-5, 1e-4]);
     
     subplot(2, 4, 8);
     slice(x, y, z, permute(snapshotVys(1:end-nBoundary, nBoundary+1:end-nBoundary, nBoundary+1:end-nBoundary, it), [3, 2, 1]), ...
@@ -224,25 +224,25 @@ for it = 1:nt
     title(sprintf('S-wave (y-axis component), t = %.3fs', t(it)));
     set(gca, 'ZDir', 'reverse');
     shading interp;
-    caxis([-0.005, 0.05]);
+    caxis([-2e-5, 1e-4]);
 
 %     subplot(2, 4, 6);
 %     imagesc(squeeze(snapshotVzs(zShot/dz, nBoundary+1:end-nBoundary, nBoundary+1:end-nBoundary, it)));
 %     xlabel('Distance (m)'); ylabel('Depth (m)');
 %     title(sprintf('S-wave (z-axis component), t = %.3f', t(it)));
-%     caxis([-0.005, 0.05]);
+%     caxis([-2e-5, 1e-4]);
 %     
 %     subplot(2, 4, 7);
 %     imagesc(squeeze(snapshotVxs(zShot/dz, nBoundary+1:end-nBoundary, nBoundary+1:end-nBoundary, it)));
 %     xlabel('Distance (m)'); ylabel('Depth (m)');
 %     title(sprintf('S-wave (x-axis component), t = %.3f', t(it)));
-%     caxis([-0.005, 0.05]);
+%     caxis([-2e-5, 1e-4]);
 %     
 %     subplot(2, 4, 8);
 %     imagesc(squeeze(snapshotVys(zShot/dz, nBoundary+1:end-nBoundary, nBoundary+1:end-nBoundary, it)));
 %     xlabel('Distance (m)'); ylabel('Depth (m)');
 %     title(sprintf('S-wave (y-axis component), t = %.3f', t(it)));
-%     caxis([-0.005, 0.05]);
+%     caxis([-2e-5, 1e-4]);
     
     if exist('objVideo3dEw', 'var')
         writeVideo(objVideo3dEw, im2frame(hardcopy(hFig, '-dzbuffer', '-r0')));

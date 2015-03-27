@@ -118,18 +118,18 @@ hold off;
 colormap(seismic);
 
 for it = 1:nt
-    % plot P-wave propagation snapshots    
+    % plot P-wave propagation snapshots
     subplot(2, 3, 2);
     imagesc(snapshotVzp(1:end-nBoundary, nBoundary+1:end-nBoundary, it));
     xlabel('Distance (m)'); ylabel('Depth (m)');
     title(sprintf('P-wave (z-axis component), t = %.3f', t(it)));
-    caxis([-0.05 0.5]);
+    caxis([-2e-5, 1e-4]);
     
     subplot(2, 3, 3);
     imagesc(snapshotVxp(1:end-nBoundary, nBoundary+1:end-nBoundary, it));
     xlabel('Distance (m)'); ylabel('Depth (m)');
     title(sprintf('P-wave (x-axis component), t = %.3f', t(it)));
-    caxis([-0.05 0.5]);
+    caxis([-2e-5, 1e-4]);
     
     % plot shot function
     subplot(2, 3, 4);
@@ -144,13 +144,13 @@ for it = 1:nt
     imagesc(snapshotVzs(1:end-nBoundary, nBoundary+1:end-nBoundary, it));
     xlabel('Distance (m)'); ylabel('Depth (m)');
     title(sprintf('S-wave (z-axis component), t = %.3f', t(it)));
-    caxis([-0.05 0.5]);
+    caxis([-2e-5, 1e-4]);
     
     subplot(2, 3, 6);
     imagesc(snapshotVxs(1:end-nBoundary, nBoundary+1:end-nBoundary, it));
     xlabel('Distance (m)'); ylabel('Depth (m)');
     title(sprintf('S-wave (x-axis component), t = %.3f', t(it)));
-    caxis([-0.05 0.5]);
+    caxis([-2e-5, 1e-4]);
     
     if exist('objVideo2dEw', 'var')
         writeVideo(objVideo2dEw, im2frame(hardcopy(hFig, '-dzbuffer', '-r0')));
