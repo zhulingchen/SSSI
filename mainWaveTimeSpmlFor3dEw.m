@@ -30,7 +30,7 @@ load('./modelData/cake3DP.mat');
 vp = velocityModel;
 load('./modelData/cake3DS.mat');
 vs = velocityModel;
-% vp = 2500 * ones(30, 30, 30);
+% vp = 2500 * ones(60, 30, 40);
 % vs = vp / sqrt(2);
 
 % dimension check
@@ -79,22 +79,71 @@ end
 
 
 %% Add region around model (vp and vs) for applying absorbing boundary conditions
-nBoundary = 5;
+nBoundary = 10;
 
 VP = extBoundary(vp, nBoundary, 3);
 VS = extBoundary(vs, nBoundary, 3);
 
 
-%% Generate Ricker wavelet as source function
-f = 20;               % peak frequency
-sourceTime = zeros([size(VP), nt]);
+%% Generate source terms
+% peak frequency
+f = 20;
+% body force excitation source for x-, y- and z-dimension
+source_xTime = zeros([size(VP), nt]);
+source_yTime = zeros([size(VP), nt]);
+source_zTime = zeros([size(VP), nt]);
+dV = dx * dy * dz;
+% moment tensor
+M = dV * repmat([dx, dy, dz], 3, 1) ...
+    .* [1, 0, 0; ...
+        0, 1, 0; ...
+        0, 0, 1];
+if (any(size(M) ~= [3, 3]))
+    error('Size of moment tensor matrix must be 3 * 3!');
+end
+if (~issymmetric(M))
+    error('Moment tensor must be a symmetric matrix!');
+end
+
 wave1dTime = ricker(f, nt, dt);
-sourceTime(zShot/dz, xShot/dx + nBoundary, yShot/dy + nBoundary, :) = reshape(wave1dTime, 1, 1, 1, nt);
+
+source_xTime(zShot/dz, xShot/dx + nBoundary, yShot/dy + nBoundary, :) = ...
+    (M(1, 1) / dV / dx) * reshape(wave1dTime, 1, 1, 1, nt) ...
+    + (M(1, 2) / dV / dy) * reshape(wave1dTime, 1, 1, 1, nt) ...
+    + (M(1, 3) / dV / dz) * reshape(wave1dTime, 1, 1, 1, nt);
+source_xTime(zShot/dz, xShot/dx - 1 + nBoundary, yShot/dy + nBoundary, :) = ...
+    - (M(1, 1) / dV / dx) * reshape(wave1dTime, 1, 1, 1, nt);
+source_xTime(zShot/dz, xShot/dx + nBoundary, yShot/dy - 1 + nBoundary, :) = ...
+    - (M(1, 2) / dV / dy) * reshape(wave1dTime, 1, 1, 1, nt);
+source_xTime(zShot/dz - 1, xShot/dx + nBoundary, yShot/dy + nBoundary, :) = ...
+    - (M(1, 3) / dV / dz) * reshape(wave1dTime, 1, 1, 1, nt);
+
+source_yTime(zShot/dz, xShot/dx + nBoundary, yShot/dy + nBoundary, :) = ...
+    (M(2, 1) / dV / dx) * reshape(wave1dTime, 1, 1, 1, nt) ...
+    + (M(2, 2) / dV / dy) * reshape(wave1dTime, 1, 1, 1, nt) ...
+    + (M(2, 3) / dV / dz) * reshape(wave1dTime, 1, 1, 1, nt);
+source_yTime(zShot/dz, xShot/dx - 1 + nBoundary, yShot/dy + nBoundary, :) = ...
+    - (M(2, 1) / dV / dx) * reshape(wave1dTime, 1, 1, 1, nt);
+source_yTime(zShot/dz, xShot/dx + nBoundary, yShot/dy - 1 + nBoundary, :) = ...
+    - (M(2, 2) / dV / dy) * reshape(wave1dTime, 1, 1, 1, nt);
+source_yTime(zShot/dz - 1, xShot/dx + nBoundary, yShot/dy + nBoundary, :) = ...
+    - (M(2, 3) / dV / dz) * reshape(wave1dTime, 1, 1, 1, nt);
+
+source_zTime(zShot/dz, xShot/dx + nBoundary, yShot/dy + nBoundary, :) = ...
+    (M(3, 1) / dV / dx) * reshape(wave1dTime, 1, 1, 1, nt) ...
+    + (M(3, 2) / dV / dy) * reshape(wave1dTime, 1, 1, 1, nt) ...
+    + (M(3, 3) / dV / dz) * reshape(wave1dTime, 1, 1, 1, nt);
+source_zTime(zShot/dz, xShot/dx - 1 + nBoundary, yShot/dy + nBoundary, :) = ...
+    - (M(3, 1) / dV / dx) * reshape(wave1dTime, 1, 1, 1, nt);
+source_zTime(zShot/dz, xShot/dx + nBoundary, yShot/dy - 1 + nBoundary, :) = ...
+    - (M(3, 2) / dV / dy) * reshape(wave1dTime, 1, 1, 1, nt);
+source_zTime(zShot/dz - 1, xShot/dx + nBoundary, yShot/dy + nBoundary, :) = ...
+    - (M(3, 3) / dV / dz) * reshape(wave1dTime, 1, 1, 1, nt);
 
 
 %% Generate shots
 tic;
-[snapshotVzp, snapshotVxp, snapshotVyp, snapshotVzs, snapshotVxs, snapshotVys] = fwdTimeSpmlFor3dEw(VP, VS, sourceTime, nDiffOrder, nBoundary, dz, dx, dy, dt);
+[snapshotVzp, snapshotVxp, snapshotVyp, snapshotVzs, snapshotVxs, snapshotVys] = fwdTimeSpmlFor3dEw(VP, VS, source_xTime, source_yTime, source_zTime, nDiffOrder, nBoundary, dz, dx, dy, dt);
 timeForward = toc;
 fprintf('Generate Forward Timing Record. elapsed time = %fs\n', timeForward);
 
@@ -142,7 +191,7 @@ for it = 1:nt
     title(sprintf('P-wave (z-axis component), t = %.3fs', t(it)));
     set(gca, 'ZDir', 'reverse');
     shading interp;
-    caxis([-2e-5, 1e-4]);
+    caxis([-1e-6, 1e-5]);
     
     subplot(2, 4, 3);
     slice(x, y, z, permute(snapshotVxp(1:end-nBoundary, nBoundary+1:end-nBoundary, nBoundary+1:end-nBoundary, it), [3, 2, 1]), ...
@@ -153,7 +202,7 @@ for it = 1:nt
     title(sprintf('P-wave (x-axis component), t = %.3fs', t(it)));
     set(gca, 'ZDir', 'reverse');
     shading interp;
-    caxis([-2e-5, 1e-4]);
+    caxis([-1e-6, 1e-5]);
     
     subplot(2, 4, 4);
     slice(x, y, z, permute(snapshotVyp(1:end-nBoundary, nBoundary+1:end-nBoundary, nBoundary+1:end-nBoundary, it), [3, 2, 1]), ...
@@ -164,25 +213,25 @@ for it = 1:nt
     title(sprintf('P-wave (y-axis component), t = %.3fs', t(it)));
     set(gca, 'ZDir', 'reverse');
     shading interp;
-    caxis([-2e-5, 1e-4]);
+    caxis([-1e-6, 1e-5]);
 
 %     subplot(2, 4, 2);
 %     imagesc(squeeze(snapshotVzp(zShot/dz, nBoundary+1:end-nBoundary, nBoundary+1:end-nBoundary, it)));
 %     xlabel('Distance (m)'); ylabel('Depth (m)');
 %     title(sprintf('P-wave (z-axis component), t = %.3f', t(it)));
-%     caxis([-2e-5, 1e-4]);
+%     caxis([-1e-6, 1e-5]);
 %     
 %     subplot(2, 4, 3);
 %     imagesc(squeeze(snapshotVxp(zShot/dz, nBoundary+1:end-nBoundary, nBoundary+1:end-nBoundary, it)));
 %     xlabel('Distance (m)'); ylabel('Depth (m)');
 %     title(sprintf('P-wave (x-axis component), t = %.3f', t(it)));
-%     caxis([-2e-5, 1e-4]);
+%     caxis([-1e-6, 1e-5]);
 %     
 %     subplot(2, 4, 4);
 %     imagesc(squeeze(snapshotVyp(zShot/dz, nBoundary+1:end-nBoundary, nBoundary+1:end-nBoundary, it)));
 %     xlabel('Distance (m)'); ylabel('Depth (m)');
 %     title(sprintf('P-wave (y-axis component), t = %.3f', t(it)));
-%     caxis([-2e-5, 1e-4]);
+%     caxis([-1e-6, 1e-5]);
 
     % plot source function in time domain
     subplot(2, 4, 5);
@@ -202,7 +251,7 @@ for it = 1:nt
     title(sprintf('S-wave (z-axis component), t = %.3fs', t(it)));
     set(gca, 'ZDir', 'reverse');
     shading interp;
-    caxis([-2e-5, 1e-4]);
+    caxis([-1e-6, 1e-5]);
     
     subplot(2, 4, 7);
     slice(x, y, z, permute(snapshotVxs(1:end-nBoundary, nBoundary+1:end-nBoundary, nBoundary+1:end-nBoundary, it), [3, 2, 1]), ...
@@ -213,7 +262,7 @@ for it = 1:nt
     title(sprintf('S-wave (x-axis component), t = %.3fs', t(it)));
     set(gca, 'ZDir', 'reverse');
     shading interp;
-    caxis([-2e-5, 1e-4]);
+    caxis([-1e-6, 1e-5]);
     
     subplot(2, 4, 8);
     slice(x, y, z, permute(snapshotVys(1:end-nBoundary, nBoundary+1:end-nBoundary, nBoundary+1:end-nBoundary, it), [3, 2, 1]), ...
@@ -224,25 +273,25 @@ for it = 1:nt
     title(sprintf('S-wave (y-axis component), t = %.3fs', t(it)));
     set(gca, 'ZDir', 'reverse');
     shading interp;
-    caxis([-2e-5, 1e-4]);
+    caxis([-1e-6, 1e-5]);
 
 %     subplot(2, 4, 6);
 %     imagesc(squeeze(snapshotVzs(zShot/dz, nBoundary+1:end-nBoundary, nBoundary+1:end-nBoundary, it)));
 %     xlabel('Distance (m)'); ylabel('Depth (m)');
 %     title(sprintf('S-wave (z-axis component), t = %.3f', t(it)));
-%     caxis([-2e-5, 1e-4]);
+%     caxis([-1e-6, 1e-5]);
 %     
 %     subplot(2, 4, 7);
 %     imagesc(squeeze(snapshotVxs(zShot/dz, nBoundary+1:end-nBoundary, nBoundary+1:end-nBoundary, it)));
 %     xlabel('Distance (m)'); ylabel('Depth (m)');
 %     title(sprintf('S-wave (x-axis component), t = %.3f', t(it)));
-%     caxis([-2e-5, 1e-4]);
+%     caxis([-1e-6, 1e-5]);
 %     
 %     subplot(2, 4, 8);
 %     imagesc(squeeze(snapshotVys(zShot/dz, nBoundary+1:end-nBoundary, nBoundary+1:end-nBoundary, it)));
 %     xlabel('Distance (m)'); ylabel('Depth (m)');
 %     title(sprintf('S-wave (y-axis component), t = %.3f', t(it)));
-%     caxis([-2e-5, 1e-4]);
+%     caxis([-1e-6, 1e-5]);
     
     if exist('objVideo3dEw', 'var')
         writeVideo(objVideo3dEw, im2frame(hardcopy(hFig, '-dzbuffer', '-r0')));

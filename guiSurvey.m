@@ -557,7 +557,7 @@ for ixs = 1:nShots
         sourceTime(cur_sz, cur_sx+nBoundary, cur_sy+nBoundary, :) = reshape(wave1dTime, 1, 1, 1, nt);
         if (exist('vs', 'var'))
             % elastic wave shot
-            [snapshotVzp, snapshotVxp, snapshotVyp, snapshotVzs, snapshotVxs, snapshotVys] = fwdTimeSpmlFor3dEw(VP, VS, sourceTime, nDiffOrder, nBoundary, dz, dx, dy, dt);
+            [snapshotVzp, snapshotVxp, snapshotVyp, snapshotVzs, snapshotVxs, snapshotVys] = fwdTimeSpmlFor3dEw(VP, VS, sourceTime, sourceTime, sourceTime, nDiffOrder, nBoundary, dz, dx, dy, dt);
         else
             % acoustic wave shot
             [dataTrue, snapshotTrue] = fwdTimeCpmlFor3dAw(VP, sourceTime, nDiffOrder, nBoundary, dz, dx, dy, dt);

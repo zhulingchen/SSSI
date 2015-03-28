@@ -1,4 +1,4 @@
-function [snapshotVzp, snapshotVxp, snapshotVyp, snapshotVzs, snapshotVxs, snapshotVys] = fwdTimeSpmlFor3dEw(vp, vs, source, nDiffOrder, nBoundary, dz, dx, dy, dt)
+function [snapshotVzp, snapshotVxp, snapshotVyp, snapshotVzs, snapshotVxs, snapshotVys] = fwdTimeSpmlFor3dEw(vp, vs, source_x, source_y, source_z, nDiffOrder, nBoundary, dz, dx, dy, dt)
 %
 % FWDTIMESPMLFOR3DEW Simulate 3-d elastic wave forward propagation using
 % finite difference in time domain with the partial differential equations
@@ -12,7 +12,13 @@ function [snapshotVzp, snapshotVxp, snapshotVyp, snapshotVzs, snapshotVxs, snaps
 % Georgia Institute of Technology
 
 %% Initialize storage
-[nz, nx, ny, nt] = size(source);
+[nz, nx, ny, nt] = size(source_x);
+if (any(size(source_x) ~= size(source_y)))
+    error('Size of X- and Y-direction source must be the same!');
+end
+if (any(size(source_x) ~= size(source_z)))
+    error('Size of X- and Z-direction source must be the same!');
+end
 
 snapshotVzp = zeros(nz, nx, ny, nt);
 snapshotVxp = zeros(nz, nx, ny, nt);
@@ -102,7 +108,7 @@ vsSq = padarray(vsSq, [nDiffOrder, nDiffOrder, nDiffOrder], 'replicate');
 for it = 1:nt
     % calculate divergence and curl field of the displacement vector
     A_x(iz, ix, iy, 2) = (1 - 0.5 * xDamp * dt) ./ (1 + 0.5 * xDamp * dt) .* A_x(iz, ix, iy, 1) ...
-        + dt ./ (1 + 0.5 * xDamp * dt) .* diffOperator(Vx(iz, 2:end, iy, 2), coeff, dx, 2);
+        + dt ./ (1 + 0.5 * xDamp * dt) .* diffOperator(Vx(iz, 1:end-1, iy, 2), coeff, dx, 2);
     
     A_y(iz, ix, iy, 2) = (1 - 0.5 * yDamp * dt) ./ (1 + 0.5 * yDamp * dt) .* A_y(iz, ix, iy, 1) ...
         + dt ./ (1 + 0.5 * yDamp * dt) .* diffOperator(Vy(iz, ix, 1:end-1, 2), coeff, dy, 3);
@@ -124,12 +130,12 @@ for it = 1:nt
         + dt ./ (1 + 0.5 * zDamp * dt) .* diffOperator(Vx(2:end, ix, iy, 2), coeff, dz, 1);
     
     B2_x(iz, ix, iy, 2) = (1 - 0.5 * xDamp * dt) ./ (1 + 0.5 * xDamp * dt) .* B2_x(iz, ix, iy, 1) ...
-        - dt ./ (1 + 0.5 * xDamp * dt) .* diffOperator(Vz(iz, 1:end-1, iy, 2), coeff, dx, 2);
+        - dt ./ (1 + 0.5 * xDamp * dt) .* diffOperator(Vz(iz, 2:end, iy, 2), coeff, dx, 2);
     
     B2(iz, ix, iy, 2) = B2_z(iz, ix, iy, 2) + B2_x(iz, ix, iy, 2);
     
     B3_x(iz, ix, iy, 2) = (1 - 0.5 * xDamp * dt) ./ (1 + 0.5 * xDamp * dt) .* B3_x(iz, ix, iy, 1) ...
-        + dt ./ (1 + 0.5 * xDamp * dt) .* diffOperator(Vy(iz, 1:end-1, iy, 2), coeff, dx, 2);
+        + dt ./ (1 + 0.5 * xDamp * dt) .* diffOperator(Vy(iz, 2:end, iy, 2), coeff, dx, 2);
     
     B3_y(iz, ix, iy, 2) = (1 - 0.5 * yDamp * dt) ./ (1 + 0.5 * yDamp * dt) .* B3_y(iz, ix, iy, 1) ...
         - dt ./ (1 + 0.5 * yDamp * dt) .* diffOperator(Vx(iz, ix, 2:end, 2), coeff, dy, 3);
@@ -139,39 +145,48 @@ for it = 1:nt
     % calculate velocity fields
     % P-wave field
     Vxp(iz, ix, iy, 3) = (1 - 0.5 * xDamp * dt) ./ (1 + 0.5 * xDamp * dt) .* Vxp(iz, ix, iy, 2) ...
-        + vpSq(iz, ix, iy) * dt ./ (1 + 0.5 * xDamp * dt) .* diffOperator(A(iz, 1:end-1, iy, 2), coeff, dx, 2);
+        + 0.25 * (vpSq(iz, ix, iy) + vpSq(iz-1, ix, iy) + vpSq(iz-1, ix, iy-1) + vpSq(iz, ix, iy-1)) ...
+        * dt ./ (1 + 0.5 * xDamp * dt) .* diffOperator(A(iz, 2:end, iy, 2), coeff, dx, 2) ...
+        + dt ./ (1 + 0.5 * xDamp * dt) .* source_x(:, :, :, it);	% source term
     
     Vyp(iz, ix, iy, 3) = (1 - 0.5 * yDamp * dt) ./ (1 + 0.5 * yDamp * dt) .* Vyp(iz, ix, iy, 2) ...
-        + 0.25 * (vpSq(iz, ix, iy) + vpSq(iz, ix+1, iy) + vpSq(iz, ix+1, iy+1) + vpSq(iz, ix, iy+1)) * dt ./ (1 + 0.5 * yDamp * dt) .* diffOperator(A(iz, ix, 2:end, 2), coeff, dy, 3);
+        + 0.25 * (vpSq(iz, ix, iy) + vpSq(iz, ix-1, iy) + vpSq(iz-1, ix-1, iy) + vpSq(iz-1, ix, iy)) ...
+        * dt ./ (1 + 0.5 * yDamp * dt) .* diffOperator(A(iz, ix, 2:end, 2), coeff, dy, 3) ...
+        + dt ./ (1 + 0.5 * yDamp * dt) .* source_y(:, :, :, it);	% source term
     
     Vzp(iz, ix, iy, 3) = (1 - 0.5 * zDamp * dt) ./ (1 + 0.5 * zDamp * dt) .* Vzp(iz, ix, iy, 2) ...
-        + 0.25 * (vpSq(iz, ix, iy) + vpSq(iz, ix+1, iy) + vpSq(iz+1, ix+1, iy) + vpSq(iz+1, ix, iy)) * dt ./ (1 + 0.5 * zDamp * dt) .* diffOperator(A(2:end, ix, iy, 2), coeff, dz, 1);
+        + 0.25 * (vpSq(iz, ix, iy) + vpSq(iz, ix-1, iy) + vpSq(iz, ix-1, iy-1) + vpSq(iz, ix, iy-1)) ...
+        * dt ./ (1 + 0.5 * zDamp * dt) .* diffOperator(A(2:end, ix, iy, 2), coeff, dz, 1) ...
+        + dt ./ (1 + 0.5 * zDamp * dt) .* source_z(:, :, :, it);	% source term
     
     % S-wave field
     Vxs_y(iz, ix, iy, 3) = (1 - 0.5 * yDamp * dt) ./ (1 + 0.5 * yDamp * dt) .* Vxs_y(iz, ix, iy, 2) ...
-        - 0.25 * (vsSq(iz-1, ix-1, iy) + vsSq(iz-1, ix, iy) + vsSq(iz, ix, iy) + vsSq(iz, ix-1, iy)) * dt ./ (1 + 0.5 * yDamp * dt) .* diffOperator(B3(iz, ix, 1:end-1, 2), coeff, dy, 3);
+        - 0.25 * (vsSq(iz, ix, iy) + vsSq(iz-1, ix, iy) + vsSq(iz-1, ix, iy-1) + vsSq(iz, ix, iy-1)) ...
+        * dt ./ (1 + 0.5 * yDamp * dt) .* diffOperator(B3(iz, ix, 1:end-1, 2), coeff, dy, 3);
     
     Vxs_z(iz, ix, iy, 3) = (1 - 0.5 * zDamp * dt) ./ (1 + 0.5 * zDamp * dt) .* Vxs_z(iz, ix, iy, 2) ...
-        + 0.25 * (vsSq(iz-1, ix-1, iy) + vsSq(iz-1, ix, iy) + vsSq(iz, ix, iy) + vsSq(iz, ix-1, iy)) * dt ./ (1 + 0.5 * zDamp * dt) .* diffOperator(B2(1:end-1, ix, iy, 2), coeff, dz, 1) ...
-        + dt ./ (1 + 0.5 * zDamp * dt) .* source(:, :, :, it);	% source term
+        + 0.25 * (vsSq(iz, ix, iy) + vsSq(iz-1, ix, iy) + vsSq(iz-1, ix, iy-1) + vsSq(iz, ix, iy-1)) ...
+        * dt ./ (1 + 0.5 * zDamp * dt) .* diffOperator(B2(1:end-1, ix, iy, 2), coeff, dz, 1);
     
     Vxs(iz, ix, iy, 3) = Vxs_y(iz, ix, iy, 3) + Vxs_z(iz, ix, iy, 3);
     
     Vys_x(iz, ix, iy, 3) = (1 - 0.5 * xDamp * dt) ./ (1 + 0.5 * xDamp * dt) .* Vys_x(iz, ix, iy, 2) ...
-        + 0.25 * (vsSq(iz-1, ix, iy) + vsSq(iz-1, ix, iy+1) + vsSq(iz, ix, iy+1) + vsSq(iz, ix, iy)) * dt ./ (1 + 0.5 * xDamp * dt) .* diffOperator(B3(iz, 2:end, iy, 2), coeff, dx, 2);
+        + 0.25 * (vsSq(iz, ix, iy) + vsSq(iz, ix-1, iy) + vsSq(iz-1, ix-1, iy) + vsSq(iz-1, ix, iy)) ...
+        * dt ./ (1 + 0.5 * xDamp * dt) .* diffOperator(B3(iz, 1:end-1, iy, 2), coeff, dx, 2);
     
     Vys_z(iz, ix, iy, 3) = (1 - 0.5 * zDamp * dt) ./ (1 + 0.5 * zDamp * dt) .* Vys_z(iz, ix, iy, 2) ...
-        - 0.25 * (vsSq(iz-1, ix, iy) + vsSq(iz-1, ix, iy+1) + vsSq(iz, ix, iy+1) + vsSq(iz, ix, iy)) * dt ./ (1 + 0.5 * zDamp * dt) .* diffOperator(B1(1:end-1, ix, iy, 2), coeff, dz, 1) ...
-        + dt ./ (1 + 0.5 * zDamp * dt) .* source(:, :, :, it);  % source term
+        - 0.25 * (vsSq(iz, ix, iy) + vsSq(iz, ix-1, iy) + vsSq(iz-1, ix-1, iy) + vsSq(iz-1, ix, iy)) ...
+        * dt ./ (1 + 0.5 * zDamp * dt) .* diffOperator(B1(1:end-1, ix, iy, 2), coeff, dz, 1);
     
     Vys(iz, ix, iy, 3) = Vys_x(iz, ix, iy, 3) + Vys_z(iz, ix, iy, 3);
     
     Vzs_x(iz, ix, iy, 3) = (1 - 0.5 * xDamp * dt) ./ (1 + 0.5 * xDamp * dt) .* Vzs_x(iz, ix, iy, 2) ...
-        - vsSq(iz, ix, iy) * dt ./ (1 + 0.5 * xDamp * dt) .* diffOperator(B2(iz, 2:end, iy, 2), coeff, dx, 2);
+        - 0.25 * (vsSq(iz, ix, iy) + vsSq(iz, ix-1, iy) + vsSq(iz, ix-1, iy-1) + vsSq(iz, ix, iy-1)) ...
+        * dt ./ (1 + 0.5 * xDamp * dt) .* diffOperator(B2(iz, 1:end-1, iy, 2), coeff, dx, 2);
     
     Vzs_y(iz, ix, iy, 3) = (1 - 0.5 * yDamp * dt) ./ (1 + 0.5 * yDamp * dt) .* Vzs_y(iz, ix, iy, 2) ...
-        + vsSq(iz, ix, iy) * dt ./ (1 + 0.5 * yDamp * dt) .* diffOperator(B1(iz, ix, 1:end-1, 2), coeff, dy, 3) ...
-        + dt ./ (1 + 0.5 * yDamp * dt) .* source(:, :, :, it);	% source term
+        + 0.25 * (vsSq(iz, ix, iy) + vsSq(iz, ix-1, iy) + vsSq(iz, ix-1, iy-1) + vsSq(iz, ix, iy-1)) ...
+        * dt ./ (1 + 0.5 * yDamp * dt) .* diffOperator(B1(iz, ix, 1:end-1, 2), coeff, dy, 3);
     
     Vzs(iz, ix, iy, 3) = Vzs_x(iz, ix, iy, 3) + Vzs_y(iz, ix, iy, 3);
     
