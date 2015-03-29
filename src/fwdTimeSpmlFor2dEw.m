@@ -110,20 +110,20 @@ for it = 1:nt
     Vz(iz, ix, 3) = Vzp(iz, ix, 3) + Vzs(iz, ix, 3);
     
     %% update the wavefield
-    A_z(iz, ix, 1) = A_z(iz, ix, 2); A_z(iz, ix, 2) = A_z(iz, ix, 3);
-    A_x(iz, ix, 1) = A_x(iz, ix, 2); A_x(iz, ix, 2) = A_x(iz, ix, 3);
-    A(iz, ix, 1) = A(iz, ix, 2); A(iz, ix, 2) = A(iz, ix, 3);
-    B_z(iz, ix, 1) = B_z(iz, ix, 2); B_z(iz, ix, 2) = B_z(iz, ix, 3);
-    B_x(iz, ix, 1) = B_x(iz, ix, 2); B_x(iz, ix, 2) = B_x(iz, ix, 3);
-    B(iz, ix, 1) = B(iz, ix, 2); B(iz, ix, 2) = B(iz, ix, 3);
+    A_z(:, :, 1) = A_z(:, :, 2); A_z(:, :, 2) = A_z(:, :, 3);
+    A_x(:, :, 1) = A_x(:, :, 2); A_x(:, :, 2) = A_x(:, :, 3);
+    A(:, :, 1) = A(:, :, 2); A(:, :, 2) = A(:, :, 3);
+    B_z(:, :, 1) = B_z(:, :, 2); B_z(:, :, 2) = B_z(:, :, 3);
+    B_x(:, :, 1) = B_x(:, :, 2); B_x(:, :, 2) = B_x(:, :, 3);
+    B(:, :, 1) = B(:, :, 2); B(:, :, 2) = B(:, :, 3);
     
-    Vxp(iz, ix, 1) = Vxp(iz, ix, 2); Vxp(iz, ix, 2) = Vxp(iz, ix, 3);
-    Vzp(iz, ix, 1) = Vzp(iz, ix, 2); Vzp(iz, ix, 2) = Vzp(iz, ix, 3);
-    Vxs(iz, ix, 1) = Vxs(iz, ix, 2); Vxs(iz, ix, 2) = Vxs(iz, ix, 3);
-    Vzs(iz, ix, 1) = Vzs(iz, ix, 2); Vzs(iz, ix, 2) = Vzs(iz, ix, 3);
+    Vxp(:, :, 1) = Vxp(:, :, 2); Vxp(:, :, 2) = Vxp(:, :, 3);
+    Vzp(:, :, 1) = Vzp(:, :, 2); Vzp(:, :, 2) = Vzp(:, :, 3);
+    Vxs(:, :, 1) = Vxs(:, :, 2); Vxs(:, :, 2) = Vxs(:, :, 3);
+    Vzs(:, :, 1) = Vzs(:, :, 2); Vzs(:, :, 2) = Vzs(:, :, 3);
     
-    Vx(iz, ix, 1) = Vx(iz, ix, 2); Vx(iz, ix, 2) = Vx(iz, ix, 3);
-    Vz(iz, ix, 1) = Vz(iz, ix, 2); Vz(iz, ix, 2) = Vz(iz, ix, 3);
+    Vx(:, :, 1) = Vx(:, :, 2); Vx(:, :, 2) = Vx(:, :, 3);
+    Vz(:, :, 1) = Vz(:, :, 2); Vz(:, :, 2) = Vz(:, :, 3);
     
     %% P-wave and S-wave snapshots of x-axis and z-axis velocity wavefield
     snapshotVxp(:, :, it) = Vxp(iz, ix, 2);

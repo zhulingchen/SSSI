@@ -216,19 +216,19 @@ for it = 1:nt
     caxis([-1e-6, 1e-5]);
 
 %     subplot(2, 4, 2);
-%     imagesc(squeeze(snapshotVzp(zShot/dz, nBoundary+1:end-nBoundary, nBoundary+1:end-nBoundary, it)));
+%     imagesc(squeeze(snapshotVzp(1:end-nBoundary, nBoundary+1:end-nBoundary, yShot/dy + nBoundary, it)));
 %     xlabel('Distance (m)'); ylabel('Depth (m)');
 %     title(sprintf('P-wave (z-axis component), t = %.3f', t(it)));
 %     caxis([-1e-6, 1e-5]);
 %     
 %     subplot(2, 4, 3);
-%     imagesc(squeeze(snapshotVxp(zShot/dz, nBoundary+1:end-nBoundary, nBoundary+1:end-nBoundary, it)));
+%     imagesc(squeeze(snapshotVxp(1:end-nBoundary, nBoundary+1:end-nBoundary, yShot/dy + nBoundary, it)));
 %     xlabel('Distance (m)'); ylabel('Depth (m)');
 %     title(sprintf('P-wave (x-axis component), t = %.3f', t(it)));
 %     caxis([-1e-6, 1e-5]);
 %     
 %     subplot(2, 4, 4);
-%     imagesc(squeeze(snapshotVyp(zShot/dz, nBoundary+1:end-nBoundary, nBoundary+1:end-nBoundary, it)));
+%     imagesc(squeeze(snapshotVyp(1:end-nBoundary, nBoundary+1:end-nBoundary, yShot/dy + nBoundary, it)));
 %     xlabel('Distance (m)'); ylabel('Depth (m)');
 %     title(sprintf('P-wave (y-axis component), t = %.3f', t(it)));
 %     caxis([-1e-6, 1e-5]);
@@ -276,19 +276,19 @@ for it = 1:nt
     caxis([-1e-6, 1e-5]);
 
 %     subplot(2, 4, 6);
-%     imagesc(squeeze(snapshotVzs(zShot/dz, nBoundary+1:end-nBoundary, nBoundary+1:end-nBoundary, it)));
+%     imagesc(squeeze(snapshotVzs(1:end-nBoundary, nBoundary+1:end-nBoundary, yShot/dy + nBoundary, it)));
 %     xlabel('Distance (m)'); ylabel('Depth (m)');
 %     title(sprintf('S-wave (z-axis component), t = %.3f', t(it)));
 %     caxis([-1e-6, 1e-5]);
 %     
 %     subplot(2, 4, 7);
-%     imagesc(squeeze(snapshotVxs(zShot/dz, nBoundary+1:end-nBoundary, nBoundary+1:end-nBoundary, it)));
+%     imagesc(squeeze(snapshotVxs(1:end-nBoundary, nBoundary+1:end-nBoundary, yShot/dy + nBoundary, it)));
 %     xlabel('Distance (m)'); ylabel('Depth (m)');
 %     title(sprintf('S-wave (x-axis component), t = %.3f', t(it)));
 %     caxis([-1e-6, 1e-5]);
 %     
 %     subplot(2, 4, 8);
-%     imagesc(squeeze(snapshotVys(zShot/dz, nBoundary+1:end-nBoundary, nBoundary+1:end-nBoundary, it)));
+%     imagesc(squeeze(snapshotVys(1:end-nBoundary, nBoundary+1:end-nBoundary, yShot/dy + nBoundary, it)));
 %     xlabel('Distance (m)'); ylabel('Depth (m)');
 %     title(sprintf('S-wave (y-axis component), t = %.3f', t(it)));
 %     caxis([-1e-6, 1e-5]);
