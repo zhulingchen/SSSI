@@ -94,13 +94,13 @@ trainData = noisyData;
 
 %% Plot figures
 hFigDataTrue = figure; imagesc(1:nRecs, 1:nSamples, dataTrue); colormap(gray); colorbar; truesize;
-xlabel('Traces'); ylabel('Time');
+xlabel('Trace Index'); ylabel('Time Sample Index');
 title('Original Seismic Data');
 
 hFigNoisyData = figure; imagesc(1:nRecs, 1:nSamples, noisyData); colormap(gray); colorbar; truesize;
 psnrNoisyData = 20*log10(sqrt(numel(noisyData)) / norm(dataTrue(:) - noisyData(:), 2));
 ssimNoisyData = ssim(noisyData, dataTrue);
-xlabel('Traces'); ylabel('Time');
+xlabel('Trace Index'); ylabel('Time Sample Index');
 title(sprintf('Noisy Seismic Data, PSNR = %.2fdB', psnrNoisyData));
 saveas(hFigNoisyData, fullfile(dataFileDir, [dataFileName, '_noisyData']), 'fig');
 fprintf('------------------------------------------------------------\n');
@@ -128,12 +128,12 @@ save(fullfile(dataFileDir, [dataFileName, '_diffData_wavelet.mat']), 'diffData_w
 hFigCleanedDataWavelet = figure; imagesc(1:nRecs, 1:nSamples, cleanData_wavelet); colormap(gray); colorbar; truesize;
 psnrCleanData_wavelet = 20*log10(sqrt(numel(cleanData_wavelet)) / norm(dataTrue(:) - cleanData_wavelet(:), 2));
 ssimCleanData_wavelet = ssim(cleanData_wavelet, dataTrue);
-xlabel('Traces'); ylabel('Time');
+xlabel('Trace Index'); ylabel('Time Sample Index');
 title(sprintf('Denoised Seismic Data (Wavelet), PSNR = %.2fdB', psnrCleanData_wavelet));
 saveas(hFigCleanedDataWavelet, fullfile(dataFileDir, [dataFileName, '_cleanData_wavelet']), 'fig');
 
 hFigDiffDataWavelet = figure; imagesc(1:nRecs, 1:nSamples, diffData_wavelet); colormap(gray); colorbar; truesize;
-xlabel('Traces'); ylabel('Time');
+xlabel('Trace Index'); ylabel('Time Sample Index');
 saveas(hFigDiffDataWavelet, fullfile(dataFileDir, [dataFileName, '_diffData_wavelet']), 'fig');
 
 fprintf('------------------------------------------------------------\n');
@@ -144,7 +144,8 @@ fprintf('Denoised Seismic Data (Wavelet), PSNR = %.2fdB, SSIM = %.4f\n', psnrCle
 nlevels_contourlet = [2, 3, 4];     % Decomposition level, all 0 means wavelet
 pfilter_contourlet = '9/7';         % Pyramidal filter
 dfilter_contourlet = 'pkva';        % Directional filter
-[vecContourletCoeff, str] = pdfb2vec(pdfbdec(noisyData, pfilter_contourlet, dfilter_contourlet, nlevels_contourlet));
+coeffContourlet = pdfbdec(noisyData, pfilter_contourlet, dfilter_contourlet, nlevels_contourlet);
+[vecContourletCoeff, str] = pdfb2vec(coeffContourlet);
 
 % Set up thresholds for coarse scales
 noiseVar = pdfb_nest(size(dataTrue, 1), size(dataTrue, 2), pfilter_contourlet, dfilter_contourlet, nlevels_contourlet);
@@ -168,16 +169,51 @@ save(fullfile(dataFileDir, [dataFileName, '_diffData_contourlet.mat']), 'diffDat
 hFigCleanedDataContourlet = figure; imagesc(1:nRecs, 1:nSamples, cleanData_contourlet); colormap(gray); colorbar; truesize;
 psnrCleanData_contourlet = 20*log10(sqrt(numel(cleanData_contourlet)) / norm(dataTrue(:) - cleanData_contourlet(:), 2));
 ssimCleanData_contourlet = ssim(cleanData_contourlet, dataTrue);
-xlabel('Traces'); ylabel('Time');
-title(sprintf('Denoised Seismic Data (Contourlet), PSNR = %.2fdB', psnrCleanData_contourlet));
+xlabel('Trace Index'); ylabel('Time Sample Index');
+title(sprintf('Denoised Seismic Data (Contourlet, Thresholding), PSNR = %.2fdB', psnrCleanData_contourlet));
 saveas(hFigCleanedDataContourlet, fullfile(dataFileDir, [dataFileName, '_cleanData_contourlet']), 'fig');
 
 hFigDiffDataContourlet = figure; imagesc(1:nRecs, 1:nSamples, diffData_contourlet); colormap(gray); colorbar; truesize;
-xlabel('Traces'); ylabel('Time');
+xlabel('Trace Index'); ylabel('Time Sample Index');
 saveas(hFigDiffDataContourlet, fullfile(dataFileDir, [dataFileName, '_diffData_contourlet']), 'fig');
 
 fprintf('------------------------------------------------------------\n');
-fprintf('Denoised Seismic Data (Contourlet), PSNR = %.2fdB, SSIM = %.4f\n', psnrCleanData_contourlet, ssimCleanData_contourlet);
+fprintf('Denoised Seismic Data (Contourlet, Thresholding), PSNR = %.2fdB, SSIM = %.4f\n', psnrCleanData_contourlet, ssimCleanData_contourlet);
+
+
+%% Reference: Contourlet denoising using BPDN with SPG-L1 optimization toolbox
+% bpdn:  min ||x||_1  s.t.  ||pdfbFunc(x, 1) - b|| <= \sigma
+% lasso: min ||pdfbFunc(x, 1) - b||_2^2 s.t. ||x||_1 < \tau
+[vecCoeffContourlet, sContourlet] = pdfb2vec(coeffContourlet);
+pdfbFunc = @(x, mode) pdfb(x, sContourlet, pfilter_contourlet, dfilter_contourlet, nlevels_contourlet, nSamples, nRecs, mode);
+b = pdfbFunc(vecCoeffContourlet, 1);
+% tau = norm(vecCoeffContourlet, 1);
+gain = 1;
+sigSpThres = sqrt((fp2 - fp1) / (fs/2)) * sigma * sqrt(nSamples * nRecs) * gain;
+opts = spgSetParms('verbosity', 1, 'optTol', 1e-6);
+% vc_bpdn = spg_lasso(pdfbFunc, b, tau, opts);
+vc_bpdn = spg_bpdn(pdfbFunc, b, sigSpThres, opts);
+
+coeffContourlet_bpdn = vec2pdfb(vc_bpdn, sContourlet);
+cleanData_contourlet_bpdn = pdfbrec(coeffContourlet_bpdn, pfilter_contourlet, dfilter_contourlet);
+save(fullfile(dataFileDir, [dataFileName, '_cleanData_contourlet_bpdn.mat']), 'cleanData_contourlet_bpdn', '-v7.3');
+diffData_contourlet_bpdn = dataTrue - cleanData_contourlet_bpdn;
+save(fullfile(dataFileDir, [dataFileName, '_diffData_contourlet_bpdn.mat']), 'diffData_contourlet_bpdn', '-v7.3');
+
+% Plot figures and PSNR output
+hFigCleanedDataContourlet_bpdn = figure; imagesc(1:nRecs, 1:nSamples, cleanData_contourlet_bpdn); colormap(gray); colorbar; truesize;
+psnrCleanData_contourlet_bpdn = 20*log10(sqrt(numel(cleanData_contourlet_bpdn)) / norm(dataTrue(:) - cleanData_contourlet_bpdn(:), 2));
+ssimCleanData_contourlet_bpdn = ssim(cleanData_contourlet_bpdn, dataTrue);
+xlabel('Trace Index'); ylabel('Time Sample Index');
+title(sprintf('Denoised Seismic Data (Contourlet, BPDN), PSNR = %.2fdB', psnrCleanData_contourlet_bpdn));
+saveas(hFigCleanedDataContourlet_bpdn, fullfile(dataFileDir, [dataFileName, '_cleanData_contourlet_bpdn']), 'fig');
+
+hFigDiffDataContourlet_bpdn = figure; imagesc(1:nRecs, 1:nSamples, diffData_contourlet_bpdn); colormap(gray); colorbar; truesize;
+xlabel('Trace Index'); ylabel('Time Sample Index');
+saveas(hFigDiffDataContourlet_bpdn, fullfile(dataFileDir, [dataFileName, '_diffData_contourlet_bpdn']), 'fig');
+
+fprintf('------------------------------------------------------------\n');
+fprintf('Denoised Seismic Data (Contourlet, BPDN), PSNR = %.2fdB, SSIM = %.4f\n', psnrCleanData_contourlet_bpdn, ssimCleanData_contourlet_bpdn);
 
 
 %% Reference: denoising using Curvelet
@@ -235,20 +271,19 @@ save(fullfile(dataFileDir, [dataFileName, '_diffData_curvelet.mat']), 'diffData_
 hFigCleanedDataCurvelet = figure; imagesc(1:nRecs, 1:nSamples, cleanData_curvelet); colormap(gray); colorbar; truesize;
 psnrCleanData_curvelet = 20*log10(sqrt(numel(cleanData_curvelet)) / norm(dataTrue(:) - cleanData_curvelet(:), 2));
 ssimCleanData_curvelet = ssim(cleanData_curvelet, dataTrue);
-xlabel('Traces'); ylabel('Time');
-title(sprintf('Denoised Seismic Data (Curvelet), PSNR = %.2fdB', psnrCleanData_curvelet));
+xlabel('Trace Index'); ylabel('Time Sample Index');
+title(sprintf('Denoised Seismic Data (Curvelet, Thresholding), PSNR = %.2fdB', psnrCleanData_curvelet));
 saveas(hFigCleanedDataCurvelet, fullfile(dataFileDir, [dataFileName, '_cleanData_curvelet']), 'fig');
 
 hFigDiffDataCurvelet = figure; imagesc(1:nRecs, 1:nSamples, diffData_curvelet); colormap(gray); colorbar; truesize;
-xlabel('Traces'); ylabel('Time');
+xlabel('Trace Index'); ylabel('Time Sample Index');
 saveas(hFigDiffDataCurvelet, fullfile(dataFileDir, [dataFileName, '_diffData_curvelet']), 'fig');
 
 fprintf('------------------------------------------------------------\n');
-fprintf('Denoised Seismic Data (Curvelet), PSNR = %.2fdB, SSIM = %.4f\n', psnrCleanData_curvelet, ssimCleanData_curvelet);
+fprintf('Denoised Seismic Data (Curvelet, Thresholding), PSNR = %.2fdB, SSIM = %.4f\n', psnrCleanData_curvelet, ssimCleanData_curvelet);
 
 
-% Curvelet denoising using BPDN with SPG-L1 optimization toolbox
-% close all;
+%% Reference: Curvelet denoising using BPDN with SPG-L1 optimization toolbox
 % bpdn:  min ||x||_1  s.t.  ||fdctFunc(x, 1) - b|| <= \sigma
 % lasso: min ||fdctFunc(x, 1) - b||_2^2 s.t. ||x||_1 < \tau
 [vecCoeffCurvelet, sCurvelet] = curvelet2vec(coeffCurvelet);
@@ -258,33 +293,34 @@ b = fdctFunc(vecCoeffCurvelet, 1);
 gain = 1;
 sigSpThres = sqrt((fp2 - fp1) / (fs/2)) * sigma * sqrt(nSamples * nRecs) * gain;
 opts = spgSetParms('verbosity', 1, 'optTol', 1e-6);
-% vc_spg = spg_lasso(fdctFunc, b, tau, opts);
-vc_spg = spg_bpdn(fdctFunc, b, sigSpThres, opts);
+% vc_bpdn = spg_lasso(fdctFunc, b, tau, opts);
+vc_bpdn = spg_bpdn(fdctFunc, b, sigSpThres, opts);
 
-coeffCurvelet_spg = vec2curvelet(vc_spg, sCurvelet);
+coeffCurvelet_bpdn = vec2curvelet(vc_bpdn, sCurvelet);
 if ~isunix
-    cleanData_curvelet_spg = ifdct_wrapping(coeffCurvelet_spg, is_real);
+    cleanData_curvelet_bpdn = ifdct_wrapping(coeffCurvelet_bpdn, is_real);
 else
-    cleanData_curvelet_spg = ifdct_wrapping(coeffCurvelet_spg, is_real, nbscales, nbangles_coarse);
+    cleanData_curvelet_bpdn = ifdct_wrapping(coeffCurvelet_bpdn, is_real, nbscales, nbangles_coarse);
 end
-cleanData_curvelet_spg = real(cleanData_curvelet_spg);
-diffData_curvelet_spg = dataTrue - cleanData_curvelet_spg;
-save(fullfile(dataFileDir, [dataFileName, '_diffData_curvelet_spg.mat']), 'diffData_curvelet_spg', '-v7.3');
+cleanData_curvelet_bpdn = real(cleanData_curvelet_bpdn);
+save(fullfile(dataFileDir, [dataFileName, '_cleanData_curvelet_bpdn.mat']), 'cleanData_curvelet_bpdn', '-v7.3');
+diffData_curvelet_bpdn = dataTrue - cleanData_curvelet_bpdn;
+save(fullfile(dataFileDir, [dataFileName, '_diffData_curvelet_bpdn.mat']), 'diffData_curvelet_bpdn', '-v7.3');
 
 % Plot figures and PSNR output
-hFigCleanedDataCurvelet_spg = figure; imagesc(1:nRecs, 1:nSamples, cleanData_curvelet_spg); colormap(gray); colorbar; truesize;
-psnrCleanData_curvelet_spg = 20*log10(sqrt(numel(cleanData_curvelet_spg)) / norm(dataTrue(:) - cleanData_curvelet_spg(:), 2));
-ssimCleanData_curvelet_spg = ssim(cleanData_curvelet_spg, dataTrue);
-xlabel('Traces'); ylabel('Time');
-title(sprintf('Denoised Seismic Data (Curvelet, BPDN), PSNR = %.2fdB', psnrCleanData_curvelet_spg));
-saveas(hFigCleanedDataCurvelet_spg, fullfile(dataFileDir, [dataFileName, '_cleanData_curvelet_spg']), 'fig');
+hFigCleanedDataCurvelet_bpdn = figure; imagesc(1:nRecs, 1:nSamples, cleanData_curvelet_bpdn); colormap(gray); colorbar; truesize;
+psnrCleanData_curvelet_bpdn = 20*log10(sqrt(numel(cleanData_curvelet_bpdn)) / norm(dataTrue(:) - cleanData_curvelet_bpdn(:), 2));
+ssimCleanData_curvelet_bpdn = ssim(cleanData_curvelet_bpdn, dataTrue);
+xlabel('Trace Index'); ylabel('Time Sample Index');
+title(sprintf('Denoised Seismic Data (Curvelet, BPDN), PSNR = %.2fdB', psnrCleanData_curvelet_bpdn));
+saveas(hFigCleanedDataCurvelet_bpdn, fullfile(dataFileDir, [dataFileName, '_cleanData_curvelet_bpdn']), 'fig');
 
-hFigDiffDataCurvelet_spg = figure; imagesc(1:nRecs, 1:nSamples, diffData_curvelet_spg); colormap(gray); colorbar; truesize;
-xlabel('Traces'); ylabel('Time');
-saveas(hFigDiffDataCurvelet_spg, fullfile(dataFileDir, [dataFileName, '_diffData_curvelet_spg']), 'fig');
+hFigDiffDataCurvelet_bpdn = figure; imagesc(1:nRecs, 1:nSamples, diffData_curvelet_bpdn); colormap(gray); colorbar; truesize;
+xlabel('Trace Index'); ylabel('Time Sample Index');
+saveas(hFigDiffDataCurvelet_bpdn, fullfile(dataFileDir, [dataFileName, '_diffData_curvelet_bpdn']), 'fig');
 
 fprintf('------------------------------------------------------------\n');
-fprintf('Denoised Seismic Data (Curvelet, BPDN), PSNR = %.2fdB, SSIM = %.4f\n', psnrCleanData_curvelet_spg, ssimCleanData_curvelet_spg);
+fprintf('Denoised Seismic Data (Curvelet, BPDN), PSNR = %.2fdB, SSIM = %.4f\n', psnrCleanData_curvelet_bpdn, ssimCleanData_curvelet_bpdn);
 
 
 %% Parameters for dictionary learning using sparse K-SVD
@@ -409,12 +445,12 @@ save(fullfile(dataFileDir, [dataFileName, '_diffData_sparseKsvd.mat']), 'diffDat
 hFigCleanedDataSparseKsvd = figure; imagesc(1:nRecs, 1:nSamples, cleanData_sparseKsvd); colormap(gray); colorbar; truesize;
 psnrCleanData_sparseKsvd = 20*log10(sqrt(numel(cleanData_sparseKsvd)) / norm(dataTrue(:) - cleanData_sparseKsvd(:), 2));
 ssimCleanData_sparseKsvd = ssim(cleanData_sparseKsvd, dataTrue);
-xlabel('Traces'); ylabel('Time');
+xlabel('Trace Index'); ylabel('Time Sample Index');
 title(sprintf('Denoised Seismic Data, PSNR = %.2fdB', psnrCleanData_sparseKsvd));
 saveas(hFigCleanedDataSparseKsvd, fullfile(dataFileDir, [dataFileName, '_cleanData_sparseKsvd']), 'fig');
 
 hFigDiffDataSparseKsvd = figure; imagesc(1:nRecs, 1:nSamples, diffData_sparseKsvd); colormap(gray); colorbar; truesize;
-xlabel('Traces'); ylabel('Time');
+xlabel('Trace Index'); ylabel('Time Sample Index');
 saveas(hFigDiffDataSparseKsvd, fullfile(dataFileDir, [dataFileName, '_diffData_sparseKsvd']), 'fig');
 
 fprintf('------------------------------------------------------------\n');
