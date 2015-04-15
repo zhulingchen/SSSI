@@ -33,7 +33,7 @@
 
 /* output arguments */
 #define TASKID_OUT          plhs[0]     /* rank (task ID) of the calling process to return */
-#define MODEL_OUT            plhs[1]
+#define MODEL_OUT           plhs[1]
 #define SNAPSHOT_OUT        plhs[2]
 #define SNAPSHOT_LOCAL_OUT  plhs[3]
 /* #define TEST_OUT        plhs[4] */     /* out argument for test */

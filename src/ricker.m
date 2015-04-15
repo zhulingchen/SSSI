@@ -1,5 +1,5 @@
 function [rw,t] = ricker(f,n,dt,t0,t1)
-%RICKER creates an causal ricker wavelet signal
+%RICKER creates a causal ricker wavelet signal
 %
 %   RICKER creates and plots a default causal ricker wavelet with:
 %

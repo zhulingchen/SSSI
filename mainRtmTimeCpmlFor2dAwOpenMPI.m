@@ -20,6 +20,12 @@ addpath(genpath('./src'));
 %% Load velocity model
 load('./modelData/velocityModel.mat');
 [nz, nx] = size(velocityModel);
+
+% smooth velocity model using average filter
+% filterSmooth = fspecial('average', 5);
+% velocityModelSmooth = imfilter(velocityModel, filterSmooth, 'replicate');
+load('./modelData/velocityModelSmooth.mat'); % velocityModelSmooth
+
 vmin = min(velocityModel(:));
 vmax = max(velocityModel(:));
 
@@ -45,6 +51,7 @@ t  = (0:nt-1).*dt;
 
 % add region around model for applying absorbing boundary conditions
 V = extBoundary(velocityModel, nBoundary, 2);
+VS = extBoundary(velocityModelSmooth, nBoundary, 2);
 
 % number of approximation order for differentiator operator
 nDiffOrder = 5;
@@ -52,47 +59,118 @@ nDiffOrder = 5;
 % Define frequency parameter for ricker wavelet
 f = 20;
 
+%% Set up positions of shot array
+idxShotArrLeft = 51;
+idxShotArrRight = 51;
+nShots = 1;
+xShotGrid = (idxShotArrLeft:ceil((idxShotArrRight - idxShotArrLeft + 1)/nShots):idxShotArrRight);
+
 %% Generate shot signals
-% shot position
-zShotGrid = 21;
+zShotGrid = 1;
 zShot = zShotGrid * dz;
-xShotGrid = 51;
 xShot = xShotGrid * dx;
 
-% generate shot source field
-sourceTime = zeros([size(V), nt]);
+%% Perform RTM in global
+hFigRtmProcess = figure;
+rtmStacked = zeros(nz+nBoundary, nx+2*nBoundary);
+for ixs = 1:nShots
+    tic;
+    % generate shot source field
+    sourceTime = zeros([size(V), nt]);
+    
+    % Ricker wavelet
+    wave1dTime = ricker(f, nt, dt);
+    sourceTime(zShotGrid, xShotGrid(ixs)+nBoundary, :) = reshape(wave1dTime, 1, 1, nt);
+    
+    % Generate the forward snapshot
+    [dataTrue, fwdSnapshotTrue] = fwdTimeCpmlFor2dAw(V, sourceTime, nDiffOrder, nBoundary, dz, dx, dt);
+    [dataSmooth, fwdSnapshotSmooth] = fwdTimeCpmlFor2dAw(VS, sourceTime, nDiffOrder, nBoundary, dz, dx, dt);
+    
+    dataDelta = dataTrue - dataSmooth;
+    
+    % Generate the reverse snapshot
+    [model, rvsSnapshotDelta] = rvsTimeCpmlFor2dAw(V, dataDelta, nDiffOrder, nBoundary, dz, dx, dt);
+    % test begin
+    % [model, rvsSnapshotTrue] = rvsTimeCpmlFor2dAw(V, dataTrue, nDiffOrder, nBoundary, dz, dx, dt);
+    % test end
+    
+    % RTM by cross-correlation
+    rtmNum = zeros(nz+nBoundary, nx+2*nBoundary);
+    rtmDen = eps * ones(nz+nBoundary, nx+2*nBoundary);
+    for it = 1:nt
+        rtmNum = fwdSnapshotSmooth(:, :, it) .* rvsSnapshotDelta(:, :, it) + rtmNum;
+        rtmDen = fwdSnapshotSmooth(:, :, it).^2 + rtmDen;
+    end
+    rtmStacked = rtmStacked + rtmNum ./ rtmDen;
+    
+    tRtmPerShot = toc;
+    fprintf('Elapsed time of Shot No. %d @ (%d, %d) for RTM = %fs\n', ixs, zShotGrid, xShotGrid(ixs), tRtmPerShot);
+    
+    figure(hFigRtmProcess);
+    imagesc(x, z, rtmStacked(1:end-nBoundary, nBoundary+1:end-nBoundary));
+    xlabel('Distance (m)'); ylabel('Depth (m)');
+    title(sprintf('Stacked Image after Shot No. %d', ixs));
+    colormap(seismic);
+end
 
-% Ricker wavelet
-wave1dTime = ricker(f, nt, dt);
-sourceTime(zShotGrid, xShotGrid+nBoundary, :) = reshape(wave1dTime, 1, 1, nt);
+filenameRtmStacked = './modelData/RtmStacked.mat';
+save(filenameRtmStacked, 'rtmStacked', '-v7.3');
 
-%% Generate the shot record
-tic; [dataTrue, snapshotTrue] = fwdTimeCpmlFor2dAw(V, sourceTime, nDiffOrder, nBoundary, dz, dx, dt); toc;
-tic; [model, rtmsnapshotTrue] = rvsTimeCpmlFor2dAw(V, dataTrue, nDiffOrder, nBoundary, dz, dx, dt); toc;
+%% Perform RTM in MPI
 mpi_init;
-tic; [taskId, dataTrue_mpi, snapshotTrue_mpi, snapshotTrue_local] = fwdTimeCpmlFor2dAw_openmpi_mex(V, sourceTime, nDiffOrder, nBoundary, dz, dx, dt); toc;
-tic; [taskId, model_mpi, rtmsnapshotTrue_mpi, rtmsnapshotTrue_local] = rvsTimeCpmlFor2dAw_openmpi_mex(V, dataTrue, nDiffOrder, nBoundary, dz, dx, dt); toc;
+
+rtmStacked_local = 0;
+for ixs = 1:nShots
+    tic;
+    
+    % generate shot source field
+    sourceTime = zeros([size(V), nt]);
+    
+    % Ricker wavelet
+    wave1dTime = ricker(f, nt, dt);
+    sourceTime(zShotGrid, xShotGrid(ixs)+nBoundary, :) = reshape(wave1dTime, 1, 1, nt);
+    
+    % Generate the forward snapshot
+    [taskId, dataTrue_mpi, fwdSnapshotTrue_mpi, fwdSnapshotTrue_local] ...
+        = fwdTimeCpmlFor2dAw_openmpi_mex(V, sourceTime, nDiffOrder, nBoundary, dz, dx, dt);
+    [taskId, dataSmooth_mpi, fwdSnapshotSmooth_mpi, fwdSnapshotSmooth_local] ...
+        = fwdTimeCpmlFor2dAw_openmpi_mex(VS, sourceTime, nDiffOrder, nBoundary, dz, dx, dt);
+    
+    % Generate the reverse snapshot
+    [taskId, model_mpi, rvsSnapshotDelta_mpi, rvsSnapshotDelta_local] ...
+        = rvsTimeCpmlFor2dAw_openmpi_mex(V, dataDelta, nDiffOrder, nBoundary, dz, dx, dt);
+    
+    % RTM by cross-correlation
+    rtmNum_local = 0;
+    rtmDen_local = 0;
+    for it = 1:nt
+        rtmNum_local = fwdSnapshotSmooth_local(:, :, it) .* rvsSnapshotDelta_local(:, :, it) + rtmNum_local;
+        rtmDen_local = fwdSnapshotSmooth_local(:, :, it).^2 + rtmDen_local; % global snapshot required otherwise RTM results are different from the global case
+    end
+    rtmStacked_local = rtmStacked_local + rtmNum_local ./ rtmDen_local;
+    
+    tRtmPerShot_local = toc;
+    fprintf('Elapsed time of Shot No. %d @ (%d, %d) on Processor No. %d for RTM = %fs\n', ixs, zShotGrid, xShotGrid(ixs), taskId, tRtmPerShot_local);
+end
+
+filenameRtmStacked_local = sprintf('./modelData/RtmStacked_proc%d.mat', taskId);
+save(filenameRtmStacked_local, 'rtmStacked_local', '-v7.3');
+
 mpi_finalize;
-% % save each local snapshot video
-% objVideoModelShots = VideoWriter(sprintf('./snapshotTrue_local_%d.mp4', taskId), 'MPEG-4');
-% open(objVideoModelShots);
-% hFig = figure;
-% for it = 1:nt
-%     imagesc(x, z, snapshotTrue_local(:, :, it));
-%     caxis([-0.14 1]);
-%     writeVideo(objVideoModelShots, im2frame(hardcopy(hFig, '-dzbuffer', '-r0')));
-%     truesize;
-%     drawnow;
-% end
-% fprintf('Video output complete for taskId %d!\n', taskId);
+
+% result comparison
 if (taskId == 0)
     delta = dataTrue - dataTrue_mpi;
     fprintf('Forward: Maximum abs difference of data = %d\n', max(abs(delta(:))));
-    delta = snapshotTrue - snapshotTrue_mpi;
+    delta = fwdSnapshotTrue - fwdSnapshotTrue_mpi;
     fprintf('Forward: Maximum abs difference of snapshot = %d\n', max(abs(delta(:))));
+    delta = dataSmooth - dataSmooth_mpi;
+    fprintf('Forward: Maximum abs difference of data (Smooth Version) = %d\n', max(abs(delta(:))));
+    delta = fwdSnapshotSmooth - fwdSnapshotSmooth_mpi;
+    fprintf('Forward: Maximum abs difference of snapshot (Smooth Version) = %d\n', max(abs(delta(:))));
     delta = model - model_mpi;
     fprintf('Reverse: Maximum abs difference of model = %d\n', max(abs(delta(:))));
-    delta = rtmsnapshotTrue - rtmsnapshotTrue_mpi;
+    delta = rvsSnapshotDelta - rvsSnapshotDelta_mpi;
     fprintf('Reverse: Maximum abs difference of snapshot = %d\n', max(abs(delta(:))));
 end
 
