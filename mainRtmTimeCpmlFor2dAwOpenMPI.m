@@ -17,6 +17,8 @@ clc;
 addpath(genpath('./modelData'));
 addpath(genpath('./src'));
 
+EPSILON = 1e-6;
+
 %% Load velocity model
 load('./modelData/velocityModel.mat');
 [nz, nx] = size(velocityModel);
@@ -60,8 +62,8 @@ nDiffOrder = 5;
 f = 20;
 
 %% Set up positions of shot array
-idxShotArrLeft = 51;
-idxShotArrRight = 51;
+idxShotArrLeft = 1;
+idxShotArrRight = 100;
 nShots = 1;
 xShotGrid = (idxShotArrLeft:ceil((idxShotArrRight - idxShotArrLeft + 1)/nShots):idxShotArrRight);
 
@@ -96,7 +98,7 @@ for ixs = 1:nShots
     
     % RTM by cross-correlation
     rtmNum = zeros(nz+nBoundary, nx+2*nBoundary);
-    rtmDen = eps * ones(nz+nBoundary, nx+2*nBoundary);
+    rtmDen = EPSILON * ones(nz+nBoundary, nx+2*nBoundary);
     for it = 1:nt
         rtmNum = fwdSnapshotSmooth(:, :, it) .* rvsSnapshotDelta(:, :, it) + rtmNum;
         rtmDen = fwdSnapshotSmooth(:, :, it).^2 + rtmDen;
@@ -142,10 +144,10 @@ for ixs = 1:nShots
     
     % RTM by cross-correlation
     rtmNum_local = 0;
-    rtmDen_local = 0;
+    rtmDen_local = EPSILON;
     for it = 1:nt
         rtmNum_local = fwdSnapshotSmooth_local(:, :, it) .* rvsSnapshotDelta_local(:, :, it) + rtmNum_local;
-        rtmDen_local = fwdSnapshotSmooth_local(:, :, it).^2 + rtmDen_local; % global snapshot required otherwise RTM results are different from the global case
+        rtmDen_local = fwdSnapshotSmooth_local(:, :, it).^2 + rtmDen_local;
     end
     rtmStacked_local = rtmStacked_local + rtmNum_local ./ rtmDen_local;
     
