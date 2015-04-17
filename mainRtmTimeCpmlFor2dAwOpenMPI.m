@@ -64,7 +64,7 @@ f = 20;
 %% Set up positions of shot array
 idxShotArrLeft = 1;
 idxShotArrRight = 100;
-nShots = 1;
+nShots = 3;
 xShotGrid = (idxShotArrLeft:ceil((idxShotArrRight - idxShotArrLeft + 1)/nShots):idxShotArrRight);
 
 %% Generate shot signals
@@ -88,6 +88,7 @@ for ixs = 1:nShots
     [dataTrue, fwdSnapshotTrue] = fwdTimeCpmlFor2dAw(V, sourceTime, nDiffOrder, nBoundary, dz, dx, dt);
     [dataSmooth, fwdSnapshotSmooth] = fwdTimeCpmlFor2dAw(VS, sourceTime, nDiffOrder, nBoundary, dz, dx, dt);
     
+    % Acquire difference data for reverse propagation
     dataDelta = dataTrue - dataSmooth;
     
     % Generate the reverse snapshot
@@ -138,16 +139,23 @@ for ixs = 1:nShots
     [taskId, dataSmooth_mpi, fwdSnapshotSmooth_mpi, fwdSnapshotSmooth_local] ...
         = fwdTimeCpmlFor2dAw_openmpi_mex(VS, sourceTime, nDiffOrder, nBoundary, dz, dx, dt);
     
+    % Acquire difference data for reverse propagation
+    if (taskId == 0)
+        dataDelta_mpi = dataTrue_mpi - dataSmooth_mpi;
+    else
+        dataDelta_mpi = zeros(nx+2*nBoundary, nt);
+    end
+    
     % Generate the reverse snapshot
     [taskId, model_mpi, rvsSnapshotDelta_mpi, rvsSnapshotDelta_local] ...
-        = rvsTimeCpmlFor2dAw_openmpi_mex(V, dataDelta, nDiffOrder, nBoundary, dz, dx, dt);
+        = rvsTimeCpmlFor2dAw_openmpi_mex(V, dataDelta_mpi, nDiffOrder, nBoundary, dz, dx, dt);
     
     % RTM by cross-correlation
     rtmNum_local = 0;
     rtmDen_local = EPSILON;
     for it = 1:nt
-        rtmNum_local = fwdSnapshotSmooth_local(:, :, it) .* rvsSnapshotDelta_local(:, :, it) + rtmNum_local;
-        rtmDen_local = fwdSnapshotSmooth_local(:, :, it).^2 + rtmDen_local;
+        rtmNum_local = rtmNum_local + fwdSnapshotSmooth_local(:, :, it) .* rvsSnapshotDelta_local(:, :, it);
+        rtmDen_local = rtmDen_local + fwdSnapshotSmooth_local(:, :, it).^2;
     end
     rtmStacked_local = rtmStacked_local + rtmNum_local ./ rtmDen_local;
     
