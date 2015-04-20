@@ -334,174 +334,174 @@ nbscales_train = 3;
 nbangles_coarse_train = 16;
 
 
-%% Dictionary learning using sparse K-SVD (band-by-band)
-% wavelet transform of train data
-trainData_coeff = pdfbdec(trainData, pfilter_wavelet_train, dfilter_wavelet_train, nlevels_wavelet_train);
-cleanCoeff_sparseKsvd = cell(size(trainData_coeff));
-learnedDict_band = cell(size(trainData_coeff));
-learnedDictImg_band = cell(size(trainData_coeff));
-overallDict_band = cell(size(trainData_coeff));
-overallDictImg_band = cell(size(trainData_coeff));
-nLayer = length(trainData_coeff);
-for iLayer = 2:nLayer
-    cleanCoeff_sparseKsvd{iLayer} = cell(size(trainData_coeff{iLayer}));
-    learnedDict_band{iLayer} = cell(size(trainData_coeff{iLayer}));
-    learnedDictImg_band{iLayer} = cell(size(trainData_coeff{iLayer}));
-    overallDict_band{iLayer} = cell(size(trainData_coeff{iLayer}));
-    overallDictImg_band{iLayer} = cell(size(trainData_coeff{iLayer}));
-end
-fprintf('------------------------------------------------------------\n');
-fprintf('Dictionary Learning (band-by-band)\n');
-idxBand = 0;
-% coarest band
-% parameters
-gain_band = 1;                                  % noise gain (default value 1.15)
-trainBlockSize_band = 16;                        % for each dimension
-trainBlockNum_band = 5000;                      % number of training blocks in the training set
-trainIter_band = 20;
-sigSpThres_band = sqrt((fp2 - fp1) / (fs/2)) * sigma * trainBlockSize_band * gain_band / 2^length(nlevels_wavelet_train); % pre-defined l2-norm error for BPDN
-atomSpThres_band = 50;                          % a self-determind value to control the sparsity of matrix A
-% dictionary learning
-fprintf('Learning from Band %d\n', idxBand);
-initDict_band = speye(trainBlockSize_band^2, trainBlockSize_band^2);
-% test begin
-% wavelets for base dictionary
-[vecTrainBlockCoeff_band, str_band] = pdfb2vec(pdfbdec(zeros(trainBlockSize_band, trainBlockSize_band), pfilter_wavelet_train, dfilter_wavelet_train, nlevels_wavelet_train));
-baseSynOp_band = @(x) pdfb(x, str_band, pfilter_wavelet_train, dfilter_wavelet_train, nlevels_wavelet_train, trainBlockSize_band, trainBlockSize_band, 1);
-baseAnaOp_band = @(x) pdfb(x, str_band, pfilter_wavelet_train, dfilter_wavelet_train, nlevels_wavelet_train, trainBlockSize_band, trainBlockSize_band, 2);
-[PhiSyn_band, PhiAna_band] = operator2matrix(baseSynOp_band, baseAnaOp_band, trainBlockSize_band * trainBlockSize_band);
-PhiSyn_band = PhiSyn_band(:, 1 : prod(str_band(1, 3:4)));
-PhiAna_band = PhiAna_band(1 : prod(str_band(1, 3:4)), :);
-idxAtom = prod(str_band(1, 3:4));
-initDict_band = speye(prod(str_band(1, 3:4)), prod(str_band(1, 3:4)));
-% test end
-[learnedDict_band{1}, Coeffs_band, errLasso_band, errBpdn_band] = sparseKsvd(trainData_coeff{1}, PhiSyn_band, PhiAna_band, ...
-    initDict_band, trainIter_band, trainBlockSize_band, trainBlockNum_band, atomSpThres_band, sigSpThres_band, struct('verbosity', 0, 'method', 'bpdn'));
-% test begin
-learnedDictImg_band{1} = showdict(full(learnedDict_band{1}), [1 1]*sqrt(size(learnedDict_band{1}, 1)), round(sqrt(size(learnedDict_band{1}, 2))), round(sqrt(size(learnedDict_band{1}, 2))), 'whitelines', 'highcontrast');
-overallDict_band{1} = PhiSyn_band * learnedDict_band{1};
-overallDictImg_band{1} = showdict(PhiSyn_band * learnedDict_band{1}, [1 1]*sqrt(size(PhiSyn_band * learnedDict_band{1}, 1)), round(sqrt(size(PhiSyn_band * learnedDict_band{1}, 2))), round(sqrt(size(PhiSyn_band * learnedDict_band{1}, 2))), 'whitelines', 'highcontrast');
-% test end
-% % start a pool of Matlab workers
-% numCores = feature('numcores');
-% if isempty(gcp('nocreate')) % checking to see if my pool is already open
-%     myPool = parpool(numCores);
+% %% Dictionary learning using sparse K-SVD (band-by-band)
+% % wavelet transform of train data
+% trainData_coeff = pdfbdec(trainData, pfilter_wavelet_train, dfilter_wavelet_train, nlevels_wavelet_train);
+% cleanCoeff_sparseKsvd = cell(size(trainData_coeff));
+% learnedDict_band = cell(size(trainData_coeff));
+% learnedDictImg_band = cell(size(trainData_coeff));
+% overallDict_band = cell(size(trainData_coeff));
+% overallDictImg_band = cell(size(trainData_coeff));
+% nLayer = length(trainData_coeff);
+% for iLayer = 2:nLayer
+%     cleanCoeff_sparseKsvd{iLayer} = cell(size(trainData_coeff{iLayer}));
+%     learnedDict_band{iLayer} = cell(size(trainData_coeff{iLayer}));
+%     learnedDictImg_band{iLayer} = cell(size(trainData_coeff{iLayer}));
+%     overallDict_band{iLayer} = cell(size(trainData_coeff{iLayer}));
+%     overallDictImg_band{iLayer} = cell(size(trainData_coeff{iLayer}));
 % end
-% % denoising
-% fprintf('Denoising Band %d\n', idxBand);
-% cleanCoeff_sparseKsvd{1} = zeros(size(trainData_coeff{1}));
-% totalBlockNum_band = (size(trainData_coeff{1}, 1) - trainBlockSize_band + 1) * (size(trainData_coeff{1}, 2) - trainBlockSize_band + 1);
-% processedBlocks = 0;
-% for ibatch = 1:size(trainData_coeff{1}, 2)-trainBlockSize_band+1
-%     fprintf('\tBatch %d... ', ibatch);
-%     % the current batch of blocks
-%     blocks = im2colstep(trainData_coeff{1}(:, ibatch:ibatch+trainBlockSize_band-1), trainBlockSize_band * [1, 1], [1, 1]);
-%     cleanBlocks = zeros(size(blocks));
-%     blockCoeff = zeros(trainBlockSize_band^2, size(trainData_coeff{1}, 1) - trainBlockSize_band + 1);
-%     parfor iblk = 1:size(trainData_coeff{1}, 1) - trainBlockSize_band + 1
-%         opts = spgSetParms('verbosity', 0, 'optTol', 1e-6);
-%         blockCoeff(:, iblk) = spg_bpdn(@(x, mode) learnedOp(x, baseSynOp_band, baseAnaOp_band, learnedDict_band, mode), blocks(:, iblk), sigSpThres_band, opts);
-%         % blockCoeff(:, iblk) = OMP({@(x) baseSynOp(learnedDict*x), @(x) learnedDict'*baseAnaOp(x)}, blocks(:, iblk), sigSpThres);
-%         cleanBlocks(:, iblk) = learnedOp(blockCoeff(:, iblk), baseSynOp_band, baseAnaOp_band, learnedDict_band, 1);
-%     end
-%     cleanBatch = col2imstep(cleanBlocks, [size(trainData_coeff{1}, 1), trainBlockSize_band], trainBlockSize_band * [1, 1], [1, 1]);
-%     cleanCoeff_sparseKsvd{1}(:,ibatch:ibatch+trainBlockSize_band-1) = cleanCoeff_sparseKsvd{1}(:,ibatch:ibatch+trainBlockSize_band-1) + cleanBatch;
-%     processedBlocks = processedBlocks + (size(trainData_coeff{1}, 1) - trainBlockSize_band + 1);
-%     fprintf('\tProcessed %d blocks\n', processedBlocks);
-% end
-% % average the denoised and noisy signals
-% cnt = countcover(size(trainData_coeff{1}), trainBlockSize_band * [1, 1], [1, 1]);
-% cleanCoeff_sparseKsvd{1} = cleanCoeff_sparseKsvd{1}./cnt;
-% % terminate the pool of Matlab workers
-% delete(gcp('nocreate'));
-% other bands
-for iLayer = 2:nLayer
-    nDir = length(trainData_coeff{iLayer});
-    for iDir = 1:nDir
-        idxBand = idxBand + 1;
-        % dictionary learning
-        fprintf('Learning from Band %d\n', idxBand);
-        initDict_band = speye(trainBlockSize_band^2, trainBlockSize_band^2);
-        % test begin
-        % wavelets for base dictionary
-        [vecTrainBlockCoeff_band, str_band] = pdfb2vec(pdfbdec(zeros(trainBlockSize_band, trainBlockSize_band), pfilter_wavelet_train, dfilter_wavelet_train, nlevels_wavelet_train));
-        baseSynOp_band = @(x) pdfb(x, str_band, pfilter_wavelet_train, dfilter_wavelet_train, nlevels_wavelet_train, trainBlockSize_band, trainBlockSize_band, 1);
-        baseAnaOp_band = @(x) pdfb(x, str_band, pfilter_wavelet_train, dfilter_wavelet_train, nlevels_wavelet_train, trainBlockSize_band, trainBlockSize_band, 2);
-        [PhiSyn_band, PhiAna_band] = operator2matrix(baseSynOp_band, baseAnaOp_band, trainBlockSize_band * trainBlockSize_band);
-        PhiSyn_band = PhiSyn_band(:, idxAtom + 1 : idxAtom + prod(str_band(1+(iLayer-2)*nDir+iDir, 3:4)));
-        PhiAna_band = PhiAna_band(idxAtom + 1 : idxAtom + prod(str_band(1+(iLayer-2)*nDir+iDir, 3:4)), :);
-        idxAtom = idxAtom + prod(str_band(1+(iLayer-2)*nDir+iDir, 3:4));
-        initDict_band = speye(prod(str_band(1+(iLayer-2)*nDir+iDir, 3:4)), prod(str_band(1+(iLayer-2)*nDir+iDir, 3:4)));
-        % test end
-        [learnedDict_band{iLayer}{iDir}, Coeffs_band, errLasso_band, errBpdn_band] = sparseKsvd(trainData_coeff{iLayer}{iDir}, PhiSyn_band, PhiAna_band, ...
-            initDict_band, trainIter_band, trainBlockSize_band, trainBlockNum_band, atomSpThres_band, sigSpThres_band, struct('verbosity', 0, 'method', 'bpdn'));
-        % test begin
-        learnedDictImg_band{iLayer}{iDir} = showdict(full(learnedDict_band{iLayer}{iDir}), [1 1]*sqrt(size(learnedDict_band{iLayer}{iDir}, 1)), round(sqrt(size(learnedDict_band{iLayer}{iDir}, 2))), round(sqrt(size(learnedDict_band{iLayer}{iDir}, 2))), 'whitelines', 'highcontrast');
-        overallDict_band{iLayer}{iDir} = PhiSyn_band * learnedDict_band{iLayer}{iDir};
-        overallDictImg_band{iLayer}{iDir} = showdict(PhiSyn_band * learnedDict_band{iLayer}{iDir}, [1 1]*sqrt(size(PhiSyn_band * learnedDict_band{iLayer}{iDir}, 1)), round(sqrt(size(PhiSyn_band * learnedDict_band{iLayer}{iDir}, 2))), round(sqrt(size(PhiSyn_band * learnedDict_band{iLayer}{iDir}, 2))), 'whitelines', 'highcontrast');
-        % test end
-%         % start a pool of Matlab workers
-%         numCores = feature('numcores');
-%         if isempty(gcp('nocreate')) % checking to see if my pool is already open
-%             myPool = parpool(numCores);
-%         end
-%         % denoising
-%         fprintf('Denoising Band %d\n', idxBand);
-%         cleanCoeff_sparseKsvd{iLayer}{iDir} = zeros(size(trainData_coeff{iLayer}{iDir}));
-%         totalBlockNum_band = (size(trainData_coeff{iLayer}{iDir}, 1) - trainBlockSize_band + 1) * (size(trainData_coeff{iLayer}{iDir}, 2) - trainBlockSize_band + 1);
-%         processedBlocks = 0;
-%         for ibatch = 1:size(trainData_coeff{iLayer}{iDir}, 2)-trainBlockSize_band+1
-%             fprintf('\tBatch %d... ', ibatch);
-%             % the current batch of blocks
-%             blocks = im2colstep(trainData_coeff{iLayer}{iDir}(:, ibatch:ibatch+trainBlockSize_band-1), trainBlockSize_band * [1, 1], [1, 1]);
-%             cleanBlocks = zeros(size(blocks));
-%             blockCoeff = zeros(trainBlockSize_band^2, size(trainData_coeff{iLayer}{iDir}, 1) - trainBlockSize_band + 1);
-%             parfor iblk = 1:size(trainData_coeff{iLayer}{iDir}, 1) - trainBlockSize_band + 1
-%                 opts = spgSetParms('verbosity', 0, 'optTol', 1e-6);
-%                 blockCoeff(:, iblk) = spg_bpdn(@(x, mode) learnedOp(x, baseSynOp_band, baseAnaOp_band, learnedDict_band, mode), blocks(:, iblk), sigSpThres_band, opts);
-%                 % blockCoeff(:, iblk) = OMP({@(x) baseSynOp(learnedDict*x), @(x) learnedDict'*baseAnaOp(x)}, blocks(:, iblk), sigSpThres);
-%                 cleanBlocks(:, iblk) = learnedOp(blockCoeff(:, iblk), baseSynOp_band, baseAnaOp_band, learnedDict_band, 1);
-%             end
-%             cleanBatch = col2imstep(cleanBlocks, [size(trainData_coeff{iLayer}{iDir}, 1), trainBlockSize_band], trainBlockSize_band * [1, 1], [1, 1]);
-%             cleanCoeff_sparseKsvd{iLayer}{iDir}(:,ibatch:ibatch+trainBlockSize_band-1) = cleanCoeff_sparseKsvd{iLayer}{iDir}(:,ibatch:ibatch+trainBlockSize_band-1) + cleanBatch;
-%             processedBlocks = processedBlocks + (size(trainData_coeff{iLayer}{iDir}, 1) - trainBlockSize_band + 1);
-%             fprintf('\tProcessed %d blocks\n', processedBlocks);
-%         end
-%         % average the denoised and noisy signals
-%         cnt = countcover(size(trainData_coeff{iLayer}{iDir}), trainBlockSize_band * [1, 1], [1, 1]);
-%         cleanCoeff_sparseKsvd{iLayer}{iDir} = cleanCoeff_sparseKsvd{iLayer}{iDir}./cnt;
-%         % terminate the pool of Matlab workers
-%         delete(gcp('nocreate'));
-    end
-    sigSpThres_band = sigSpThres_band * 2;
-end
-% test begin
-save(fullfile(dataFileDir, [dataFileName, '_learnedDict_band.mat']), 'learnedDict_band', '-v7.3');
-save(fullfile(dataFileDir, [dataFileName, '_learnedDictImg_band.mat']), 'learnedDictImg_band', '-v7.3');
-save(fullfile(dataFileDir, [dataFileName, '_overallDict_band.mat']), 'overallDict_band', '-v7.3');
-save(fullfile(dataFileDir, [dataFileName, '_overallDictImg_band.mat']), 'overallDictImg_band', '-v7.3');
-% test end
-% % reconstruction
-% cleanData_sparseKsvd_band = pdfbrec(cleanCoeff_sparseKsvd, pfilter_wavelet_train, dfilter_wavelet_train);
-% save(fullfile(dataFileDir, [dataFileName, '_cleanData_sparseKsvd_band.mat']), 'cleanData_sparseKsvd_band', '-v7.3');
-% diffData_sparseKsvd_band = dataTrue - cleanData_sparseKsvd_band;
-% save(fullfile(dataFileDir, [dataFileName, '_diffData_sparseKsvd_band.mat']), 'diffData_sparseKsvd_band', '-v7.3');
-
-% %% Plot figures and PSNR output
-% hFigCleanedDataSparseKsvd_band = figure; imagesc(1:nRecs, 1:nSamples, cleanData_sparseKsvd_band); colormap(gray); colorbar; truesize;
-% psnrCleanData_sparseKsvd_band = 20*log10(sqrt(numel(cleanData_sparseKsvd_band)) / norm(dataTrue(:) - cleanData_sparseKsvd_band(:), 2));
-% ssimCleanData_sparseKsvd_band = ssim(cleanData_sparseKsvd_band, dataTrue);
-% xlabel('Trace Index'); ylabel('Time Sample Index');
-% title(sprintf('Denoised Seismic Data (Dictionary Learning, band-by-band), PSNR = %.2fdB', psnrCleanData_sparseKsvd_band));
-% saveas(hFigCleanedDataSparseKsvd_band, fullfile(dataFileDir, [dataFileName, '_cleanData_sparseKsvd_band']), 'fig');
-% 
-% hFigDiffDataSparseKsvd_band = figure; imagesc(1:nRecs, 1:nSamples, diffData_sparseKsvd_band); colormap(gray); colorbar; truesize;
-% xlabel('Trace Index'); ylabel('Time Sample Index');
-% saveas(hFigDiffDataSparseKsvd_band, fullfile(dataFileDir, [dataFileName, '_diffData_sparseKsvd_band']), 'fig');
-% 
 % fprintf('------------------------------------------------------------\n');
-% fprintf('Denoised Seismic Data (Dictionary Learning, band-by-band), PSNR = %.2fdB, SSIM = %.4f\n', psnrCleanData_sparseKsvd_band, ssimCleanData_sparseKsvd_band);
-
+% fprintf('Dictionary Learning (band-by-band)\n');
+% idxBand = 0;
+% % coarest band
+% % parameters
+% gain_band = 1;                                  % noise gain (default value 1.15)
+% trainBlockSize_band = 16;                        % for each dimension
+% trainBlockNum_band = 5000;                      % number of training blocks in the training set
+% trainIter_band = 20;
+% sigSpThres_band = sqrt((fp2 - fp1) / (fs/2)) * sigma * trainBlockSize_band * gain_band / 2^length(nlevels_wavelet_train); % pre-defined l2-norm error for BPDN
+% atomSpThres_band = 50;                          % a self-determind value to control the sparsity of matrix A
+% % dictionary learning
+% fprintf('Learning from Band %d\n', idxBand);
+% initDict_band = speye(trainBlockSize_band^2, trainBlockSize_band^2);
+% % test begin
+% % wavelets for base dictionary
+% [vecTrainBlockCoeff_band, str_band] = pdfb2vec(pdfbdec(zeros(trainBlockSize_band, trainBlockSize_band), pfilter_wavelet_train, dfilter_wavelet_train, nlevels_wavelet_train));
+% baseSynOp_band = @(x) pdfb(x, str_band, pfilter_wavelet_train, dfilter_wavelet_train, nlevels_wavelet_train, trainBlockSize_band, trainBlockSize_band, 1);
+% baseAnaOp_band = @(x) pdfb(x, str_band, pfilter_wavelet_train, dfilter_wavelet_train, nlevels_wavelet_train, trainBlockSize_band, trainBlockSize_band, 2);
+% [PhiSyn_band, PhiAna_band] = operator2matrix(baseSynOp_band, baseAnaOp_band, trainBlockSize_band * trainBlockSize_band);
+% PhiSyn_band = PhiSyn_band(:, 1 : prod(str_band(1, 3:4)));
+% PhiAna_band = PhiAna_band(1 : prod(str_band(1, 3:4)), :);
+% idxAtom = prod(str_band(1, 3:4));
+% initDict_band = speye(prod(str_band(1, 3:4)), prod(str_band(1, 3:4)));
+% % test end
+% [learnedDict_band{1}, Coeffs_band, errLasso_band, errBpdn_band] = sparseKsvd(trainData_coeff{1}, PhiSyn_band, PhiAna_band, ...
+%     initDict_band, trainIter_band, trainBlockSize_band, trainBlockNum_band, atomSpThres_band, sigSpThres_band, struct('verbosity', 0, 'method', 'bpdn'));
+% % test begin
+% learnedDictImg_band{1} = showdict(full(learnedDict_band{1}), [1 1]*sqrt(size(learnedDict_band{1}, 1)), round(sqrt(size(learnedDict_band{1}, 2))), round(sqrt(size(learnedDict_band{1}, 2))), 'whitelines', 'highcontrast');
+% overallDict_band{1} = PhiSyn_band * learnedDict_band{1};
+% overallDictImg_band{1} = showdict(PhiSyn_band * learnedDict_band{1}, [1 1]*sqrt(size(PhiSyn_band * learnedDict_band{1}, 1)), round(sqrt(size(PhiSyn_band * learnedDict_band{1}, 2))), round(sqrt(size(PhiSyn_band * learnedDict_band{1}, 2))), 'whitelines', 'highcontrast');
+% % test end
+% % % start a pool of Matlab workers
+% % numCores = feature('numcores');
+% % if isempty(gcp('nocreate')) % checking to see if my pool is already open
+% %     myPool = parpool(numCores);
+% % end
+% % % denoising
+% % fprintf('Denoising Band %d\n', idxBand);
+% % cleanCoeff_sparseKsvd{1} = zeros(size(trainData_coeff{1}));
+% % totalBlockNum_band = (size(trainData_coeff{1}, 1) - trainBlockSize_band + 1) * (size(trainData_coeff{1}, 2) - trainBlockSize_band + 1);
+% % processedBlocks = 0;
+% % for ibatch = 1:size(trainData_coeff{1}, 2)-trainBlockSize_band+1
+% %     fprintf('\tBatch %d... ', ibatch);
+% %     % the current batch of blocks
+% %     blocks = im2colstep(trainData_coeff{1}(:, ibatch:ibatch+trainBlockSize_band-1), trainBlockSize_band * [1, 1], [1, 1]);
+% %     cleanBlocks = zeros(size(blocks));
+% %     blockCoeff = zeros(trainBlockSize_band^2, size(trainData_coeff{1}, 1) - trainBlockSize_band + 1);
+% %     parfor iblk = 1:size(trainData_coeff{1}, 1) - trainBlockSize_band + 1
+% %         opts = spgSetParms('verbosity', 0, 'optTol', 1e-6);
+% %         blockCoeff(:, iblk) = spg_bpdn(@(x, mode) learnedOp(x, baseSynOp_band, baseAnaOp_band, learnedDict_band, mode), blocks(:, iblk), sigSpThres_band, opts);
+% %         % blockCoeff(:, iblk) = OMP({@(x) baseSynOp(learnedDict*x), @(x) learnedDict'*baseAnaOp(x)}, blocks(:, iblk), sigSpThres);
+% %         cleanBlocks(:, iblk) = learnedOp(blockCoeff(:, iblk), baseSynOp_band, baseAnaOp_band, learnedDict_band, 1);
+% %     end
+% %     cleanBatch = col2imstep(cleanBlocks, [size(trainData_coeff{1}, 1), trainBlockSize_band], trainBlockSize_band * [1, 1], [1, 1]);
+% %     cleanCoeff_sparseKsvd{1}(:,ibatch:ibatch+trainBlockSize_band-1) = cleanCoeff_sparseKsvd{1}(:,ibatch:ibatch+trainBlockSize_band-1) + cleanBatch;
+% %     processedBlocks = processedBlocks + (size(trainData_coeff{1}, 1) - trainBlockSize_band + 1);
+% %     fprintf('\tProcessed %d blocks\n', processedBlocks);
+% % end
+% % % average the denoised and noisy signals
+% % cnt = countcover(size(trainData_coeff{1}), trainBlockSize_band * [1, 1], [1, 1]);
+% % cleanCoeff_sparseKsvd{1} = cleanCoeff_sparseKsvd{1}./cnt;
+% % % terminate the pool of Matlab workers
+% % delete(gcp('nocreate'));
+% % other bands
+% for iLayer = 2:nLayer
+%     nDir = length(trainData_coeff{iLayer});
+%     for iDir = 1:nDir
+%         idxBand = idxBand + 1;
+%         % dictionary learning
+%         fprintf('Learning from Band %d\n', idxBand);
+%         initDict_band = speye(trainBlockSize_band^2, trainBlockSize_band^2);
+%         % test begin
+%         % wavelets for base dictionary
+%         [vecTrainBlockCoeff_band, str_band] = pdfb2vec(pdfbdec(zeros(trainBlockSize_band, trainBlockSize_band), pfilter_wavelet_train, dfilter_wavelet_train, nlevels_wavelet_train));
+%         baseSynOp_band = @(x) pdfb(x, str_band, pfilter_wavelet_train, dfilter_wavelet_train, nlevels_wavelet_train, trainBlockSize_band, trainBlockSize_band, 1);
+%         baseAnaOp_band = @(x) pdfb(x, str_band, pfilter_wavelet_train, dfilter_wavelet_train, nlevels_wavelet_train, trainBlockSize_band, trainBlockSize_band, 2);
+%         [PhiSyn_band, PhiAna_band] = operator2matrix(baseSynOp_band, baseAnaOp_band, trainBlockSize_band * trainBlockSize_band);
+%         PhiSyn_band = PhiSyn_band(:, idxAtom + 1 : idxAtom + prod(str_band(1+(iLayer-2)*nDir+iDir, 3:4)));
+%         PhiAna_band = PhiAna_band(idxAtom + 1 : idxAtom + prod(str_band(1+(iLayer-2)*nDir+iDir, 3:4)), :);
+%         idxAtom = idxAtom + prod(str_band(1+(iLayer-2)*nDir+iDir, 3:4));
+%         initDict_band = speye(prod(str_band(1+(iLayer-2)*nDir+iDir, 3:4)), prod(str_band(1+(iLayer-2)*nDir+iDir, 3:4)));
+%         % test end
+%         [learnedDict_band{iLayer}{iDir}, Coeffs_band, errLasso_band, errBpdn_band] = sparseKsvd(trainData_coeff{iLayer}{iDir}, PhiSyn_band, PhiAna_band, ...
+%             initDict_band, trainIter_band, trainBlockSize_band, trainBlockNum_band, atomSpThres_band, sigSpThres_band, struct('verbosity', 0, 'method', 'bpdn'));
+%         % test begin
+%         learnedDictImg_band{iLayer}{iDir} = showdict(full(learnedDict_band{iLayer}{iDir}), [1 1]*sqrt(size(learnedDict_band{iLayer}{iDir}, 1)), round(sqrt(size(learnedDict_band{iLayer}{iDir}, 2))), round(sqrt(size(learnedDict_band{iLayer}{iDir}, 2))), 'whitelines', 'highcontrast');
+%         overallDict_band{iLayer}{iDir} = PhiSyn_band * learnedDict_band{iLayer}{iDir};
+%         overallDictImg_band{iLayer}{iDir} = showdict(PhiSyn_band * learnedDict_band{iLayer}{iDir}, [1 1]*sqrt(size(PhiSyn_band * learnedDict_band{iLayer}{iDir}, 1)), round(sqrt(size(PhiSyn_band * learnedDict_band{iLayer}{iDir}, 2))), round(sqrt(size(PhiSyn_band * learnedDict_band{iLayer}{iDir}, 2))), 'whitelines', 'highcontrast');
+%         % test end
+% %         % start a pool of Matlab workers
+% %         numCores = feature('numcores');
+% %         if isempty(gcp('nocreate')) % checking to see if my pool is already open
+% %             myPool = parpool(numCores);
+% %         end
+% %         % denoising
+% %         fprintf('Denoising Band %d\n', idxBand);
+% %         cleanCoeff_sparseKsvd{iLayer}{iDir} = zeros(size(trainData_coeff{iLayer}{iDir}));
+% %         totalBlockNum_band = (size(trainData_coeff{iLayer}{iDir}, 1) - trainBlockSize_band + 1) * (size(trainData_coeff{iLayer}{iDir}, 2) - trainBlockSize_band + 1);
+% %         processedBlocks = 0;
+% %         for ibatch = 1:size(trainData_coeff{iLayer}{iDir}, 2)-trainBlockSize_band+1
+% %             fprintf('\tBatch %d... ', ibatch);
+% %             % the current batch of blocks
+% %             blocks = im2colstep(trainData_coeff{iLayer}{iDir}(:, ibatch:ibatch+trainBlockSize_band-1), trainBlockSize_band * [1, 1], [1, 1]);
+% %             cleanBlocks = zeros(size(blocks));
+% %             blockCoeff = zeros(trainBlockSize_band^2, size(trainData_coeff{iLayer}{iDir}, 1) - trainBlockSize_band + 1);
+% %             parfor iblk = 1:size(trainData_coeff{iLayer}{iDir}, 1) - trainBlockSize_band + 1
+% %                 opts = spgSetParms('verbosity', 0, 'optTol', 1e-6);
+% %                 blockCoeff(:, iblk) = spg_bpdn(@(x, mode) learnedOp(x, baseSynOp_band, baseAnaOp_band, learnedDict_band, mode), blocks(:, iblk), sigSpThres_band, opts);
+% %                 % blockCoeff(:, iblk) = OMP({@(x) baseSynOp(learnedDict*x), @(x) learnedDict'*baseAnaOp(x)}, blocks(:, iblk), sigSpThres);
+% %                 cleanBlocks(:, iblk) = learnedOp(blockCoeff(:, iblk), baseSynOp_band, baseAnaOp_band, learnedDict_band, 1);
+% %             end
+% %             cleanBatch = col2imstep(cleanBlocks, [size(trainData_coeff{iLayer}{iDir}, 1), trainBlockSize_band], trainBlockSize_band * [1, 1], [1, 1]);
+% %             cleanCoeff_sparseKsvd{iLayer}{iDir}(:,ibatch:ibatch+trainBlockSize_band-1) = cleanCoeff_sparseKsvd{iLayer}{iDir}(:,ibatch:ibatch+trainBlockSize_band-1) + cleanBatch;
+% %             processedBlocks = processedBlocks + (size(trainData_coeff{iLayer}{iDir}, 1) - trainBlockSize_band + 1);
+% %             fprintf('\tProcessed %d blocks\n', processedBlocks);
+% %         end
+% %         % average the denoised and noisy signals
+% %         cnt = countcover(size(trainData_coeff{iLayer}{iDir}), trainBlockSize_band * [1, 1], [1, 1]);
+% %         cleanCoeff_sparseKsvd{iLayer}{iDir} = cleanCoeff_sparseKsvd{iLayer}{iDir}./cnt;
+% %         % terminate the pool of Matlab workers
+% %         delete(gcp('nocreate'));
+%     end
+%     sigSpThres_band = sigSpThres_band * 2;
+% end
+% % test begin
+% save(fullfile(dataFileDir, [dataFileName, '_learnedDict_band.mat']), 'learnedDict_band', '-v7.3');
+% save(fullfile(dataFileDir, [dataFileName, '_learnedDictImg_band.mat']), 'learnedDictImg_band', '-v7.3');
+% save(fullfile(dataFileDir, [dataFileName, '_overallDict_band.mat']), 'overallDict_band', '-v7.3');
+% save(fullfile(dataFileDir, [dataFileName, '_overallDictImg_band.mat']), 'overallDictImg_band', '-v7.3');
+% % test end
+% % % reconstruction
+% % cleanData_sparseKsvd_band = pdfbrec(cleanCoeff_sparseKsvd, pfilter_wavelet_train, dfilter_wavelet_train);
+% % save(fullfile(dataFileDir, [dataFileName, '_cleanData_sparseKsvd_band.mat']), 'cleanData_sparseKsvd_band', '-v7.3');
+% % diffData_sparseKsvd_band = dataTrue - cleanData_sparseKsvd_band;
+% % save(fullfile(dataFileDir, [dataFileName, '_diffData_sparseKsvd_band.mat']), 'diffData_sparseKsvd_band', '-v7.3');
+% 
+% % %% Plot figures and PSNR output
+% % hFigCleanedDataSparseKsvd_band = figure; imagesc(1:nRecs, 1:nSamples, cleanData_sparseKsvd_band); colormap(gray); colorbar; truesize;
+% % psnrCleanData_sparseKsvd_band = 20*log10(sqrt(numel(cleanData_sparseKsvd_band)) / norm(dataTrue(:) - cleanData_sparseKsvd_band(:), 2));
+% % ssimCleanData_sparseKsvd_band = ssim(cleanData_sparseKsvd_band, dataTrue);
+% % xlabel('Trace Index'); ylabel('Time Sample Index');
+% % title(sprintf('Denoised Seismic Data (Dictionary Learning, band-by-band), PSNR = %.2fdB', psnrCleanData_sparseKsvd_band));
+% % saveas(hFigCleanedDataSparseKsvd_band, fullfile(dataFileDir, [dataFileName, '_cleanData_sparseKsvd_band']), 'fig');
+% % 
+% % hFigDiffDataSparseKsvd_band = figure; imagesc(1:nRecs, 1:nSamples, diffData_sparseKsvd_band); colormap(gray); colorbar; truesize;
+% % xlabel('Trace Index'); ylabel('Time Sample Index');
+% % saveas(hFigDiffDataSparseKsvd_band, fullfile(dataFileDir, [dataFileName, '_diffData_sparseKsvd_band']), 'fig');
+% % 
+% % fprintf('------------------------------------------------------------\n');
+% % fprintf('Denoised Seismic Data (Dictionary Learning, band-by-band), PSNR = %.2fdB, SSIM = %.4f\n', psnrCleanData_sparseKsvd_band, ssimCleanData_sparseKsvd_band);
+% 
 
 %% Dictionary learning using sparse K-SVD (all bands together)
 fprintf('------------------------------------------------------------\n');
