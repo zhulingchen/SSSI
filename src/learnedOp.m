@@ -4,9 +4,17 @@ function y = learnedOp(x, baseSynOp, baseAnaOp, A, mode)
 
 
 if (mode == 1) % inverse transform or synthesis
-    y = baseSynOp(A*x);
+    if (isa(baseSynOp, 'function_handle'))
+        y = baseSynOp(A*x);
+    else
+        y = baseSynOp*(A*x);
+    end
 elseif (mode == 2) % transform or analysis
-    y = A'*baseAnaOp(x);
+    if (isa(baseAnaOp, 'function_handle'))
+        y = A'*baseAnaOp(x);
+    else
+        y = A'*baseAnaOp*x;
+    end
 else
     error('Wrong mode!');
 end

@@ -45,8 +45,6 @@ else
     coefLen = length(baseAnaOp * zeros(atomLen, 1));
     PhiSyn = baseSynOp;
     PhiAna = baseAnaOp;
-    baseSynOp = @(x) (PhiSyn * x);
-    baseAnaOp = @(x) (PhiAna * x);
 end
 
 
@@ -80,13 +78,17 @@ for iter = 1:trainIter
         opts = spgSetParms('verbosity', option.verbosity, 'optTol', SPGOPTTOL_SIG);
         switch lower(option.method)
             case 'lasso'
-                X(:, iblk) = spg_lasso(@(x, mode) learnedOp(x, baseSynOp, baseAnaOp, A, mode), Y(:, iblk), sigSpThres, opts);
+                if (size(PhiSyn, 1) > size(PhiSyn, 2))
+                    X(:, iblk) = spg_lasso(@(x, mode) learnedOp(x, PhiAna * PhiSyn, PhiAna * PhiSyn, A, mode), PhiAna * Y(:, iblk), sigSpThres, opts);
+                else
+                    X(:, iblk) = spg_lasso(@(x, mode) learnedOp(x, PhiSyn, PhiAna, A, mode), Y(:, iblk), sigSpThres, opts);
+                end
             case 'bpdn'
-                X(:, iblk) = spg_bpdn(@(x, mode) learnedOp(x, baseSynOp, baseAnaOp, A, mode), Y(:, iblk), sigSpThres, opts);
+                X(:, iblk) = spg_bpdn(@(x, mode) learnedOp(x, PhiSyn, PhiAna, A, mode), Y(:, iblk), sigSpThres, opts);
             otherwise
                 error('Invalid optimization option! Should be either ''lasso'' or ''bpdn''');
         end
-        % X(:, iblk) = OMP({@(x) baseSynOp(A*x), @(x) A'*baseAnaOp(x)}, Y(:, iblk), sigSpThres);
+        % X(:, iblk) = OMP({@(x) PhiSyn*A*x, @(x) A'*PhiAna*x}, Y(:, iblk), sigSpThres);
     end
     
     %% dictionary learning and updating
@@ -104,13 +106,17 @@ for iter = 1:trainIter
         if (nnz(I) <= 1)
             % err = zeros(length(unusedSig), 1);
             % for iblk = 1:length(unusedSig)
-            %     err(iblk) = norm(Y(:, unusedSig(iblk)) - learnedOp(X(:, unusedSig(iblk)), baseSynOp, baseAnaOp, A, 1), 2)^2;
+            %     err(iblk) = norm(Y(:, unusedSig(iblk)) - learnedOp(X(:, unusedSig(iblk)), PhiSyn, PhiAna, A, 1), 2)^2;
             % end
             err = sum((Y(:, unusedSig) - PhiSyn * A * X(:, unusedSig)).^2, 1);
             [~, idxErr] = max(err);
             opts = spgSetParms('verbosity', option.verbosity, 'optTol', SPGOPTTOL_ATOM);
-            a = spg_lasso(@(x, mode) baseOp(x, baseSynOp, baseAnaOp, mode), Y(:, unusedSig(idxErr)), atomSpThres, opts);
-            a = a / norm(baseSynOp(a), 2);
+            if (size(PhiSyn, 1) > size(PhiSyn, 2))
+                a = spg_lasso(@(x, mode) baseOp(x, PhiAna * PhiSyn, PhiAna * PhiSyn, mode), PhiAna * Y(:, unusedSig(idxErr)), atomSpThres, opts);
+            else
+                a = spg_lasso(@(x, mode) baseOp(x, PhiSyn, PhiAna, mode), Y(:, unusedSig(idxErr)), atomSpThres, opts);
+            end
+            a = a / norm(PhiSyn * a, 2);
             if (isnan(a))
                 error ('a is NaN!');
             end
@@ -128,23 +134,27 @@ for iter = 1:trainIter
         % XI = X(:, I);
         % E = zeros(atomLen, nnz(I));
         % for ii = 1:nnz(I)
-        %     E(:, ii) = YI(:, ii) - learnedOp(XI(:, ii), baseSynOp, baseAnaOp, A, 1);
+        %     E(:, ii) = YI(:, ii) - learnedOp(XI(:, ii), PhiSyn, PhiAna, A, 1);
         % end
         % z = E * g;
         z = Y(:, I) * g - PhiSyn * A * X(:, I) * g;
         
         % a = argmin_a || z - B*a ||_2 s.t. ||a||_1 <= atomSpThres
         opts = spgSetParms('verbosity', option.verbosity, 'optTol', SPGOPTTOL_ATOM);
-        a = spg_lasso(@(x, mode) baseOp(x, baseSynOp, baseAnaOp, mode), z, atomSpThres, opts);
-        % a = OMP({baseSynOp, baseAnaOp}, z, atomSpThres);
+        if (size(PhiSyn, 1) > size(PhiSyn, 2))
+            a = spg_lasso(@(x, mode) baseOp(x, PhiAna * PhiSyn, PhiAna * PhiSyn, mode), PhiAna * z, atomSpThres, opts);
+        else
+            a = spg_lasso(@(x, mode) baseOp(x, PhiSyn, PhiAna, mode), z, atomSpThres, opts);
+        end
+        % a = OMP({@(x) (PhiSyn*x), @(x) (PhiAna*x)}, z, atomSpThres);
         % normalize vector a
-        a = a / norm(baseSynOp(a), 2);
+        a = a / norm(PhiSyn * a, 2);
         if (isnan(a))
             error ('a is NaN!');
         end
         
         A(:, iatom) = a;
-        % X(iatom, I) = (E' * baseSynOp(a)).';
+        % X(iatom, I) = (E' * PhiSyn * a).';
         
         X(iatom, I) = (Y(:, I)' * PhiSyn * a - (PhiSyn * A * X(:, I))' * PhiSyn * a).';
     end
@@ -152,7 +162,7 @@ for iter = 1:trainIter
     %% dictionary clearing
     % err = zeros(1, blkNum);
     % for iblk = 1:blkNum
-    %     err(iblk) = norm(Y(:, iblk) - learnedOp(X(:, iblk), baseSynOp, baseAnaOp, A, 1), 2)^2;
+    %     err(iblk) = norm(Y(:, iblk) - learnedOp(X(:, iblk), PhiSyn, PhiAna, A, 1), 2)^2;
     % end
     err = sum((Y - PhiSyn * A * X).^2, 1);
     
@@ -161,15 +171,19 @@ for iter = 1:trainIter
     
     for iatom = 1:coefLen
         % compute mutual coherence
-        mutCoh = learnedOp(baseSynOp(A(:, iatom)), baseSynOp, baseAnaOp, A, 2);
+        mutCoh = learnedOp(PhiSyn * A(:, iatom), PhiSyn, PhiAna, A, 2);
         mutCoh(iatom) = 0; % excluding self coherence (=1)
         
         % replace atoms if they do not meet requirements
         if ( (max(abs(mutCoh))>MUTCOH_THRES || useCount(iatom) < USE_THRES) && ~replacedAtom(iatom) )
             [~, idxErr] = max(err(unusedSig));
             opts = spgSetParms('verbosity', option.verbosity, 'optTol', SPGOPTTOL_ATOM);
-            a = spg_lasso(@(x, mode) baseOp(x, baseSynOp, baseAnaOp, mode), Y(:, unusedSig(idxErr)), atomSpThres, opts);
-            a = a / norm(baseSynOp(a), 2);
+            if (size(PhiSyn, 1) > size(PhiSyn, 2))
+                a = spg_lasso(@(x, mode) baseOp(x, PhiAna * PhiSyn, PhiAna * PhiSyn, mode), PhiAna * Y(:, unusedSig(idxErr)), atomSpThres, opts);
+            else
+                a = spg_lasso(@(x, mode) baseOp(x, PhiSyn, PhiAna, mode), Y(:, unusedSig(idxErr)), atomSpThres, opts);
+            end
+            a = a / norm(PhiSyn * a, 2);
             if (isnan(a))
                 error ('a is NaN!');
             end
@@ -193,7 +207,7 @@ end
 % % calculate residue error
 % % err = 0;
 % % for iblk = 1:blkNum
-% %     err = err + norm(Y(:, iblk) - learnedOp(X(:, iblk), baseSynOp, baseAnaOp, A, 1), 2);
+% %     err = err + norm(Y(:, iblk) - learnedOp(X(:, iblk), PhiSyn, PhiAna, A, 1), 2);
 % % end
 % err = norm(Y - PhiSyn * A * X, 'fro');
 
