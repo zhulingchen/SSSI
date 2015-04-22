@@ -198,10 +198,10 @@ for ixs = 1:nShots %21:nx+20 % shot loop
     for it = start_t:nt
         % plot shot function
         subplot(2,2,2);
-        plot([1:nt], rw1dTime); hold on;
-        plot(it, rw1dTime(it), 'r*'); hold off;
-        xlim([1, nt]);
-        xlabel('Time'); ylabel('Amplitude');
+        plot(t, rw1dTime); hold on;
+        plot(t(it), rw1dTime(it), 'r*'); hold off;
+        xlim([t(1), t(end)]);
+        xlabel('Time (s)'); ylabel('Amplitude');
         title(sprintf('Shot No. %d at x = %dm', ixs, x(xs-nBoundary)));
         
         % plot shot record evolution (true)

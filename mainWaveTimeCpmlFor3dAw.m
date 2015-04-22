@@ -124,10 +124,10 @@ slice_z = median(z);
 for it = 1:nt
     % plot source function in time domain
     subplot(2, 2, 2);
-    plot([1:nt], wave1dTime); hold on;
-    plot(it, wave1dTime(it), 'r*'); hold off;
-    xlim([1, nt]);
-    xlabel('Time'); ylabel('Amplitude');
+    plot(t, wave1dTime); hold on;
+    plot(t(it), wave1dTime(it), 'r*'); hold off;
+    xlim([t(1), t(end)]);
+    xlabel('Time (s)'); ylabel('Amplitude');
     title(sprintf('Input source waveform'));
     
     % plot received data traces

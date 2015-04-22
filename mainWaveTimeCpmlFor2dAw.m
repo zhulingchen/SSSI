@@ -167,15 +167,15 @@ for it = 1:nt
         wave1dTime = reshape(sourceTime(zShotGrid(is), xShotGrid(is)+nBoundary, :), 1, nt);
         wave1dTime = mat2gray(wave1dTime);
         wave1dTime = wave1dTime + (is-1);
-        plot([1:nt], wave1dTime, it, wave1dTime(it), 'r*'); hold on;
+        plot(t, wave1dTime, t(it), wave1dTime(it), 'r*'); hold on;
         if (is < nShots)
-           plot([1, nt], [is, is], 'k-'); 
+           plot([t(1), t(end)], [is, is], 'k-'); 
         end
     end
     hold off;
-    xlim([1, nt]);
+    xlim([t(1), t(end)]);
     set(hSub, 'YTick', []);
-    xlabel('Time'); ylabel('Amplitude');
+    xlabel('Time (s)'); ylabel('Amplitude');
     title(sprintf('Input source waveform'));
     
     % plot shot record evolution (true)

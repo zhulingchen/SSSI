@@ -593,10 +593,10 @@ for ixs = 1:nShots
         end
         
         % plot source function in time domain
-        plot(handles.axes_sourceTime, [1:nt], wave1dTime); hold(handles.axes_sourceTime, 'on');
-        plot(handles.axes_sourceTime, it, wave1dTime(it), 'r*'); hold(handles.axes_sourceTime, 'off');
-        xlim(handles.axes_sourceTime, [1, nt]);
-        xlabel(handles.axes_sourceTime, 'Time'); ylabel(handles.axes_sourceTime, 'Amplitude');
+        plot(handles.axes_sourceTime, t, wave1dTime); hold(handles.axes_sourceTime, 'on');
+        plot(handles.axes_sourceTime, t(it), wave1dTime(it), 'r*'); hold(handles.axes_sourceTime, 'off');
+        xlim(handles.axes_sourceTime, [t(1), t(end)]);
+        xlabel(handles.axes_sourceTime, 'Time (s)'); ylabel(handles.axes_sourceTime, 'Amplitude');
         colormap(handles.axes_sourceTime, seismic);
         
         if (Ndims <= 2)	% 2D case
