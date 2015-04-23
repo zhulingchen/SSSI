@@ -1,6 +1,6 @@
-function [A, snapshot] = freqSolverCpml(v, source, w, nDiffOrder, nBoundary, dz, dx)
+function [A, snapshot] = freqCpmlFor2dAw(v, source, w, nDiffOrder, nBoundary, dz, dx)
 %
-% FREQSOLVERCPML solves the following equation in frequency domain
+% FREQCPMLFOR2DAW solves the following equation in frequency domain
 %
 % (w^2)/(v^2)*U(z, x, jw) + (d^2)U(z, x, jw)/dz^2 + (d^2)U(z, x, jw)/dx^2 = S(z, x, jw)
 %                                           |

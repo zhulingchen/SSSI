@@ -1,6 +1,6 @@
-function [A, snapshot] = freqSolver(v, source, w, nBoundary, dz, dx)
+function [A, snapshot] = freqFor2dAw(v, source, w, nBoundary, dz, dx)
 %
-% FREQSOLVER solves the following equation in frequency domain
+% FREQFOR2DAW solves the following equation in frequency domain
 % 
 % (w^2)/(v^2)*U(z, x, jw) + (d^2)U(z, x, jw)/dz^2 + (d^2)U(z, x, jw)/dx^2 = S(z, x, jw)
 %                                           |

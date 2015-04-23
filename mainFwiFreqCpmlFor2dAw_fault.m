@@ -277,7 +277,7 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
         
         fprintf('Processing f(%d) = %fHz ... ', iw, w(iw)/(2*pi));
         tic;
-        [A, ~] = freqSolverCpml(vmOld, zeros(size(V)), w(iw), nDiffOrder, nBoundary, dz, dx);
+        [A, ~] = freqCpmlFor2dAw(vmOld, zeros(size(V)), w(iw), nDiffOrder, nBoundary, dz, dx);
         
         % Green's function for every shot
         sourceFreq = zeros(nLengthWithBoundary, nShots);
@@ -386,7 +386,7 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
 %         
 %         fprintf('Processing f(%d) = %fHz ... ', iw, w(iw)/(2*pi));
 %         tic;
-%         [A, ~] = freqSolverCpml(vmOld, zeros(size(V)), w(iw), nDiffOrder, nBoundary, dz, dx);
+%         [A, ~] = freqCpmlFor2dAw(vmOld, zeros(size(V)), w(iw), nDiffOrder, nBoundary, dz, dx);
 %         
 %         % Green's function for every shot
 %         sourceFreq = zeros(nLengthWithBoundary, nShots);

@@ -32,10 +32,17 @@ addpath(genpath('./src'));
 %% Model Parameters setup
 % vp = P-wave velocity, vs = S-wave velocity
 
+% fault model
 load('./modelData/velocityModelP.mat');
 vp = velocityModel;
 load('./modelData/velocityModelS.mat');
 vs = velocityModel;
+% % Saudi Arabia Southern Ghawar model
+% load('./modelData/SaudiArabia_SouthernGhawar/Vp.mat');
+% velocityModel = Vp(1:10:end-1, 1:40:end-1);
+% vp = Vp(1:10:end-1, 1:40:end-1);
+% load('./modelData/SaudiArabia_SouthernGhawar/Vs.mat');
+% vs = Vs(1:10:end-1, 1:40:end-1);
 
 % dimension check
 if (ndims(vp) ~= ndims(vs))
@@ -62,8 +69,8 @@ nt = round(sqrt((dx*nx)^2 + (dz*nz)^2)*2/vsmin/dt + 1);
 t  = (0:nt-1).*dt;
 
 % shot position
-zShot = 50 * dz;
-xShot = 20 * dx;
+zShot = 1 * dz;
+xShot = 50 * dx;
 
 % number of approximation order for differentiator operator
 nDiffOrder = 3;

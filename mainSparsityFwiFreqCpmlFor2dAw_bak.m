@@ -411,7 +411,7 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
         
         fprintf('Generate Green''s functions for f(%d) = %fHz ... ', iw, w(iw)/(2*pi));
         tic;
-        [A, ~] = freqSolverCpml(vmOld, zeros(nz + nBoundary, nx + 2*nBoundary), w(iw), nDiffOrder, nBoundary, dz, dx);
+        [A, ~] = freqCpmlFor2dAw(vmOld, zeros(nz + nBoundary, nx + 2*nBoundary), w(iw), nDiffOrder, nBoundary, dz, dx);
         
         % Green's function for every shot
         sourceFreq = zeros(nLengthWithBoundary, nShots);
