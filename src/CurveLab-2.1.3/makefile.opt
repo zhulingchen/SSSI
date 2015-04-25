@@ -3,7 +3,13 @@ MODE = optim
 
 # extern library and program variables
 FFTW_DIR = 	~/fftw-2.1.5
-MEX 		= 	/Applications/MATLAB_R2014a.app/bin/mex
+ifeq ($(UNAME), Linux)
+	MEX = mex
+endif
+
+ifeq ($(UNAME), Darwin)
+	MEX = /Applications/MATLAB_R2014a.app/bin/mex
+endif
 #MEXT = mexmaci64
 
 # compiler and linker variable 
