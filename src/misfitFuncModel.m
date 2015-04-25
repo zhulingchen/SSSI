@@ -2,7 +2,7 @@ function [value, grad] = misfitFuncModel(dm, w, fs, nShots, dataDeltaFreq, green
 % MISFITFUNCMODEL Calculate the least-squares misfit function with respect
 % to the perturbation model dm
 %
-% value = 1/2 * (L(dm) = delta_d)' * (L(dm) - delta_d)
+% value = 1/2 * (L(dm) - delta_d)' * (L(dm) - delta_d)
 % grad = L'(L(dm) - delta_d)
 %
 %

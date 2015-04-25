@@ -4,7 +4,7 @@ function [value, grad] = misfitFuncSparse(dcoeff, synthesisOp, analysisOp, w, fs
 % transform function
 %
 % value = 1/2 * (L(invTransform(dcoeff)) - delta_d)' * (L(invTransform(dcoeff)) - delta_d)
-% grad = transform(L'(L(transform(dcoeff)) = delta_d))
+% grad = transform(L'(L(transform(dcoeff)) - delta_d))
 %
 %
 % This matlab source file is free for use in academic research.
