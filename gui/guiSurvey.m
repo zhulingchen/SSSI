@@ -46,8 +46,8 @@ end
 % only add the directory into path when it is not in the path to load GUI
 % faster
 pathCell = regexp(path, pathsep, 'split');
-if ~any(strcmpi('./src', pathCell))
-    addpath(genpath('./src'));
+if ~any(strcmpi('../src', pathCell))
+    addpath(genpath('../src'));
 end
 
 
