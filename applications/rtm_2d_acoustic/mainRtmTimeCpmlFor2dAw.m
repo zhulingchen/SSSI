@@ -32,13 +32,16 @@ run ../setpath;
 
 
 %% Read in velocity model data and plot it
-load([model_data_path, '/velocityModel.mat']); % velocityModel
+filenameVelocityModel = [model_data_path, '/velocityModel.mat'];
+[pathVelocityModel, nameVelocityModel] = fileparts(filenameVelocityModel);
+load(filenameVelocityModel); % velocityModel
 [nz, nx] = size(velocityModel);
 
 % smooth velocity model using average filter
 % filterSmooth = fspecial('average', 5);
 % velocityModelSmooth = imfilter(velocityModel, filterSmooth, 'replicate');
-load([model_data_path, '/velocityModelSmooth.mat']); % velocityModelSmooth
+filenameVelocityModelSmooth = [model_data_path, '/velocityModelSmooth.mat'];
+load(filenameVelocityModelSmooth); % velocityModelSmooth
 
 dx = 10;
 dz = 10;
@@ -143,7 +146,7 @@ end
 
 for ixs = 1:nShots %21:nx+20 % shot loop
     
-    xs = xShotGrid(ixs) + nBoundary; % shot position on x
+    xs = xShotGrid(ixs); % shot position on x
     
     % % initial wavefield
     % rw = ricker(f, nx + 2*nBoundary, dt, dt*xs, 0);
@@ -152,21 +155,21 @@ for ixs = 1:nShots %21:nx+20 % shot loop
     % generate shot signal
     source = zeros([size(V), nt]);
     % source(1, xs, 1) = 1; % impulse input
-    source(1, xs, :) = reshape(rw1dTime, 1, 1, nt);
+    source(1, xs + nBoundary, :) = reshape(rw1dTime, 1, 1, nt);
     
     % plot shot position
-    set(hShotPos, 'XData', x(xs-nBoundary), 'YData', z(1));
+    set(hShotPos, 'XData', x(xs), 'YData', z(1));
     
     % generate shot record
     tic;
     [dataTrue, snapshotTrue] = fwdTimeCpmlFor2dAw(V, source, nDiffOrder, nBoundary, dz, dx, dt);
     [dataSmooth, snapshotSmooth] = fwdTimeCpmlFor2dAw(VS, source, nDiffOrder, nBoundary, dz, dx, dt);
     timeForward = toc;
-    fprintf('Generate Forward Timing Record for Shot No. %d at x = %dm, elapsed time = %fs\n', xs-nBoundary, x(xs-nBoundary), timeForward);
+    fprintf('Generate Forward Timing Record for Shot No. %d at x = %dm, elapsed time = %fs\n', xs, x(xs), timeForward);
     
-    filenameDataTrue = [model_data_path, sprintf('/dataTrue%d.mat', xs-nBoundary)];
-    filenameDataSmooth = [model_data_path, sprintf('/dataSmooth%d.mat', xs-nBoundary)];
-    filenameSnapshotSmooth = [model_data_path, sprintf('/snapshotSmooth%d.mat', xs-nBoundary)];
+    filenameDataTrue = [pathVelocityModel, sprintf('/dataTrue%d.mat', xs)];
+    filenameDataSmooth = [pathVelocityModel, sprintf('/dataSmooth%d.mat', xs)];
+    filenameSnapshotSmooth = [pathVelocityModel, sprintf('/snapshotSmooth%d.mat', xs)];
     
     if ~exist(filenameDataTrue, 'file')
         save(filenameDataTrue, 'dataTrue', '-v7.3');
@@ -198,7 +201,7 @@ for ixs = 1:nShots %21:nx+20 % shot loop
         plot(t(it), rw1dTime(it), 'r*'); hold off;
         xlim([t(1), t(end)]);
         xlabel('Time (s)'); ylabel('Amplitude');
-        title(sprintf('Shot No. %d at x = %dm', ixs, x(xs-nBoundary)));
+        title(sprintf('Shot No. %d at x = %dm', ixs, x(xs)));
         
         % plot shot record evolution (true)
         ds = zeros(nt, nx);
@@ -244,8 +247,8 @@ Stacked = zeros(nz+nBoundary, nx+2*nBoundary);
 for ixs = 1:nShots      %1:nx
     xs = xShotGrid(ixs); % shot position on x
     
-    load([model_data_path, sprintf('/dataTrue%d.mat', xs)]); % dataTrue
-    load([model_data_path, sprintf('/dataSmooth%d.mat', xs)]); % dataSmooth
+    load([pathVelocityModel, sprintf('/dataTrue%d.mat', xs)]); % dataTrue
+    load([pathVelocityModel, sprintf('/dataSmooth%d.mat', xs)]); % dataSmooth
     dataDelta = dataTrue - dataSmooth;
     dataTrue = dataTrue(nBoundary+1:end-nBoundary, :)';
     
@@ -254,13 +257,13 @@ for ixs = 1:nShots      %1:nx
     timeRT = toc;
     fprintf('Generate Reverse Time Record for Shot No. %d at x = %d, elapsed time = %fs\n', xs, x(xs), timeRT);
     
-    filenameRTMSnapshot = [model_data_path, sprintf('/rtmsnapshot%d.mat', xs)];
+    filenameRTMSnapshot = [pathVelocityModel, sprintf('/rtmsnapshot%d.mat', xs)];
     
     if ~exist(filenameRTMSnapshot, 'file')
         save(filenameRTMSnapshot,'rtmsnapshot', '-v7.3');
     end
     
-    load([model_data_path, sprintf('/snapshotSmooth%d.mat', xs)]); % snapshotSmooth
+    load([pathVelocityModel, sprintf('/snapshotSmooth%d.mat', xs)]); % snapshotSmooth
     
     M = 0;
     s2 = EPSILON;
@@ -342,7 +345,7 @@ end
 % StackedRTM = diff(Stacked(1:end-nBoundary, nBoundary+1:end-nBoundary), 2, 1);
 StackedRTM = Stacked(1:end-nBoundary, nBoundary+1:end-nBoundary);
 
-filenameStackedRtmMat = [model_data_path, '/StackedRTM.mat'];
+filenameStackedRtmMat = [pathVelocityModel, '/StackedRTM.mat'];
 if ~exist(filenameStackedRtmMat, 'file')
     save(filenameStackedRtmMat, 'StackedRTM', '-v7.3');
 end

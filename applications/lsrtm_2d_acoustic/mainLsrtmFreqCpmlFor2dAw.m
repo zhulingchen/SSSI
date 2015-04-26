@@ -74,20 +74,23 @@ run ../setpath;
 
 
 %% Read in velocity model data
-load([model_data_path, '/velocityModel.mat']); % velocityModel
+filenameVelocityModel = [model_data_path, '/velocityModel.mat'];
+[pathVelocityModel, nameVelocityModel] = fileparts(filenameVelocityModel);
+load(filenameVelocityModel); % velocityModel
 [nz, nx] = size(velocityModel);
-nBoundary = 20;
 
 % smooth velocity model used average filter
-load([model_data_path, '/velocityModelSmooth.mat']); % velocityModelSmooth
+filenameVelocityModelSmooth = [model_data_path, '/velocityModelSmooth.mat'];
+load(filenameVelocityModelSmooth); % velocityModelSmooth
 
-% a more smooth velocity model for FWI
-VS = extBoundary(velocityModelSmooth, nBoundary, 2);
-VS = [repmat(VS(1, :), nBoundary, 1); VS];
-nAvgSize = [1, 1];
-hImageSmooth = fspecial('average', nAvgSize);
-VS = imfilter(VS, hImageSmooth);
-velocityModelSmooth = VS(nBoundary+1:end-nBoundary, nBoundary+1:end-nBoundary);
+nBoundary = 20;
+% % a more smooth velocity model for FWI
+% VS = extBoundary(velocityModelSmooth, nBoundary, 2);
+% VS = [repmat(VS(1, :), nBoundary, 1); VS];
+% nAvgSize = [1, 1];
+% hImageSmooth = fspecial('average', nAvgSize);
+% VS = imfilter(VS, hImageSmooth);
+% velocityModelSmooth = VS(nBoundary+1:end-nBoundary, nBoundary+1:end-nBoundary);
 
 dx = 10;
 dz = 10;
@@ -210,10 +213,10 @@ for ixs = 1:nShots %21:nx+20 % shot loop
 end % end shot loop
 
 % save received surface data
-filenameDataTrueFreq = [model_data_path, '/dataTrueFreq.mat'];
+filenameDataTrueFreq = [pathVelocityModel, '/dataTrueFreq.mat'];
 save(filenameDataTrueFreq, 'dataTrueFreq', '-v7.3');
 
-filenameDataDeltaFreq = [model_data_path, '/dataDeltaFreq0.mat'];
+filenameDataDeltaFreq = [pathVelocityModel, '/dataDeltaFreq0.mat'];
 save(filenameDataDeltaFreq, 'dataDeltaFreq', '-v7.3');
 
 % clear variables and functions from memory
@@ -329,11 +332,11 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     end
     
     % save the pseudo-Hessian matrix
-    filenameHessianDiag = [model_data_path, sprintf('/hessianDiag%d.mat', iter)];
+    filenameHessianDiag = [pathVelocityModel, sprintf('/hessianDiag%d.mat', iter)];
     save(filenameHessianDiag, 'hessianDiag', '-v7.3');
     
     % save the migrated image
-    filenameMig = [model_data_path, sprintf('/mig%d.mat', iter)];
+    filenameMig = [pathVelocityModel, sprintf('/mig%d.mat', iter)];
     save(filenameMig, 'mig', '-v7.3');
     
     lambda = 5 * max(hessianDiag);
@@ -354,7 +357,7 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     title('Updated Velocity Model');
     colormap(seismic);
     % save current updated velocity model
-    filenameVmNew = [model_data_path, sprintf('/vmNew%d.mat', iter)];
+    filenameVmNew = [pathVelocityModel, sprintf('/vmNew%d.mat', iter)];
     save(filenameVmNew, 'vmNew', 'modelNew', '-v7.3');
     
     
@@ -466,7 +469,7 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     %     title('Updated Velocity Model');
     %     colormap(seismic);
     %     % save current updated velocity model
-    %     % filenameVmNew = [model_data_path, sprintf('/vmNew%d.mat', iter)];
+    %     % filenameVmNew = [pathVelocityModel, sprintf('/vmNew%d.mat', iter)];
     %     % save(filenameVmNew, 'vmNew', 'modelNew', '-v7.3');
     %
     %     dataDeltaFreq = zeros(nRecs, nShots, nfft);
@@ -509,7 +512,7 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
         % % debug end
         
     end % end shot loop
-    filenameDataDeltaFreq = [model_data_path, sprintf('/dataDeltaFreq%d.mat', iter)];
+    filenameDataDeltaFreq = [pathVelocityModel, sprintf('/dataDeltaFreq%d.mat', iter)];
     save(filenameDataDeltaFreq, 'dataDeltaFreq', '-v7.3');
     
     % clear variables and functions from memory

@@ -22,13 +22,16 @@ run ../setpath;
 
 
 %% Read in velocity model data and plot it
-load([model_data_path, '/velocityModel.mat']); % velocityModel
+filenameVelocityModel = [model_data_path, '/velocityModel.mat'];
+[pathVelocityModel, nameVelocityModel] = fileparts(filenameVelocityModel);
+load(filenameVelocityModel); % velocityModel
 [nz, nx] = size(velocityModel);
 
 % smooth velocity model using average filter
 % filterSmooth = fspecial('average', 5);
 % velocityModelSmooth = imfilter(velocityModel, filterSmooth, 'replicate');
-load([model_data_path, '/velocityModelSmooth.mat']); % velocityModelSmooth
+filenameVelocityModelSmooth = [model_data_path, '/velocityModelSmooth.mat'];
+load(filenameVelocityModelSmooth); % velocityModelSmooth
 
 vmin = min(velocityModel(:));
 vmax = max(velocityModel(:));
@@ -37,6 +40,7 @@ dx = 10;
 dz = 10;
 x = (1:nx) * dx;
 z = (1:nz) * dz;
+
 nBoundary = 20;
 
 %% Grids and positions of receiver array
@@ -118,7 +122,7 @@ for ixs = 1:nShots
     colormap(seismic);
 end
 
-filenameRtmStacked = [model_data_path, '/RtmStacked.mat'];
+filenameRtmStacked = [pathVelocityModel, '/RtmStacked.mat'];
 save(filenameRtmStacked, 'rtmStacked', '-v7.3');
 
 %% Perform RTM in MPI
@@ -165,7 +169,7 @@ for ixs = 1:nShots
     fprintf('Elapsed time of Shot No. %d @ (%d, %d) on Processor No. %d for RTM = %fs\n', ixs, zShotGrid, xShotGrid(ixs), taskId, tRtmPerShot_local);
 end
 
-filenameRtmStacked_local = [model_data_path, sprintf('/RtmStacked_proc%d.mat', taskId)];
+filenameRtmStacked_local = [pathVelocityModel, sprintf('/RtmStacked_proc%d.mat', taskId)];
 save(filenameRtmStacked_local, 'rtmStacked_local', '-v7.3');
 
 mpi_finalize;

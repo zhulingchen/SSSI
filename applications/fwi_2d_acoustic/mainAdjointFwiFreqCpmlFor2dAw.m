@@ -72,13 +72,16 @@ run ../setpath;
 
 
 %% Read in velocity model data
-load([model_data_path, '/velocityModel.mat']); % velocityModel
+filenameVelocityModel = [model_data_path, '/velocityModel.mat'];
+[pathVelocityModel, nameVelocityModel] = fileparts(filenameVelocityModel);
+load(filenameVelocityModel); % velocityModel
 [nz, nx] = size(velocityModel);
-nBoundary = 20;
 
 % smooth velocity model used average filter
-load([model_data_path, '/velocityModelSmooth.mat']); % velocityModelSmooth
+filenameVelocityModelSmooth = [model_data_path, '/velocityModelSmooth.mat'];
+load(filenameVelocityModelSmooth); % velocityModelSmooth
 
+nBoundary = 20;
 % % a more smooth velocity model for FWI
 % VS = extBoundary(velocityModelSmooth, nBoundary, 2);
 % VS = [repmat(VS(1, :), nBoundary, 1); VS];
@@ -217,10 +220,10 @@ for ixs = 1:nShots %21:nx+20 % shot loop
 end % end shot loop
 
 % save received surface data
-filenameDataTrueFreq = [model_data_path, '/dataTrueFreq.mat'];
+filenameDataTrueFreq = [pathVelocityModel, '/dataTrueFreq.mat'];
 save(filenameDataTrueFreq, 'dataTrueFreq', '-v7.3');
 
-filenameDataDeltaFreq = [model_data_path, '/dataDeltaFreq0.mat'];
+filenameDataDeltaFreq = [pathVelocityModel, '/dataDeltaFreq0.mat'];
 save(filenameDataDeltaFreq, 'dataDeltaFreq', '-v7.3');
 
 % clear variables and functions from memory
@@ -406,10 +409,10 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
         
     end
     
-    filenameGreenFreqForShotSet = [model_data_path, sprintf('/greenFreqForShotSet%d.mat', iter)];
+    filenameGreenFreqForShotSet = [pathVelocityModel, sprintf('/greenFreqForShotSet%d.mat', iter)];
     save(filenameGreenFreqForShotSet, 'greenFreqForShotSet', '-v7.3');
     
-    filenameGreenFreqForRecSet = [model_data_path, sprintf('/greenFreqForRecSet%d.mat', iter)];
+    filenameGreenFreqForRecSet = [pathVelocityModel, sprintf('/greenFreqForRecSet%d.mat', iter)];
     save(filenameGreenFreqForRecSet, 'greenFreqForRecSet', '-v7.3');
     
     %% plot updated model optimized in different domains
@@ -590,7 +593,7 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     title('Updated Velocity Model');
     colormap(seismic); colorbar; caxis manual; caxis([vmin, vmax]);
     % save current updated velocity model
-    filenameVmNew = [model_data_path, sprintf('/vmNew%d.mat', iter)];
+    filenameVmNew = [pathVelocityModel, sprintf('/vmNew%d.mat', iter)];
     save(filenameVmNew, 'vmNew', 'modelNew', '-v7.3');
     
     % clear variables and functions from memory
@@ -622,7 +625,7 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
         dataDeltaFreq(:, ixs, :) = squeeze(dataTrueFreq(:, ixs, :)) - fftshift(fft(dataSmooth, nfft, 2), 2);
         
     end % end shot loop
-    filenameDataDeltaFreq = [model_data_path, sprintf('/dataDeltaFreq%d.mat', iter)];
+    filenameDataDeltaFreq = [pathVelocityModel, sprintf('/dataDeltaFreq%d.mat', iter)];
     save(filenameDataDeltaFreq, 'dataDeltaFreq', '-v7.3');
     
     % clear variables and functions from memory

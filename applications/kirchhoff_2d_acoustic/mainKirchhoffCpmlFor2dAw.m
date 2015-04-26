@@ -32,21 +32,22 @@ EPSILON = 1e-3;
 run ../setpath;
 
 
-%% Read in velocity model data and plot it
-load([model_data_path, '/velocityModel.mat']); % velocityModel
+%% Read in velocity model data
+filenameVelocityModel = [model_data_path, '/velocityModel.mat'];
+[pathVelocityModel, nameVelocityModel] = fileparts(filenameVelocityModel);
+load(filenameVelocityModel); % velocityModel
 [nz, nx] = size(velocityModel);
 
-% smooth velocity model using average filter
-% filterSmooth = fspecial('average', 5);
-% velocityModelSmooth = imfilter(velocityModel, filterSmooth, 'replicate');
-load([model_data_path, '/velocityModelSmooth.mat']); % velocityModelSmooth
+% smooth velocity model used average filter
+filenameVelocityModelSmooth = [model_data_path, '/velocityModelSmooth.mat'];
+load(filenameVelocityModelSmooth); % velocityModelSmooth
+
+nBoundary = 20;
 
 dx = 10;
 dz = 10;
 x = (1:nx) * dx;
 z = (1:nz) * dz;
-
-nBoundary = 20;
 
 % grids and positions of shot array
 shotArrType = 'uniform';
@@ -144,7 +145,7 @@ end
 
 for ixs = 1:nShots %21:nx+20 % shot loop
     
-    xs = xShotGrid(ixs) + nBoundary; % shot position on x
+    xs = xShotGrid(ixs); % shot position on x
     
     % % initial wavefield
     % rw = ricker(f, nx + 2*nBoundary, dt, dt*xs, 0);
@@ -153,21 +154,21 @@ for ixs = 1:nShots %21:nx+20 % shot loop
     % generate shot signal
     source = zeros([size(V), nt]);
     % source(1, xs, 1) = 1; % impulse input
-    source(1, xs, :) = reshape(rw1dTime, 1, 1, nt);
+    source(1, xs + nBoundary, :) = reshape(rw1dTime, 1, 1, nt);
     
     % plot shot position
-    set(hShotPos, 'XData', x(xs-nBoundary), 'YData', z(1));
+    set(hShotPos, 'XData', x(xs), 'YData', z(1));
     
     % generate shot record
     tic;
     [dataTrue, snapshotTrue] = fwdTimeCpmlFor2dAw(V, source, nDiffOrder, nBoundary, dz, dx, dt);
     [dataSmooth, snapshotSmooth] = fwdTimeCpmlFor2dAw(VS, source, nDiffOrder, nBoundary, dz, dx, dt);
     timeForward = toc;
-    fprintf('Generate Forward Timing Record for Shot No. %d at x = %dm, elapsed time = %fs\n', xs-nBoundary, x(xs-nBoundary), timeForward);
+    fprintf('Generate Forward Timing Record for Shot No. %d at x = %dm, elapsed time = %fs\n', xs, x(xs), timeForward);
     
-    filenameDataTrue = [model_data_path, sprintf('/dataTrue%d.mat', xs-nBoundary)];
-    filenameDataSmooth = [model_data_path, sprintf('/dataSmooth%d.mat', xs-nBoundary)];
-    filenameSnapshotSmooth = [model_data_path, sprintf('/snapshotSmooth%d.mat', xs-nBoundary)];
+    filenameDataTrue = [pathVelocityModel, sprintf('/dataTrue%d.mat', xs)];
+    filenameDataSmooth = [pathVelocityModel, sprintf('/dataSmooth%d.mat', xs)];
+    filenameSnapshotSmooth = [pathVelocityModel, sprintf('/snapshotSmooth%d.mat', xs)];
     
     if ~exist(filenameDataTrue, 'file')
         save(filenameDataTrue, 'dataTrue', '-v7.3');
@@ -199,7 +200,7 @@ for ixs = 1:nShots %21:nx+20 % shot loop
         plot(t(it), rw1dTime(it), 'r*'); hold off;
         xlim([t(1), t(end)]);
         xlabel('Time (s)'); ylabel('Amplitude');
-        title(sprintf('Shot No. %d at x = %dm', ixs, x(xs-nBoundary)));
+        title(sprintf('Shot No. %d at x = %dm', ixs, x(xs)));
         
         % plot shot record evolution (true)
         ds = zeros(nt, nx);
@@ -260,7 +261,7 @@ if exist('objVideoModelTravelTime', 'var')
 end
 
 % save results for later re-use
-filenameTravelTime = [model_data_path, '/travelTime.mat'];
+filenameTravelTime = [pathVelocityModel, '/travelTime.mat'];
 if ~exist(filenameTravelTime, 'file')
     save(filenameTravelTime, 'travelTime', '-v7.3')
 end
@@ -282,7 +283,7 @@ Stacked = zeros(nz, nx);
 for ixs = 1:nShots
     xs = xShotGrid(ixs); % shot position on x
     
-    load([model_data_path, sprintf('/dataTrue%d.mat', xs)]); % data
+    load([pathVelocityModel, sprintf('/dataTrue%d.mat', xs)]); % data
     dataTrue = dataTrue(nBoundary+1:end-nBoundary, :)';
     tic;
     M = migrate(travelTime, xRecGrid, xShotAndRecGrid, dataTrue, dt, nz, xs);
@@ -323,7 +324,7 @@ if exist('objVideoModelKirchhoff', 'var')
     close(objVideoModelKirchhoff);
 end
 
-filenameKirchoffMigStackedMat = [model_data_path, '/KirchoffMigStacked.mat'];
+filenameKirchoffMigStackedMat = [pathVelocityModel, '/KirchoffMigStacked.mat'];
 if ~exist(filenameKirchoffMigStackedMat, 'file')
     StackedKirchoffMig = diff(Stacked(1:end-nBoundary, nBoundary+1:end-nBoundary), 2, 1);
     save(filenameKirchoffMigStackedMat, 'StackedKirchoffMig', '-v7.3');

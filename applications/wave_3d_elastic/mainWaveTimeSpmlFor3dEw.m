@@ -26,13 +26,14 @@ run ../setpath;
 
 %% Model Parameters setup
 % vp = P-wave velocity, vs = S-wave velocity
-
-load([model_data_path, '/cake3DP.mat']);
+filenameVelocityModelP = [model_data_path, '/cake3DP.mat'];
+[pathVelocityModel, nameVelocityModel] = fileparts(filenameVelocityModelP);
+load(filenameVelocityModelP);
 vp = velocityModel;
-load([model_data_path, '/cake3DS.mat']);
+
+filenameVelocityModelS = [model_data_path, '/cake3DS.mat'];
+load(filenameVelocityModelS);
 vs = velocityModel;
-% vp = 2500 * ones(60, 30, 40);
-% vs = vp / sqrt(2);
 
 % dimension check
 if (ndims(vp) ~= ndims(vs))

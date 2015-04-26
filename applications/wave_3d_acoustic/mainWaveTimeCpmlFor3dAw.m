@@ -36,7 +36,9 @@ dy = 10;
 
 % velocity model
 % velocityModel = 2500 * ones(nz, nx, ny);
-load([model_data_path, '/cake3DP.mat']);
+filenameVelocityModel = [model_data_path, '/cake3DP.mat'];
+[pathVelocityModel, nameVelocityModel] = fileparts(filenameVelocityModel);
+load(filenameVelocityModel);
 
 % smooth velocity model using average filter
 % filterSmooth = fspecial('average', 5);

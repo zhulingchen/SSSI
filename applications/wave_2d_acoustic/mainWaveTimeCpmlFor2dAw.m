@@ -27,7 +27,9 @@ run ../setpath;
 
 
 %% Read in velocity model data and plot it
-load([model_data_path, '/velocityModel.mat']); % velocityModel
+filenameVelocityModel = [model_data_path, '/velocityModel.mat'];
+[pathVelocityModel, nameVelocityModel] = fileparts(filenameVelocityModel);
+load(filenameVelocityModel); % velocityModel
 [nz, nx] = size(velocityModel);
 
 dx = 10;
@@ -133,8 +135,8 @@ profile off;
 profile viewer;
 fprintf('Generate Forward Timing Record. elapsed time = %fs\n', timeForward);
 
-filenameDataTrue = [model_data_path, sprintf('/dataTrue.mat')];
-filenameSnapshotTrue = [model_data_path, sprintf('/snapshotTrue.mat')];
+filenameDataTrue = [pathVelocityModel, sprintf('/dataTrue.mat')];
+filenameSnapshotTrue = [pathVelocityModel, sprintf('/snapshotTrue.mat')];
 
 if ~exist(filenameDataTrue, 'file')
     save(filenameDataTrue, 'dataTrue', '-v7.3');
@@ -201,7 +203,7 @@ if ~exist(filenameVideo, 'file')
     open(objVideoModelReverse);
 end
 
-load([model_data_path, '/dataTrue.mat']); % dataTrue
+load([pathVelocityModel, '/dataTrue.mat']); % dataTrue
 
 noisyDataTrue = dataTrue;
 
@@ -219,7 +221,7 @@ profile off;
 profile viewer;
 fprintf('Generate Reverse Time Record, elapsed time = %fs\n', timeRT);
 
-filenameRTMSnapshot = [model_data_path, sprintf('/rtmsnapshot.mat')];
+filenameRTMSnapshot = [pathVelocityModel, sprintf('/rtmsnapshot.mat')];
 
 if ~exist(filenameRTMSnapshot, 'file')
     save(filenameRTMSnapshot, 'rtmsnapshot', '-v7.3');

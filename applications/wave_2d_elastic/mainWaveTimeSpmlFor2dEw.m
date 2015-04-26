@@ -32,18 +32,14 @@ run ../setpath;
 
 %% Model Parameters setup
 % vp = P-wave velocity, vs = S-wave velocity
-
-% fault model
-load([model_data_path, '/velocityModelP.mat']);
+filenameVelocityModelP = [model_data_path, '/velocityModelP.mat'];
+[pathVelocityModel, nameVelocityModel] = fileparts(filenameVelocityModelP);
+load(filenameVelocityModelP);
 vp = velocityModel;
-load([model_data_path, '/velocityModelS.mat']);
+
+filenameVelocityModelS = [model_data_path, '/velocityModelS.mat'];
+load(filenameVelocityModelS);
 vs = velocityModel;
-% % Saudi Arabia Southern Ghawar model
-% load([model_data_path, '/SaudiArabia_SouthernGhawar/Vp.mat']);
-% velocityModel = Vp(1:10:end-1, 1:40:end-1);
-% vp = Vp(1:10:end-1, 1:40:end-1);
-% load([model_data_path, '/SaudiArabia_SouthernGhawar/Vs.mat']);
-% vs = Vs(1:10:end-1, 1:40:end-1);
 
 % dimension check
 if (ndims(vp) ~= ndims(vs))
