@@ -29,7 +29,7 @@ EPSILON = 1e-3;
 
 
 %% Set path
-run ../setpath;
+run([fileparts(pwd), '/setpath']);
 
 
 %% Read in velocity model data

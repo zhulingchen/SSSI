@@ -27,7 +27,7 @@ clc;
 
 
 %% Set path
-run ../setpath;
+run([fileparts(pwd), '/setpath']);
 
 
 %% Model Parameters setup

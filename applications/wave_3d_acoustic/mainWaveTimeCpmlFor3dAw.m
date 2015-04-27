@@ -23,7 +23,7 @@ EPSILON = 1e-3;
 
 
 %% Set path
-run ../setpath;
+run([fileparts(pwd), '/setpath']);
 
 
 %% Read in velocity model data and plot it
@@ -36,7 +36,7 @@ dy = 10;
 
 % velocity model
 % velocityModel = 2500 * ones(nz, nx, ny);
-filenameVelocityModel = [model_data_path, '/cake3DP.mat'];
+filenameVelocityModel = [model_data_path, '/cake3D.mat'];
 [pathVelocityModel, nameVelocityModel] = fileparts(filenameVelocityModel);
 load(filenameVelocityModel);
 
