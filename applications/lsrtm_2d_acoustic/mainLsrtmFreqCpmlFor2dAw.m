@@ -65,7 +65,7 @@ clc;
 ALPHA = 0.75;
 DELTA = 1e-4;
 EPSILON = 1;
-FREQTHRES = 1;
+FREQTHRES = 2;
 MAXITER = 20;
 
 
@@ -183,6 +183,7 @@ end
 rw1dFreq = fftshift(fft(rw1dTime, nfft), 2);
 % find active frequency set with FFT amplitude larger than the threshold
 activeW = find(abs(rw1dFreq) > FREQTHRES);
+activeW = activeW(activeW > nfft / 2 + 1); % choose f > 0Hz
 
 dataTrueFreq = zeros(nRecs, nShots, nfft);
 dataDeltaFreq = zeros(nRecs, nShots, nfft);
@@ -272,12 +273,9 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     colormap(seismic);
     
     % update the velocity model with least-squares
-    for iw = activeW
+    parfor idx_w = 1:length(activeW)
         
-        if (iw == nfft / 2 + 1)
-            % skip f = 0Hz
-            continue;
-        end
+        iw = activeW(idx_w);
         
         fprintf('Processing f(%d) = %fHz ... ', iw, w(iw)/(2*pi));
         tic;
