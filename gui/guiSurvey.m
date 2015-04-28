@@ -22,7 +22,7 @@ function varargout = guiSurvey(varargin)
 
 % Edit the above text to modify the response to help guiSurvey
 
-% Last Modified by GUIDE v2.5 27-Apr-2015 16:32:04
+% Last Modified by GUIDE v2.5 27-Apr-2015 22:52:24
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -1577,5 +1577,3 @@ function edit_status_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
-
-
