@@ -22,7 +22,7 @@ function varargout = guiSurvey(varargin)
 
 % Edit the above text to modify the response to help guiSurvey
 
-% Last Modified by GUIDE v2.5 26-Mar-2015 15:10:34
+% Last Modified by GUIDE v2.5 27-Apr-2015 16:32:04
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -115,7 +115,7 @@ set(handles.edit_rz, 'Enable', 'off');
 %% set finite difference setting values
 dx = 10;
 dz = 10;
-dt = 0.5*(min([dx, dz])/vmax/sqrt(2));
+dt = 0.5*(min([dx, dz])/vmax/sqrt(2));  % times 0.5 to reduce the possibility of instability
 [nz, nx, ~] = size(v);
 nt = round((sqrt((dx*nx)^2 + (dz*nz)^2)*2/vmin/dt + 1));
 x = (1:nx) * dx;
@@ -213,9 +213,9 @@ set(handles.axes_out5, 'Visible', 'off');
 set(handles.axes_out6, 'Visible', 'off');
 
 
-
 % end of self-defined functions
 % --------------------------------------------------
+
 
 
 % --------------------------------------------------------------------
@@ -324,9 +324,6 @@ function menu_clearVModel_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-%% clear values
-clear('vp', 'vs');
-
 %% clear object contents
 set(handles.edit_dx, 'String', '');
 set(handles.edit_dy, 'String', '');
@@ -369,10 +366,11 @@ set(handles.pmenu_receiveAll, 'Enable', 'off');
 set(handles.edit_rx, 'Enable', 'off');
 set(handles.edit_ry, 'Enable', 'off');
 set(handles.edit_rz, 'Enable', 'off');
-set(handles.edit_status, 'Enable', 'off');
+% set(handles.edit_status, 'Enable', 'off');
 
 set(handles.btn_shot, 'Enable', 'off');
 set(handles.btn_stop, 'Enable', 'off');
+set(handles.btn_saveData, 'Enable', 'off');
 
 %% clear other axes & set them invisible
 cla(handles.axes_velocityModel, 'reset');
@@ -394,6 +392,12 @@ set(handles.axes_out6, 'Visible', 'off');
 
 %% share variables among callback functions
 data = guidata(hObject);
+if (isfield(data, 'vp'))
+    data = rmfield(data, 'vp');
+end
+if (isfield(data, 'vs'))
+    data = rmfield(data, 'vs');
+end
 if (isfield(data, 'loadPFlag'))
     data = rmfield(data, 'loadPFlag');
 end
@@ -409,6 +413,27 @@ end
 if (isfield(data, 'stopFlag'))
     data = rmfield(data, 'stopFlag');
 end
+if (isfield(data, 'dataP'))
+    data = rmfield(data, 'dataP');
+end
+if (isfield(data, 'dataVxp'))
+    data = rmfield(data, 'dataVxp');
+end
+if (isfield(data, 'dataVyp'))
+    data = rmfield(data, 'dataVyp');
+end
+if (isfield(data, 'dataVzp'))
+    data = rmfield(data, 'dataVzp');
+end
+if (isfield(data, 'dataVxs'))
+    data = rmfield(data, 'dataVxs');
+end
+if (isfield(data, 'dataVys'))
+    data = rmfield(data, 'dataVys');
+end
+if (isfield(data, 'dataVzs'))
+    data = rmfield(data, 'dataVzs');
+end
 guidata(hObject, data); % hObject can be any object contained in the figure, including push button, edit text, popup menu, etc.
 
 
@@ -419,8 +444,9 @@ function btn_shot_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 %% enable / disable objects
-set(handles.btn_stop, 'Enable', 'on');
 set(handles.btn_shot, 'Enable', 'off');
+set(handles.btn_stop, 'Enable', 'on');
+set(handles.btn_saveData, 'Enable', 'off');
 
 %% share variables among callback functions
 data = guidata(hObject);
@@ -446,6 +472,7 @@ if (isfield(data, 'vp'))
 else
     % only S-wave velocity model has been loaded, treat as only P-wave
     % velocity model has been loaded
+    warndlg('Only S-wave velocity model has been loaded, treat as only P-wave velocity model has been loaded!', 'Warning');
     vp = data.vs;
 end
 
@@ -527,9 +554,26 @@ for ixs = 1:nShots
         if (exist('vs', 'var'))
             % elastic wave shot
             [snapshotVzp, snapshotVxp, snapshotVzs, snapshotVxs] = fwdTimeSpmlFor2dEw(VP, VS, sourceTime, nDiffOrder, nBoundary, dz, dx, dt);
+            % share variables among callback functions
+            data = guidata(hObject);
+            if (isfield(data, 'dataVyp'))
+                data = rmfield(data, 'dataVyp');
+            end
+            if (isfield(data, 'dataVys'))
+                data = rmfield(data, 'dataVys');
+            end
+            data.dataVzp = squeeze(snapshotVzp(1, rx+nBoundary, :)).';
+            data.dataVxp = squeeze(snapshotVxp(1, rx+nBoundary, :)).';
+            data.dataVzs = squeeze(snapshotVzs(1, rx+nBoundary, :)).';
+            data.dataVxs = squeeze(snapshotVxs(1, rx+nBoundary, :)).';
+            guidata(hObject, data);
         else
             % acoustic wave shot
-            [dataTrue, snapshotTrue] = fwdTimeCpmlFor2dAw(VP, sourceTime, nDiffOrder, nBoundary, dz, dx, dt);
+            [dataP, snapshotTrue] = fwdTimeCpmlFor2dAw(VP, sourceTime, nDiffOrder, nBoundary, dz, dx, dt);
+            % share variables among callback functions
+            data = guidata(hObject);
+            data.dataP = dataP(rx+nBoundary, :).';
+            guidata(hObject, data);
         end
         
         % update status
@@ -558,9 +602,22 @@ for ixs = 1:nShots
         if (exist('vs', 'var'))
             % elastic wave shot
             [snapshotVzp, snapshotVxp, snapshotVyp, snapshotVzs, snapshotVxs, snapshotVys] = fwdTimeSpmlFor3dEw(VP, VS, sourceTime, sourceTime, sourceTime, nDiffOrder, nBoundary, dz, dx, dy, dt);
+            % share variables among callback functions
+            data = guidata(hObject);
+            data.dataVzp = permute(squeeze(snapshotVzp(1, rx+nBoundary, ry+nBoundary, :)), [3, 1, 2]);
+            data.dataVxp = permute(squeeze(snapshotVxp(1, rx+nBoundary, ry+nBoundary, :)), [3, 1, 2]);
+            data.dataVyp = permute(squeeze(snapshotVyp(1, rx+nBoundary, ry+nBoundary, :)), [3, 1, 2]);
+            data.dataVzs = permute(squeeze(snapshotVzs(1, rx+nBoundary, ry+nBoundary, :)), [3, 1, 2]);
+            data.dataVxs = permute(squeeze(snapshotVxs(1, rx+nBoundary, ry+nBoundary, :)), [3, 1, 2]);
+            data.dataVys = permute(squeeze(snapshotVys(1, rx+nBoundary, ry+nBoundary, :)), [3, 1, 2]);
+            guidata(hObject, data);
         else
             % acoustic wave shot
-            [dataTrue, snapshotTrue] = fwdTimeCpmlFor3dAw(VP, sourceTime, nDiffOrder, nBoundary, dz, dx, dy, dt);
+            [dataP, snapshotTrue] = fwdTimeCpmlFor3dAw(VP, sourceTime, nDiffOrder, nBoundary, dz, dx, dy, dt);
+            % share variables among callback functions
+            data = guidata(hObject);
+            data.dataP = permute(dataP(rx+nBoundary, ry+nBoundary, :), [3, 1, 2]);
+            guidata(hObject, data);
         end
         
         % update status
@@ -628,7 +685,7 @@ for ixs = 1:nShots
                 % display acoustic wavefields
                 % plot received data traces
                 dataDisplay = zeros(nt, nx);
-                dataDisplay(1:it, rx) = dataTrue(rx+nBoundary, 1:it).';
+                dataDisplay(1:it, rx) = dataP(rx+nBoundary, 1:it).';
                 imagesc(x, t, dataDisplay, 'Parent', handles.axes_out1);
                 xlabel(handles.axes_out1, 'Distance (m)'); ylabel(handles.axes_out1, 'Time (s)');
                 title(handles.axes_out1, 'Shot Record');
@@ -710,7 +767,7 @@ for ixs = 1:nShots
                 % display acoustic wavefields
                 % plot received data traces
                 dataDisplay = zeros(nx, ny, nt);
-                dataDisplay(rx, ry, 1:it) = dataTrue(rx+nBoundary, ry+nBoundary, 1:it);
+                dataDisplay(rx, ry, 1:it) = dataP(rx+nBoundary, ry+nBoundary, 1:it);
                 slice(handles.axes_out1, x, y, t, permute(dataDisplay, [2, 1, 3]), ...
                     round(linspace(x(2), x(end-1), 5)), ...
                     round(linspace(y(2), y(end-1), 5)), ...
@@ -744,6 +801,7 @@ end
 %% enable / disable objects
 set(handles.btn_shot, 'Enable', 'on');
 set(handles.btn_stop, 'Enable', 'off');
+set(handles.btn_saveData, 'Enable', 'on');	% data has already been ready after plotting
 
 
 % --- Executes on button press in btn_stop.
@@ -755,6 +813,7 @@ function btn_stop_Callback(hObject, eventdata, handles)
 %% enable / disable objects
 set(handles.btn_shot, 'Enable', 'on');
 set(handles.btn_stop, 'Enable', 'off');
+set(handles.btn_saveData, 'Enable', 'on');	% data has already been ready when the stop button can be pushed
 
 %% update status
 str_status = get(handles.edit_status, 'String');
@@ -765,6 +824,96 @@ set(handles.edit_status, 'String', str_status);
 data = guidata(hObject);
 data.stopFlag = true;
 guidata(hObject, data);
+
+
+% --- Executes on button press in btn_savedata.
+function btn_saveData_Callback(hObject, eventdata, handles)
+% hObject    handle to btn_savedata (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+data = guidata(hObject);
+Ndims = ndims(data.vp);
+if (Ndims <= 2)	% 2D case
+    if (isfield(data, 'vs')) % elastic wave
+        % save X-axis particle velocity data
+        [file, path] = uiputfile('*.mat', 'Save X-axis 2D particle velocity data as');
+        dataVx = data.dataVxp + data.dataVxs;
+        if (~(isequal(file, 0) || isequal(path, 0))) % user does not press the cancel button
+            save(fullfile(path, file), 'dataVx', '-v7.3');
+            % update status
+            str_status = get(handles.edit_status, 'String');
+            str_status{end+1} = ['X-axis 2D particle velocity data has been saved in ', fullfile(path, file)];
+            set(handles.edit_status, 'String', str_status);
+        end
+        % save Z-axis particle velocity data
+        [file, path] = uiputfile('*.mat', 'Save Z-axis 2D particle velocity data as');
+        dataVz = data.dataVzp + data.dataVzs;
+        if (~(isequal(file, 0) || isequal(path, 0))) % user does not press the cancel button
+            save(fullfile(path, file), 'dataVz', '-v7.3');
+            % update status
+            str_status = get(handles.edit_status, 'String');
+            str_status{end+1} = ['Z-axis 2D particle velocity data has been saved in ', fullfile(path, file)];
+            set(handles.edit_status, 'String', str_status);
+        end
+    else                    % acoustic wave
+        % save acoustic pressure data
+        [file, path] = uiputfile('*.mat', 'Save 2D acoustic pressure data as');
+        dataP = data.dataP;
+        if (~(isequal(file, 0) || isequal(path, 0))) % user does not press the cancel button
+            save(fullfile(path, file), 'dataP', '-v7.3');
+            % update status
+            str_status = get(handles.edit_status, 'String');
+            str_status{end+1} = ['2D Acoustic pressure data has been saved in ', fullfile(path, file)];
+            set(handles.edit_status, 'String', str_status);
+        end
+    end
+    
+else            % 3D case
+    if (isfield(data, 'vs')) % elastic wave
+        % save X-axis particle velocity data
+        [file, path] = uiputfile('*.mat', 'Save X-axis 3D particle velocity data as');
+        dataVx = data.dataVxp + data.dataVxs;
+        if (~(isequal(file, 0) || isequal(path, 0))) % user does not press the cancel button
+            save(fullfile(path, file), 'dataVx', '-v7.3');
+            % update status
+            str_status = get(handles.edit_status, 'String');
+            str_status{end+1} = ['X-axis 3D particle velocity data has been saved in ', fullfile(path, file)];
+            set(handles.edit_status, 'String', str_status);
+        end
+        % save Y-axis particle velocity data
+        [file, path] = uiputfile('*.mat', 'Save Y-axis 3D particle velocity data as');
+        dataVy = data.dataVyp + data.dataVys;
+        if (~(isequal(file, 0) || isequal(path, 0))) % user does not press the cancel button
+            save(fullfile(path, file), 'dataVy', '-v7.3');
+            % update status
+            str_status = get(handles.edit_status, 'String');
+            str_status{end+1} = ['Y-axis 3D particle velocity data has been saved in ', fullfile(path, file)];
+            set(handles.edit_status, 'String', str_status);
+        end
+        % save Z-axis particle velocity data
+        [file, path] = uiputfile('*.mat', 'Save Z-axis 3D particle velocity data as');
+        dataVz = data.dataVzp + data.dataVzs;
+        if (~(isequal(file, 0) || isequal(path, 0))) % user does not press the cancel button
+            save(fullfile(path, file), 'dataVz', '-v7.3');
+            % update status
+            str_status = get(handles.edit_status, 'String');
+            str_status{end+1} = ['Z-axis 3D particle velocity data has been saved in ', fullfile(path, file)];
+            set(handles.edit_status, 'String', str_status);
+        end
+    else                    % acoustic wave
+        % save acoustic pressure data
+        [file, path] = uiputfile('*.mat', 'Save 3D acoustic pressure data as');
+        dataP = data.dataP;
+        if (~(isequal(file, 0) || isequal(path, 0))) % user does not press the cancel button
+            save(fullfile(path, file), 'dataP', '-v7.3');
+            % update status
+            str_status = get(handles.edit_status, 'String');
+            str_status{end+1} = ['3D Acoustic pressure data has been saved in ', fullfile(path, file)];
+            set(handles.edit_status, 'String', str_status);
+        end
+    end
+end
 
 
 function edit_dx_Callback(hObject, eventdata, handles)
@@ -1408,7 +1557,6 @@ function figureMain_CloseRequestFcn(hObject, eventdata, handles)
 delete(hObject);
 
 
-
 function edit_status_Callback(hObject, eventdata, handles)
 % hObject    handle to edit_status (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
@@ -1429,4 +1577,5 @@ function edit_status_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
+
 
