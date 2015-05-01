@@ -239,8 +239,8 @@ clear('sourceTime');
 impTime = [1, zeros(1, nt-1)];
 impFreq = fftshift(fft(impTime, nfft), 2);
 
-modelOld = zeros(nz, nx);
-modelNew = 1./VS(1:end-nBoundary, nBoundary+1:end-nBoundary).^2;
+modelOld = zeros(nz + nBoundary, nx + 2*nBoundary);
+modelNew = 1./(VS.^2);
 
 % shot positions on extended velocity model
 xs = xShotGrid + nBoundary;
@@ -257,14 +257,13 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     
     modelOld = modelNew;
     vmOld = 1./sqrt(modelOld);
-    vmOld = extBoundary(vmOld, nBoundary, 2);
     load(filenameDataDeltaFreq);
     
     % an approximated diagonal Hessian matrix
-    hessianDiag = zeros(nLength, 1);
+    hessianDiag = zeros(nLengthWithBoundary, 1);
     % hessianMat = zeros(nLength, nLength);
     % migrated image
-    mig = zeros(nLength, 1);
+    mig = zeros(nLengthWithBoundary, 1);
     
     figure(1);
     imagesc(x, z, vmOld(1:end-nBoundary, nBoundary+1:end-nBoundary));
@@ -285,19 +284,11 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
         sourceFreq = zeros(nLengthWithBoundary, nShots);
         sourceFreq((xs-1)*(nz+nBoundary)+1, :) = impFreq(iw) * eye(nShots, nShots);
         greenFreqForShot = A \ sourceFreq;
-        % remove external boundaries
-        greenFreqForShot = reshape(greenFreqForShot, nz + nBoundary, nx + 2*nBoundary, nShots);
-        greenFreqForShot = greenFreqForShot(1:end-nBoundary, nBoundary+1:end-nBoundary, :);
-        greenFreqForShot = reshape(greenFreqForShot, nLength, nShots);
         
         % Green's function for every receiver
         sourceFreq = zeros(nLengthWithBoundary, nRecs);
         sourceFreq((xr-1)*(nz+nBoundary)+1, :) = impFreq(iw) * eye(nRecs, nRecs);
         greenFreqForRec = A \ sourceFreq;
-        % remove external boundaries
-        greenFreqForRec = reshape(greenFreqForRec, nz + nBoundary, nx + 2*nBoundary, nRecs);
-        greenFreqForRec = greenFreqForRec(1:end-nBoundary, nBoundary+1:end-nBoundary, :);
-        greenFreqForRec = reshape(greenFreqForRec, nLength, nRecs);
         
         % calculate the pseudo-Hessian matrix, which is the diagonal elements of Hessian matrix
         hessianDiag = hessianDiag + w(iw)^4 * abs(rw1dFreq(iw))^2 ...
@@ -340,14 +331,13 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     lambda = 5 * max(hessianDiag);
     
     % updated model
-    modelOld = reshape(modelOld, nLength, 1);
-    modelNew = modelOld + EPSILON * (real(mig) ./ real(hessianDiag + lambda * ones(nLength, 1)));
-    modelOld = reshape(modelOld, nz, nx);
-    modelNew = reshape(modelNew, nz, nx);
+    modelOld = reshape(modelOld, nLengthWithBoundary, 1);
+    modelNew = modelOld + EPSILON * (real(mig) ./ real(hessianDiag + lambda * ones(nLengthWithBoundary, 1)));
+    modelOld = reshape(modelOld, nz + nBoundary, nx + 2*nBoundary);
+    modelNew = reshape(modelNew, nz + nBoundary, nx + 2*nBoundary);
     modelNew(modelNew < 1/vmax^2) = 1/vmax^2;
     modelNew(modelNew > 1/vmin^2) = 1/vmin^2;
     vmNew = 1./sqrt(modelNew);
-    vmNew = extBoundary(vmNew, nBoundary, 2);
     
     figure(2);
     imagesc(x, z, vmNew(1:end-nBoundary, nBoundary+1:end-nBoundary));

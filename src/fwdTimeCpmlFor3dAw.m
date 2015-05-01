@@ -4,7 +4,7 @@ function [data, snapshot] = fwdTimeCpmlFor3dAw(v, source, nDiffOrder, nBoundary,
 % finite difference in time domain with the following partial differential
 % equation (PDE)
 %
-% (1/v^2)*(d^2)u(z, x, y, t)/dt^2 + s(z, x, y, t) = zP + xP + yP
+% (1/v^2)*(d^2)u(z, x, y, t)/dt^2 = zP + xP + yP + s(z, x, y, t)
 % Update xPhi, yPhi, zPhi, xA, yA, zA, xPsi, yPsi, zPsi, xP, yP, zP and
 % solve u(z, x, y, t) with Nonsplit Convolutional-PML (CPML)
 %
@@ -119,7 +119,6 @@ for it = 1:nt
     xA(:, ixl, :) = diffOperator(fdm(izi, :, iyi, 2), coeff, dx, 2) + xPhi(:, ixl, :);
     yA(:, :, iyl) = diffOperator(fdm(izi, ixi, :, 2), coeff, dy, 3) + yPhi(:, :, iyl);
     
-    
     zPsi(izi, :, :) = zb .* zPsi(izi, :, :) + (zb - 1) .* diffOperator(zA(izl, :, :), coeff, dz, 1);
     xPsi(:, ixi, :) = xb .* xPsi(:, ixi, :) + (xb - 1) .* diffOperator(xA(:, ixl, :), coeff, dx, 2);
     yPsi(:, :, iyi) = yb .* yPsi(:, :, iyi) + (yb - 1) .* diffOperator(yA(:, :, iyl), coeff, dy, 3);
@@ -129,7 +128,7 @@ for it = 1:nt
     yP(:, :, iyi) = diffOperator(yA(:, :, iyl), coeff, dy, 3) + yPsi(:, :, iyi);
     
     
-    fdm(izi, ixi, iyi, 3) = vdtSq .* (zP(izi, :, :) + xP(:, ixi, :) + yP(:, :, iyi) - source(:, :, :, it)) + 2 * fdm(izi, ixi, iyi, 2) - fdm(izi, ixi, iyi, 1);
+    fdm(izi, ixi, iyi, 3) = vdtSq .* (zP(izi, :, :) + xP(:, ixi, :) + yP(:, :, iyi) + source(:, :, :, it)) + 2 * fdm(izi, ixi, iyi, 2) - fdm(izi, ixi, iyi, 1);
     
     % *******************************************************************
     % FCT elimination of numerical dispersion. Needed for high frequency

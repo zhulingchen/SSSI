@@ -598,11 +598,11 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         /* ======================================================================
          * One-step finite difference calculation
          * ====================================================================== */
-        /* rtm(izi, ixi, 3) = vdtSq .* (zP(izi, :) + xP(:, ixi) - source) + 2 * rtm(izi, ixi, 2) - rtm(izi, ixi, 1); */
+        /* rtm(izi, ixi, 3) = vdtSq .* (zP(izi, :) + xP(:, ixi) + source) + 2 * rtm(izi, ixi, 2) - rtm(izi, ixi, 1); */
         for (j = l; j < recvcount_block_nx + l; j++)
             for (i = l; i < nz + l; i++)
                 pNewRtm_local[j * (nz+2*l) + i] = pVdtSq_local[(j - l) * nz + (i - l)] *
-                        ( pzP_local[(j - l) * (nz+l) + i] + pxP_local[j * nz + (i - l)] - pSource_local[(j - l) * nz + (i - l)] ) +
+                        ( pzP_local[(j - l) * (nz+l) + i] + pxP_local[j * nz + (i - l)] + pSource_local[(j - l) * nz + (i - l)] ) +
                         2 * pCurRtm_local[j * (nz+2*l) + i] - pOldRtm_local[j * (nz+2*l) + i];
         
         mxFree(pSource_local);

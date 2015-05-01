@@ -4,7 +4,7 @@ function [data, snapshot] = fwdTimeCpmlFor2dAw(v, source, nDiffOrder, nBoundary,
 % finite difference in time domain with the following partial differential
 % equation (PDE)
 %
-% (1/v^2)*(d^2)u(z, x, t)/dt^2 + f(z, x, t) = zP + xP
+% (1/v^2)*(d^2)u(z, x, t)/dt^2 = zP + xP + s(z, x, t)
 % Update xPhi, zPhi, xA, zA, xPsi, zPsi, xP, zP and solve u(z, x, t) with Nonsplit Convolutional-PML (CPML)
 %
 % input arguments
@@ -99,7 +99,8 @@ for it = 1:nt
     zP(izi, :) = diffOperator(zA(izl, :), coeff, dz, 1) + zPsi(izi, :);
     xP(:, ixi) = diffOperator(xA(:, ixl), coeff, dx, 2) + xPsi(:, ixi);
     
-    fdm(izi, ixi, 3) = vdtSq .* (zP(izi, :) + xP(:, ixi) - source(:, :, it)) + 2 * fdm(izi, ixi, 2) - fdm(izi, ixi, 1);
+    
+    fdm(izi, ixi, 3) = vdtSq .* (zP(izi, :) + xP(:, ixi) + source(:, :, it)) + 2 * fdm(izi, ixi, 2) - fdm(izi, ixi, 1);
     
     % *******************************************************************
     % FCT elimination of numerical dispersion. Needed for high frequency

@@ -256,14 +256,14 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         /* ======================================================================
          * One-step finite difference calculation
          * ====================================================================== */
-        /* fdm(izi, ixi, 3) = vdtSq .* (zP(izi, :) + xP(:, ixi) - source(:, :, it)) + 2 * fdm(izi, ixi, 2) - fdm(izi, ixi, 1); */
+        /* fdm(izi, ixi, 3) = vdtSq .* (zP(izi, :) + xP(:, ixi) + source(:, :, it)) + 2 * fdm(izi, ixi, 2) - fdm(izi, ixi, 1); */
 #pragma omp parallel private(j, i)
         {
 #pragma omp for schedule(static, 8)
                     for (j = l; j < nx + l; j++)
                         for (i = l; i < nz + l; i++)
                             pNewFdm[j * (nz+2*l) + i] = pVdtSq[(j - l) * nz + (i - l)] *
-                                    ( pzP[(j - l) * (nz+l) + i] + pxP[j * nz + (i - l)] - pSource[t * (nz * nx) + (j - l) * nz + (i - l)] ) +
+                                    ( pzP[(j - l) * (nz+l) + i] + pxP[j * nz + (i - l)] + pSource[t * (nz * nx) + (j - l) * nz + (i - l)] ) +
                                     2 * pCurFdm[j * (nz+2*l) + i] - pOldFdm[j * (nz+2*l) + i];
         }
                 

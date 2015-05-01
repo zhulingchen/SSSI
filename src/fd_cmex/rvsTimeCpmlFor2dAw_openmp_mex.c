@@ -251,14 +251,14 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         /* ======================================================================
          * One-step finite difference calculation
          * ====================================================================== */
-        /* rtm(izi, ixi, 3) = vdtSq .* (zP(izi, :) + xP(:, ixi) - source) + 2 * rtm(izi, ixi, 2) - rtm(izi, ixi, 1); */
+        /* rtm(izi, ixi, 3) = vdtSq .* (zP(izi, :) + xP(:, ixi) + source) + 2 * rtm(izi, ixi, 2) - rtm(izi, ixi, 1); */
 #pragma omp parallel private(j, i)
         {
 #pragma omp for schedule(static, 8)
                     for (j = l; j < nx + l; j++)
                         for (i = l; i < nz + l; i++)
                             pNewRtm[j * (nz+2*l) + i] = pVdtSq[(j - l) * nz + (i - l)] *
-                                    ( pzP[(j - l) * (nz+l) + i] + pxP[j * nz + (i - l)] - pSource[(j - l) * nz + (i - l)] ) +
+                                    ( pzP[(j - l) * (nz+l) + i] + pxP[j * nz + (i - l)] + pSource[(j - l) * nz + (i - l)] ) +
                                     2 * pCurRtm[j * (nz+2*l) + i] - pOldRtm[j * (nz+2*l) + i];
         }
                 

@@ -600,11 +600,11 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         /* ======================================================================
          * One-step finite difference calculation
          * ====================================================================== */
-        /* fdm(izi, ixi, 3) = vdtSq .* (zP(izi, :) + xP(:, ixi) - source(:, :, it)) + 2 * fdm(izi, ixi, 2) - fdm(izi, ixi, 1); */
+        /* fdm(izi, ixi, 3) = vdtSq .* (zP(izi, :) + xP(:, ixi) + source(:, :, it)) + 2 * fdm(izi, ixi, 2) - fdm(izi, ixi, 1); */
         for (j = l; j < recvcount_block_nx + l; j++)
             for (i = l; i < nz + l; i++)
                 pNewFdm_local[j * (nz+2*l) + i] = pVdtSq_local[(j - l) * nz + (i - l)] *
-                        ( pzP_local[(j - l) * (nz+l) + i] + pxP_local[j * nz + (i - l)] - pSource_local[t * (nz * recvcount_block_nx) + (j - l) * nz + (i - l)] ) +
+                        ( pzP_local[(j - l) * (nz+l) + i] + pxP_local[j * nz + (i - l)] + pSource_local[t * (nz * recvcount_block_nx) + (j - l) * nz + (i - l)] ) +
                         2 * pCurFdm_local[j * (nz+2*l) + i] - pOldFdm_local[j * (nz+2*l) + i];
         
         /* update finite difference matrices */

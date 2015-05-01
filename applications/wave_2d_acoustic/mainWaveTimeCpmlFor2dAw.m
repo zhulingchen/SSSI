@@ -125,14 +125,14 @@ if ~exist(filenameVideo, 'file')
 end
 
 % generate shot record -- forward propagation
-profile -memory on;
-setpref('profiler', 'showJitLines', true);
+% profile -memory on;
+% setpref('profiler', 'showJitLines', true);
 tic;
 [dataTrue, snapshotTrue] = fwdTimeCpmlFor2dAw(V, sourceTime, nDiffOrder, nBoundary, dz, dx, dt);
 dataTrue(setdiff(1:nx, xRecGrid)+nBoundary, :) = 0;
 timeForward = toc;
-profile off;
-profile viewer;
+% profile off;
+% profile viewer;
 fprintf('Generate Forward Timing Record. elapsed time = %fs\n', timeForward);
 
 filenameDataTrue = [pathVelocityModel, sprintf('/dataTrue.mat')];
@@ -208,17 +208,17 @@ load([pathVelocityModel, '/dataTrue.mat']); % dataTrue
 noisyDataTrue = dataTrue;
 
 for ixr = 1:nRecs
-    noisyDataTrue(xRecGrid(ixr)+nBoundary,:) = awgn(dataTrue(xRecGrid(ixr)+nBoundary,:), 10, 'measured');
+    noisyDataTrue(xRecGrid(ixr)+nBoundary,:) = awgn(dataTrue(xRecGrid(ixr)+nBoundary,:), 100, 'measured');
 end
 
 % reverse propagation
-profile -memory on;
-setpref('profiler', 'showJitLines', true);
+% profile -memory on;
+% setpref('profiler', 'showJitLines', true);
 tic;
 [~, rtmsnapshot] = rvsTimeCpmlFor2dAw(V, noisyDataTrue, nDiffOrder, nBoundary, dz, dx, dt);
 timeRT = toc;
-profile off;
-profile viewer;
+% profile off;
+% profile viewer;
 fprintf('Generate Reverse Time Record, elapsed time = %fs\n', timeRT);
 
 filenameRTMSnapshot = [pathVelocityModel, sprintf('/rtmsnapshot.mat')];
