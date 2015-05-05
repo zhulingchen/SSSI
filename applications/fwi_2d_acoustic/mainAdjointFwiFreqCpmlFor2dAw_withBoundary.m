@@ -108,11 +108,11 @@ elseif (strcmpi(shotArrType, 'random'))
 else
     error('Shot array deployment type error!');
 end
+zShotGrid = ones(1, nShots); % shots are on the surface
 xShot = xShotGrid * dx;
+zShot = zShotGrid * dz;
 
-shotWatchList = [1, ceil(nShots/2), nShots];
-
-% grids and positions of receiver array
+% grids and positions of receiver array (all on the surface)
 recArrType = 'uniform';
 idxRecArrLeft = 1;
 idxRecArrRight = nx;
@@ -197,25 +197,26 @@ dataDeltaFreq = zeros(nRecs, nShots, nfft);
 xr = xRecGrid + nBoundary;
 
 % generate shot record and save them in frequency domain
-for ixs = 1:nShots %21:nx+20 % shot loop
+for idx_shot = 1:nShots % shot loop
     
-    curXsPos = xShotGrid(ixs) + nBoundary; % shot position on x
+    curXsPos = xShotGrid(idx_shot) + nBoundary; % shot position on x
+    curZsPos = zShotGrid(idx_shot);             % shot position on z
     
     % generate shot signal
     sourceTime = zeros([size(V), nt]);
-    sourceTime(1, curXsPos, :) = reshape(rw1dTime, 1, 1, nt);
+    sourceTime(curZsPos, curXsPos, :) = reshape(rw1dTime, 1, 1, nt);
     
     tic;
     [dataTrue, ~] = fwdTimeCpmlFor2dAw(V, sourceTime, nDiffOrder, nBoundary, dz, dx, dt);
     [dataSmooth, ~] = fwdTimeCpmlFor2dAw(VS, sourceTime, nDiffOrder, nBoundary, dz, dx, dt);
     timeForward = toc;
-    fprintf('Generate Forward Timing Record for Shot No. %d at x = %dm, elapsed time = %fs\n', curXsPos-nBoundary, x(curXsPos-nBoundary), timeForward);
+    fprintf('Generate Forward Timing Record for Shot No. %d at z = %d, x = %dm, elapsed time = %fs\n', idx_shot, zShot(idx_shot), xShot(idx_shot), timeForward);
     
     dataTrue = dataTrue(xr, :);
     dataSmooth = dataSmooth(xr, :);
     
-    dataTrueFreq(:, ixs, :) = fftshift(fft(dataTrue, nfft, 2), 2);
-    dataDeltaFreq(:, ixs, :) = fftshift(fft(dataTrue - dataSmooth, nfft, 2), 2);
+    dataTrueFreq(:, idx_shot, :) = fftshift(fft(dataTrue, nfft, 2), 2);
+    dataDeltaFreq(:, idx_shot, :) = fftshift(fft(dataTrue - dataSmooth, nfft, 2), 2);
     
 end % end shot loop
 
@@ -241,12 +242,12 @@ clear('sourceTime');
 %
 % Green's function is the impulse response of the wave equation.
 
-
 modelOld = zeros(nz + nBoundary, nx + 2*nBoundary);
 modelNew = 1./(VS.^2);
 
 % shot positions on extended velocity model
 xs = xShotGrid + nBoundary;
+zs = zShotGrid;
 
 hFig1 = figure(1);
 hFig2 = figure(2);
@@ -387,7 +388,7 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
         
         % Green's function for every shot
         sourceFreq = zeros(nLengthWithBoundary, nShots);
-        sourceFreq((xs-1)*(nz+nBoundary)+1, :) = eye(nShots, nShots);
+        sourceFreq((xs-1)*(nz+nBoundary)+zs, :) = eye(nShots, nShots);
         greenFreqForShotSet{idx_w} = A \ (-sourceFreq);
         
         % Green's function for every receiver
@@ -592,23 +593,24 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     dataDeltaFreq = zeros(nRecs, nShots, nfft);
     
     % update dataDeltaFreq
-    for ixs = 1:nShots %21:nx+20 % shot loop
+    for idx_shot = 1:nShots % shot loop
         
-        curXsPos = xShotGrid(ixs) + nBoundary; % shot position on x
+        curXsPos = xShotGrid(idx_shot) + nBoundary; % shot position on x
+        curZsPos = zShotGrid(idx_shot);             % shot position on z
         
         % generate shot signal
         sourceTime = zeros([size(V), nt]);
-        sourceTime(1, curXsPos, :) = reshape(rw1dTime, 1, 1, nt);
+        sourceTime(curZsPos, curXsPos, :) = reshape(rw1dTime, 1, 1, nt);
         
         % generate shot record
         tic;
         [dataSmooth, ~] = fwdTimeCpmlFor2dAw(vmNew, sourceTime, nDiffOrder, nBoundary, dz, dx, dt);
         timeForward = toc;
-        fprintf('Generate Forward Timing Record for Shot No. %d at x = %dm, elapsed time = %fs\n', curXsPos-nBoundary, x(curXsPos-nBoundary), timeForward);
+        fprintf('Generate Forward Timing Record for Shot No. %d at z = %d, x = %dm, elapsed time = %fs\n', idx_shot, zShot(idx_shot), xShot(idx_shot), timeForward);
         
         dataSmooth = dataSmooth(xr, :);
         
-        dataDeltaFreq(:, ixs, :) = squeeze(dataTrueFreq(:, ixs, :)) - fftshift(fft(dataSmooth, nfft, 2), 2);
+        dataDeltaFreq(:, idx_shot, :) = squeeze(dataTrueFreq(:, idx_shot, :)) - fftshift(fft(dataSmooth, nfft, 2), 2);
         
     end % end shot loop
     filenameDataDeltaFreq = [pathVelocityModel, sprintf('/dataDeltaFreq%d.mat', iter)];
