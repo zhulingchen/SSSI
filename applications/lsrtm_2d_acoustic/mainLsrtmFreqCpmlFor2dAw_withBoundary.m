@@ -12,8 +12,8 @@
 % ====================================================================================================
 %
 % m = m_0 + epsilon * delta_m
-% True field u: (m(x)(d^2/dt^2) - Laplacian)u(x, t; xs) = -f(x, t; xs)
-% Incident field u_0: (m_0(x)(d^2/dt^2) - Laplacian)u_0(x, t; xs) = -f(x, t; xs)
+% True field u: (m(x)(d^2/dt^2) - Laplacian)u(x, t; xs) = f(x, t; xs)
+% Incident field u_0: (m_0(x)(d^2/dt^2) - Laplacian)u_0(x, t; xs) = f(x, t; xs)
 % u = u_0 + u_sc, u_sc is scattered field
 %
 % Therefore,
@@ -283,12 +283,12 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
         % Green's function for every shot
         sourceFreq = zeros(nLengthWithBoundary, nShots);
         sourceFreq((xs-1)*(nz+nBoundary)+1, :) = impFreq(iw) * eye(nShots, nShots);
-        greenFreqForShot = A \ sourceFreq;
+        greenFreqForShot = A \ (-sourceFreq);
         
         % Green's function for every receiver
         sourceFreq = zeros(nLengthWithBoundary, nRecs);
         sourceFreq((xr-1)*(nz+nBoundary)+1, :) = impFreq(iw) * eye(nRecs, nRecs);
-        greenFreqForRec = A \ sourceFreq;
+        greenFreqForRec = A \ (-sourceFreq);
         
         % calculate the pseudo-Hessian matrix, which is the diagonal elements of Hessian matrix
         hessianDiag = hessianDiag + w(iw)^4 * abs(rw1dFreq(iw))^2 ...
@@ -383,7 +383,7 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     %         % Green's function for every shot
     %         sourceFreq = zeros(nLengthWithBoundary, nShots);
     %         sourceFreq((xs-1)*(nz+nBoundary)+1, :) = impFreq(iw) * eye(nShots, nShots);
-    %         greenFreqForShot = A \ sourceFreq;
+    %         greenFreqForShot = A \ (-sourceFreq);
     %         % remove external boundaries
     %         greenFreqForShot = reshape(greenFreqForShot, nz + nBoundary, nx + 2*nBoundary, nShots);
     %         greenFreqForShot = greenFreqForShot(1:end-nBoundary, nBoundary+1:end-nBoundary, :);
@@ -392,7 +392,7 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     %         % Green's function for every receiver
     %         sourceFreq = zeros(nLengthWithBoundary, nRecs);
     %         sourceFreq((xr-1)*(nz+nBoundary)+1, :) = impFreq(iw) * eye(nRecs, nRecs);
-    %         greenFreqForRec = A \ sourceFreq;
+    %         greenFreqForRec = A \ (-sourceFreq);
     %         % remove external boundaries
     %         greenFreqForRec = reshape(greenFreqForRec, nz + nBoundary, nx + 2*nBoundary, nRecs);
     %         greenFreqForRec = greenFreqForRec(1:end-nBoundary, nBoundary+1:end-nBoundary, :);

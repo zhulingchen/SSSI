@@ -11,8 +11,8 @@
 % ====================================================================================================
 %
 % m = m_0 + epsilon * delta_m
-% True field u: (m(x)(d^2/dt^2) - Laplacian)u(x, t; xs) = -f(x, t; xs)
-% Incident field u_0: (m_0(x)(d^2/dt^2) - Laplacian)u_0(x, t; xs) = -f(x, t; xs)
+% True field u: (m(x)(d^2/dt^2) - Laplacian)u(x, t; xs) = f(x, t; xs)
+% Incident field u_0: (m_0(x)(d^2/dt^2) - Laplacian)u_0(x, t; xs) = f(x, t; xs)
 % u = u_0 + u_sc, u_sc is scattered field
 %
 % Therefore,

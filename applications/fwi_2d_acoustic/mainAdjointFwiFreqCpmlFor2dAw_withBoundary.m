@@ -11,8 +11,8 @@
 % ====================================================================================================
 %
 % m = m_0 + epsilon * delta_m
-% True field u: (m(x)(d^2/dt^2) - Laplacian)u(x, t; xs) = -f(x, t; xs)
-% Incident field u_0: (m_0(x)(d^2/dt^2) - Laplacian)u_0(x, t; xs) = -f(x, t; xs)
+% True field u: (m(x)(d^2/dt^2) - Laplacian)u(x, t; xs) = f(x, t; xs)
+% Incident field u_0: (m_0(x)(d^2/dt^2) - Laplacian)u_0(x, t; xs) = f(x, t; xs)
 % u = u_0 + u_sc, u_sc is scattered field
 %
 % Therefore,
@@ -388,12 +388,12 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
         % Green's function for every shot
         sourceFreq = zeros(nLengthWithBoundary, nShots);
         sourceFreq((xs-1)*(nz+nBoundary)+1, :) = eye(nShots, nShots);
-        greenFreqForShotSet{idx_w} = A \ sourceFreq;
+        greenFreqForShotSet{idx_w} = A \ (-sourceFreq);
         
         % Green's function for every receiver
         sourceFreq = zeros(nLengthWithBoundary, nRecs);
         sourceFreq((xr-1)*(nz+nBoundary)+1, :) = eye(nRecs, nRecs);
-        greenFreqForRecSet{idx_w} = A \ sourceFreq;
+        greenFreqForRecSet{idx_w} = A \ (-sourceFreq);
         
         timePerFreq = toc;
         fprintf('elapsed time = %fs\n', timePerFreq);
@@ -424,8 +424,8 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     
     %% minimization using PQN toolbox in model domain
     func = @(dm) misfitFuncModel(dm, w(activeW), rw1dFreq(activeW), nShots, dataDeltaFreq(:, :, activeW), greenFreqForShotSet, greenFreqForRecSet);
-    lowerBound = 1/vmax^2*ones(nLengthWithBoundary,1) - reshape(modelOld, nLengthWithBoundary, 1);
-    upperBound = +inf(nLengthWithBoundary, 1); %1/vmin^2*ones(nLength,1) - reshape(modelOld, nLength, 1);
+    lowerBound = -inf(nLengthWithBoundary, 1); % 1/vmax^2*ones(nLengthWithBoundary,1) - reshape(modelOld, nLengthWithBoundary, 1);
+    upperBound = +inf(nLengthWithBoundary, 1); % 1/vmin^2*ones(nLength,1) - reshape(modelOld, nLength, 1);
     funProj = @(x) boundProject(x, lowerBound, upperBound);
     options.verbose = 3;
     options.optTol = 1e-8;

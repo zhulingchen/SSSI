@@ -2,12 +2,12 @@ function [A, snapshot] = freqCpmlFor2dAw(v, source, w, nDiffOrder, nBoundary, dz
 %
 % FREQCPMLFOR2DAW solves the following equation in frequency domain
 %
-% (w^2)/(v^2)*U(z, x, jw) + (d^2)U(z, x, jw)/dz^2 + (d^2)U(z, x, jw)/dx^2 = S(z, x, jw)
+% (w^2)/(v^2)*U(z, x, jw) + (d^2)U(z, x, jw)/dz^2 + (d^2)U(z, x, jw)/dx^2 = -S(z, x, jw)
 %                                           |
 %                                   (Fourier transform), (d^n)f(t)/dt^n -> ((jw)^n)*F(jw)
 %                                           |
 %                                           V
-%                                     A * U = S
+%                                     A * U = -S
 % for U(z, x, jw) with with Nonsplit Convolutional-PML (CPML) Absorbing Boundary Conditions
 %
 % input arguments
@@ -131,14 +131,14 @@ A = A(idxRowInternal, idxRowInternal);
 % end
 
 
-%% A * U = S, solve U(z, x, jw)
+%% A * U = -S, solve U(z, x, jw)
 
 % tic;
-% snapshot = umfpack2 (A, '\', s);
+% snapshot = umfpack2 (A, '\', (-s));
 % toc;
 
 % tic;
-snapshot = A \ s;
+snapshot = A \ (-s);
 % toc;
 
 % snapshot = reshape(snapshot, nz, nx);
