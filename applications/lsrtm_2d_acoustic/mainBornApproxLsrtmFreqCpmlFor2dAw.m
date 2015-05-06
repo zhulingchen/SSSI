@@ -14,7 +14,7 @@
 %
 % m = m_0 + delta_m, delta_m is model perturbation
 % PDE for true field u:         (m(x)(d^2/dt^2) - Laplacian)u(x, t; xs) = f(x, t; xs)
-% PDE for incident field u_0:	(m_0(x)(d^2/dt^2) - Laplacian)u_0(x, t; xs) = f(x, t; xs)
+% PDE for incident field u_0:   (m_0(x)(d^2/dt^2) - Laplacian)u_0(x, t; xs) = f(x, t; xs)
 % u = u_0 + u_sc, u_sc is scattered field
 %
 % Therefore, we have
