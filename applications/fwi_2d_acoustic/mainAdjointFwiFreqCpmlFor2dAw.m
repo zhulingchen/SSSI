@@ -392,12 +392,12 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
         % Green's function for every shot
         sourceFreq = zeros(nLengthWithBoundary, nShots);
         sourceFreq((xs-1)*(nz+nBoundary)+zs, :) = eye(nShots, nShots);
-        greenFreqForShotSet{idx_w} = A \ (-sourceFreq);
+        greenFreqForShotSet{idx_w} = A \ sourceFreq;
         
         % Green's function for every receiver
         sourceFreq = zeros(nLengthWithBoundary, nRecs);
         sourceFreq((xr-1)*(nz+nBoundary)+1, :) = eye(nRecs, nRecs);
-        greenFreqForRecSet{idx_w} = A \ (-sourceFreq);
+        greenFreqForRecSet{idx_w} = A \ sourceFreq;
         
         timePerFreq = toc;
         fprintf('elapsed time = %fs\n', timePerFreq);
