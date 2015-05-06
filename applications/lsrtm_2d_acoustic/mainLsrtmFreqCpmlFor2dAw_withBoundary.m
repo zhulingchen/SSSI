@@ -167,11 +167,10 @@ nLength = nz * nx;
 nLengthWithBoundary = (nz + nBoundary) * (nx + 2*nBoundary);
 
 % number of approximation order for differentiator operator
-nDiffOrder = 1;
+nDiffOrder = 2;
 
 % Define analog frequency parameter for ricker wavelet
 f = 20;
-% f = w(550)/(2*pi);
 
 
 %% Shot data recording at the surface
@@ -190,7 +189,16 @@ dataDeltaFreq = zeros(nRecs, nShots, nfft);
 % receiver positions on extended velocity model
 xr = xRecGrid + nBoundary;
 
-for idx_shot = 1:nShots % shot loop
+
+%% Start a pool of Matlab workers
+numCores = feature('numcores');
+if isempty(gcp('nocreate')) % checking to see if my pool is already open
+    myPool = parpool(numCores);
+end
+
+
+%% generate shot record and save them in frequency domain
+parfor idx_shot = 1:nShots % shot loop
 
     curXsPos = xShotGrid(idx_shot) + nBoundary; % shot position on x
     curZsPos = zShotGrid(idx_shot);             % shot position on z
@@ -246,12 +254,7 @@ xs = xShotGrid + nBoundary;
 zs = zShotGrid;
 
 
-%% Start a pool of Matlab workers
-numCores = feature('numcores');
-if isempty(gcp('nocreate')) % checking to see if my pool is already open
-    myPool = parpool(numCores);
-end
-
+%% LSRTM main iteration
 iter = 1;
 while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <= MAXITER)
     
@@ -335,8 +338,8 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     modelNew = modelOld + EPSILON * (real(mig) ./ real(hessianDiag + lambda * ones(nLengthWithBoundary, 1)));
     modelOld = reshape(modelOld, nz + nBoundary, nx + 2*nBoundary);
     modelNew = reshape(modelNew, nz + nBoundary, nx + 2*nBoundary);
-    modelNew(modelNew < 1/vmax^2) = 1/vmax^2;
-    modelNew(modelNew > 1/vmin^2) = 1/vmin^2;
+    % modelNew(modelNew < 1/vmax^2) = 1/vmax^2;
+    % modelNew(modelNew > 1/vmin^2) = 1/vmin^2;
     vmNew = 1./sqrt(modelNew);
     
     figure(2);
@@ -470,7 +473,7 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     dataDeltaFreq = zeros(nRecs, nShots, nfft);
     
     % update dataDeltaFreq
-    for idx_shot = 1:nShots % shot loop
+    parfor idx_shot = 1:nShots % shot loop
         
         curXsPos = xShotGrid(idx_shot) + nBoundary; % shot position on x
         curZsPos = zShotGrid(idx_shot);             % shot position on z

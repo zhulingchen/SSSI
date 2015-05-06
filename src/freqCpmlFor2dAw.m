@@ -58,12 +58,9 @@ zDamp = [zeros(nz-nBoundary, nx); zDampDown];
 
 %% fill the elements into A
 % with boundary padding (fastest and most readable)
-vExt = extBoundary(v, k);
-vExt = [repmat(vExt(1, :), k, 1); vExt];
-xDampExt = extBoundary(xDamp, k);
-xDampExt = [repmat(xDampExt(1, :), k, 1); xDampExt];
-zDampExt = extBoundary(zDamp, k);
-zDampExt = [repmat(zDampExt(1, :), k, 1); zDampExt];
+vExt = padarray(v, [k, k], 'replicate');
+xDampExt = padarray(xDamp, [k, k], 'replicate');
+zDampExt = padarray(zDamp, [k, k], 'replicate');
 % interior domain
 [ix, iz] = meshgrid((1+k):(nx+k), (1+k):(nz+k));
 idxRowInternal = (ix-1)*(nz+2*k) + iz;
