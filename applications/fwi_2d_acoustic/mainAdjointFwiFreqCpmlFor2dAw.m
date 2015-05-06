@@ -108,11 +108,11 @@ elseif (strcmpi(shotArrType, 'random'))
 else
     error('Shot array deployment type error!');
 end
+zShotGrid = ones(1, nShots); % shots are on the surface
 xShot = xShotGrid * dx;
+zShot = zShotGrid * dz;
 
-shotWatchList = [1, ceil(nShots/2), nShots];
-
-% grids and positions of receiver array
+% grids and positions of receiver array (all on the surface)
 recArrType = 'uniform';
 idxRecArrLeft = 1;
 idxRecArrRight = nx;
@@ -158,7 +158,7 @@ nLength = nz * nx;
 nLengthWithBoundary = (nz + nBoundary) * (nx + 2*nBoundary);
 
 % number of approximation order for differentiator operator
-nDiffOrder = 1;
+nDiffOrder = 2;
 
 % Define analog frequency parameter for ricker wavelet
 f = 20;
@@ -196,26 +196,35 @@ dataDeltaFreq = zeros(nRecs, nShots, nfft);
 % receiver positions on extended velocity model
 xr = xRecGrid + nBoundary;
 
-% generate shot record and save them in frequency domain
-for ixs = 1:nShots %21:nx+20 % shot loop
+
+%% Start a pool of Matlab workers
+numCores = feature('numcores');
+if isempty(gcp('nocreate')) % checking to see if my pool is already open
+    myPool = parpool(numCores);
+end
+
+
+%% generate shot record and save them in frequency domain
+parfor idx_shot = 1:nShots % shot loop
     
-    curXsPos = xShotGrid(ixs) + nBoundary; % shot position on x
+    curXsPos = xShotGrid(idx_shot) + nBoundary; % shot position on x
+    curZsPos = zShotGrid(idx_shot);             % shot position on z
     
     % generate shot signal
     sourceTime = zeros([size(V), nt]);
-    sourceTime(1, curXsPos, :) = reshape(rw1dTime, 1, 1, nt);
+    sourceTime(curZsPos, curXsPos, :) = reshape(rw1dTime, 1, 1, nt);
     
     tic;
     [dataTrue, ~] = fwdTimeCpmlFor2dAw(V, sourceTime, nDiffOrder, nBoundary, dz, dx, dt);
     [dataSmooth, ~] = fwdTimeCpmlFor2dAw(VS, sourceTime, nDiffOrder, nBoundary, dz, dx, dt);
     timeForward = toc;
-    fprintf('Generate Forward Timing Record for Shot No. %d at x = %dm, elapsed time = %fs\n', curXsPos-nBoundary, x(curXsPos-nBoundary), timeForward);
+    fprintf('Generate Forward Timing Record for Shot No. %d at z = %d, x = %dm, elapsed time = %fs\n', idx_shot, zShot(idx_shot), xShot(idx_shot), timeForward);
     
     dataTrue = dataTrue(xr, :);
     dataSmooth = dataSmooth(xr, :);
     
-    dataTrueFreq(:, ixs, :) = fftshift(fft(dataTrue, nfft, 2), 2);
-    dataDeltaFreq(:, ixs, :) = fftshift(fft(dataTrue - dataSmooth, nfft, 2), 2);
+    dataTrueFreq(:, idx_shot, :) = fftshift(fft(dataTrue, nfft, 2), 2);
+    dataDeltaFreq(:, idx_shot, :) = fftshift(fft(dataTrue - dataSmooth, nfft, 2), 2);
     
 end % end shot loop
 
@@ -241,30 +250,24 @@ clear('sourceTime');
 %
 % Green's function is the impulse response of the wave equation.
 
-
-modelOld = zeros(nz, nx);
-modelNew = 1./VS(1:end-nBoundary, nBoundary+1:end-nBoundary).^2;
+modelOld = zeros(nz + nBoundary, nx + 2*nBoundary);
+modelNew = 1./(VS.^2);
 
 % shot positions on extended velocity model
 xs = xShotGrid + nBoundary;
+zs = zShotGrid;
 
 hFig1 = figure(1);
 hFig2 = figure(2);
 set(hFig2, 'Position', [100, 100, 1000, 500]);
 
 
-%% Start a pool of Matlab workers
-numCores = feature('numcores');
-if isempty(gcp('nocreate')) % checking to see if my pool is already open
-    myPool = parpool(numCores);
-end
-
+%% FWI main iteration
 iter = 1;
 while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <= MAXITER)
     
     modelOld = modelNew;
     vmOld = sqrt(1./modelOld);
-    vmOld = extBoundary(vmOld, nBoundary, 2);
     load(filenameDataDeltaFreq);
     
     % plot the velocity model
@@ -388,21 +391,13 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
         
         % Green's function for every shot
         sourceFreq = zeros(nLengthWithBoundary, nShots);
-        sourceFreq((xs-1)*(nz+nBoundary)+1, :) = eye(nShots, nShots);
-        greenFreqForShot = A \ sourceFreq;
-        % remove external boundaries
-        greenFreqForShot = reshape(greenFreqForShot, nz + nBoundary, nx + 2*nBoundary, nShots);
-        greenFreqForShot = greenFreqForShot(1:end-nBoundary, nBoundary+1:end-nBoundary, :);
-        greenFreqForShotSet{idx_w} = reshape(greenFreqForShot, nLength, nShots);
+        sourceFreq((xs-1)*(nz+nBoundary)+zs, :) = eye(nShots, nShots);
+        greenFreqForShotSet{idx_w} = A \ (-sourceFreq);
         
         % Green's function for every receiver
         sourceFreq = zeros(nLengthWithBoundary, nRecs);
         sourceFreq((xr-1)*(nz+nBoundary)+1, :) = eye(nRecs, nRecs);
-        greenFreqForRec = A \ sourceFreq;
-        % remove external boundaries
-        greenFreqForRec = reshape(greenFreqForRec, nz + nBoundary, nx + 2*nBoundary, nRecs);
-        greenFreqForRec = greenFreqForRec(1:end-nBoundary, nBoundary+1:end-nBoundary, :);
-        greenFreqForRecSet{idx_w} = reshape(greenFreqForRec, nLength, nRecs);
+        greenFreqForRecSet{idx_w} = A \ (-sourceFreq);
         
         timePerFreq = toc;
         fprintf('elapsed time = %fs\n', timePerFreq);
@@ -431,10 +426,10 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     colormap(seismic); colorbar;
     caxis manual; caxis([vmin, vmax]);
     
-    %% minimization using PQN toolbox in model domain
+    %% minimization using PQN toolbox in model (physical) domain
     func = @(dm) misfitFuncModel(dm, w(activeW), rw1dFreq(activeW), nShots, dataDeltaFreq(:, :, activeW), greenFreqForShotSet, greenFreqForRecSet);
-    lowerBound = 1/vmax^2*ones(nLength,1) - reshape(modelOld, nLength, 1);
-    upperBound = +inf(nLength, 1); %1/vmin^2*ones(nLength,1) - reshape(modelOld, nLength, 1);
+    lowerBound = -inf(nLengthWithBoundary, 1); % 1/vmax^2*ones(nLengthWithBoundary, 1) - reshape(modelOld, nLengthWithBoundary, 1);
+    upperBound = +inf(nLengthWithBoundary, 1); % 1/vmin^2*ones(nLengthWithBoundary, 1) - reshape(modelOld, nLengthWithBoundary, 1);
     funProj = @(x) boundProject(x, lowerBound, upperBound);
     options.verbose = 3;
     options.optTol = 1e-8;
@@ -444,17 +439,16 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     options.bbInit = 0;
     options.maxIter = 10;
     
-    [dm_pqn_model, value_pqn_model] = minConF_PQN_new(func, zeros(nLength, 1), funProj, options);
+    [dm_pqn_model, value_pqn_model] = minConF_PQN_new(func, zeros(nLengthWithBoundary, 1), funProj, options);
     
     % updated model
-    modelOld = reshape(modelOld, nLength, 1);
+    modelOld = reshape(modelOld, nLengthWithBoundary, 1);
     modelNew = modelOld + dm_pqn_model;
-    modelOld = reshape(modelOld, nz, nx);
-    modelNew = reshape(modelNew, nz, nx);
+    modelOld = reshape(modelOld, nz + nBoundary, nx + 2*nBoundary);
+    modelNew = reshape(modelNew, nz + nBoundary, nx + 2*nBoundary);
     % modelNew(modelNew < 1/vmax^2) = 1/vmax^2;
     % modelNew(modelNew > 1/vmin^2) = 1/vmin^2;
     vmNew = sqrt(1./modelNew);
-    vmNew = extBoundary(vmNew, nBoundary, 2);
     
     subplot(3, 3, 4);
     imagesc(x, z, vmNew(1:end-nBoundary, nBoundary+1:end-nBoundary));
@@ -466,9 +460,6 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     
     %% minimization using PQN toolbox in Wavelet domain
 %     func = @(dcoeff) misfitFuncSparse(dcoeff, @(x)waveletFunc(x, 1), @(x)waveletFunc(x, 2), w(activeW), rw1dFreq(activeW), nShots, dataDeltaFreq(:, :, activeW), greenFreqForShotSet, greenFreqForRecSet);
-%     % lowerBound = -inf(length(vecWaveletCoeff), 1); %1/vmax^2*ones(nLength,1) - reshape(modelOld, nLength, 1);
-%     % upperBound = inf(length(vecWaveletCoeff), 1); %1/vmin^2*ones(nLength,1) - reshape(modelOld, nLength, 1);
-%     % funProj = @(x) boundProject(x, lowerBound, upperBound);
 %     tau = norm(vecWaveletCoeff, 1);
 %     funProj = @(x) sign(x).*projectRandom2C(abs(x), tau);
 %     options.verbose = 3;
@@ -484,12 +475,12 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
 %     dm_pqn_wavelet = real(waveletFunc(dcoeff_pqn_wavelet, 1));
 %     
 %     % updated model
-%     modelOld = reshape(modelOld, nLength, 1);
+%     modelOld = reshape(modelOld, nLengthWithBoundary, 1);
 %     modelNew = modelOld + dm_pqn_wavelet;
-%     modelOld = reshape(modelOld, nz, nx);
-%     modelNew = reshape(modelNew, nz, nx);
-%     modelNew(modelNew < 1/vmax^2) = 1/vmax^2;
-%     modelNew(modelNew > 1/vmin^2) = 1/vmin^2;
+%     modelOld = reshape(modelOld, nz + nBoundary, nx + 2*nBoundary);
+%     modelNew = reshape(modelNew, nz + nBoundary, nx + 2*nBoundary);
+%     % modelNew(modelNew < 1/vmax^2) = 1/vmax^2;
+%     % modelNew(modelNew > 1/vmin^2) = 1/vmin^2;
 %     vmNew = sqrt(1./modelNew);
 %     vmNew = extBoundary(vmNew, nBoundary, 2);
 %     
@@ -503,8 +494,8 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     
     %% minimization using PQN toolbox in Curvelet domain
 %     func = @(dcoeff) misfitFuncSparse(dcoeff, @(x)fdctFunc(x, 1), @(x)fdctFunc(x, 2), w(activeW), rw1dFreq(activeW), nShots, dataDeltaFreq(:, :, activeW), greenFreqForShotSet, greenFreqForRecSet);
-%     % lowerBound = -inf(length(vecCurveletCoeff), 1); %1/vmax^2*ones(nLength,1) - reshape(modelOld, nLength, 1);
-%     % upperBound = inf(length(vecCurveletCoeff), 1); %1/vmin^2*ones(nLength,1) - reshape(modelOld, nLength, 1);
+%     % lowerBound = -inf(length(vecCurveletCoeff), 1); % 1/vmax^2*ones(nLengthWithBoundary, 1) - reshape(modelOld, nLengthWithBoundary, 1);
+%     % upperBound = inf(length(vecCurveletCoeff), 1);  % 1/vmin^2*ones(nLengthWithBoundary, 1) - reshape(modelOld, nLengthWithBoundary, 1);
 %     % funProj = @(x) boundProject(x, lowerBound, upperBound);
 %     tau = norm(vecCurveletCoeff, 1);
 %     funProj = @(x) sign(x).*projectRandom2C(abs(x), tau);
@@ -521,12 +512,12 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
 %     dm_pqn_curvelet = real(fdctFunc(dcoeff_pqn_curvelet, 1));
 %     
 %     % updated model
-%     modelOld = reshape(modelOld, nLength, 1);
+%     modelOld = reshape(modelOld, nLengthWithBoundary, 1);
 %     modelNew = modelOld + dm_pqn_curvelet;
-%     modelOld = reshape(modelOld, nz, nx);
-%     modelNew = reshape(modelNew, nz, nx);
-%     modelNew(modelNew < 1/vmax^2) = 1/vmax^2;
-%     modelNew(modelNew > 1/vmin^2) = 1/vmin^2;
+%     modelOld = reshape(modelOld, nz + nBoundary, nx + 2*nBoundary);
+%     modelNew = reshape(modelNew, nz + nBoundary, nx + 2*nBoundary);
+%     % modelNew(modelNew < 1/vmax^2) = 1/vmax^2;
+%     % modelNew(modelNew > 1/vmin^2) = 1/vmin^2;
 %     vmNew = sqrt(1./modelNew);
 %     vmNew = extBoundary(vmNew, nBoundary, 2);
 %     
@@ -540,8 +531,8 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     
     %% minimization using PQN toolbox in Contourlet domain
 %     func = @(dcoeff) misfitFuncSparse(dcoeff, @(x)pdfbFunc(x, 1), @(x)pdfbFunc(x, 2), w(activeW), rw1dFreq(activeW), nShots, dataDeltaFreq(:, :, activeW), greenFreqForShotSet, greenFreqForRecSet);
-%     % lowerBound = -inf(length(vecPdfbCoeff), 1); %1/vmax^2*ones(nLength,1) - reshape(modelOld, nLength, 1);
-%     % upperBound = inf(length(vecPdfbCoeff), 1); %1/vmin^2*ones(nLength,1) - reshape(modelOld, nLength, 1);
+%     % lowerBound = -inf(length(vecPdfbCoeff), 1); % 1/vmax^2*ones(nLengthWithBoundary, 1) - reshape(modelOld, nLengthWithBoundary, 1);
+%     % upperBound = inf(length(vecPdfbCoeff), 1);  % 1/vmin^2*ones(nLengthWithBoundary, 1) - reshape(modelOld, nLengthWithBoundary, 1);
 %     % funProj = @(x) boundProject(x, lowerBound, upperBound);
 %     tau = norm(vecPdfbCoeff, 1);
 %     funProj = @(x) sign(x).*projectRandom2C(abs(x), tau);
@@ -558,12 +549,12 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
 %     dm_pqn_pdfb = real(pdfbFunc(dcoeff_pqn_pdfb, 1));
 %     
 %     % updated model
-%     modelOld = reshape(modelOld, nLength, 1);
+%     modelOld = reshape(modelOld, nLengthWithBoundary, 1);
 %     modelNew = modelOld + dm_pqn_pdfb;
-%     modelOld = reshape(modelOld, nz, nx);
-%     modelNew = reshape(modelNew, nz, nx);
-%     modelNew(modelNew < 1/vmax^2) = 1/vmax^2;
-%     modelNew(modelNew > 1/vmin^2) = 1/vmin^2;
+%     modelOld = reshape(modelOld, nz + nBoundary, nx + 2*nBoundary);
+%     modelNew = reshape(modelNew, nz + nBoundary, nx + 2*nBoundary);
+%     % modelNew(modelNew < 1/vmax^2) = 1/vmax^2;
+%     % modelNew(modelNew > 1/vmin^2) = 1/vmin^2;
 %     vmNew = sqrt(1./modelNew);
 %     vmNew = extBoundary(vmNew, nBoundary, 2);
 %     
@@ -578,14 +569,13 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     %% updated model
     dm = dm_pqn_model;
     
-    modelOld = reshape(modelOld, nLength, 1);
+    modelOld = reshape(modelOld, nLengthWithBoundary, 1);
     modelNew = modelOld + dm;
-    modelOld = reshape(modelOld, nz, nx);
-    modelNew = reshape(modelNew, nz, nx);
-    modelNew(modelNew < 1/vmax^2) = 1/vmax^2;
-    modelNew(modelNew > 1/vmin^2) = 1/vmin^2;
+    modelOld = reshape(modelOld, nz + nBoundary, nx + 2*nBoundary);
+    modelNew = reshape(modelNew, nz + nBoundary, nx + 2*nBoundary);
+    % modelNew(modelNew < 1/vmax^2) = 1/vmax^2;
+    % modelNew(modelNew > 1/vmin^2) = 1/vmin^2;
     vmNew = sqrt(1./modelNew);
-    vmNew = extBoundary(vmNew, nBoundary, 2);
     
     figure(3);
     imagesc(x, z, vmNew(1:end-nBoundary, nBoundary+1:end-nBoundary));
@@ -606,23 +596,24 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     dataDeltaFreq = zeros(nRecs, nShots, nfft);
     
     % update dataDeltaFreq
-    for ixs = 1:nShots %21:nx+20 % shot loop
+    parfor idx_shot = 1:nShots % shot loop
         
-        curXsPos = xShotGrid(ixs) + nBoundary; % shot position on x
+        curXsPos = xShotGrid(idx_shot) + nBoundary; % shot position on x
+        curZsPos = zShotGrid(idx_shot);             % shot position on z
         
         % generate shot signal
         sourceTime = zeros([size(V), nt]);
-        sourceTime(1, curXsPos, :) = reshape(rw1dTime, 1, 1, nt);
+        sourceTime(curZsPos, curXsPos, :) = reshape(rw1dTime, 1, 1, nt);
         
         % generate shot record
         tic;
         [dataSmooth, ~] = fwdTimeCpmlFor2dAw(vmNew, sourceTime, nDiffOrder, nBoundary, dz, dx, dt);
         timeForward = toc;
-        fprintf('Generate Forward Timing Record for Shot No. %d at x = %dm, elapsed time = %fs\n', curXsPos-nBoundary, x(curXsPos-nBoundary), timeForward);
+        fprintf('Generate Forward Timing Record for Shot No. %d at z = %d, x = %dm, elapsed time = %fs\n', idx_shot, zShot(idx_shot), xShot(idx_shot), timeForward);
         
         dataSmooth = dataSmooth(xr, :);
         
-        dataDeltaFreq(:, ixs, :) = squeeze(dataTrueFreq(:, ixs, :)) - fftshift(fft(dataSmooth, nfft, 2), 2);
+        dataDeltaFreq(:, idx_shot, :) = squeeze(dataTrueFreq(:, idx_shot, :)) - fftshift(fft(dataSmooth, nfft, 2), 2);
         
     end % end shot loop
     filenameDataDeltaFreq = [pathVelocityModel, sprintf('/dataDeltaFreq%d.mat', iter)];

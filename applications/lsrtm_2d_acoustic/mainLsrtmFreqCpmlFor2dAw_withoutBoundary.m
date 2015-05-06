@@ -110,11 +110,11 @@ elseif (strcmpi(shotArrType, 'random'))
 else
     error('Shot array deployment type error!');
 end
-zShotGrid = ones(1, nShots); % shots are on the surface
 xShot = xShotGrid * dx;
-zShot = zShotGrid * dz;
 
-% grids and positions of receiver array (all on the surface)
+shotWatchList = [1, ceil(nShots/2), nShots];
+
+% grids and positions of receiver array
 recArrType = 'uniform';
 idxRecArrLeft = 1;
 idxRecArrRight = nx;
@@ -167,10 +167,11 @@ nLength = nz * nx;
 nLengthWithBoundary = (nz + nBoundary) * (nx + 2*nBoundary);
 
 % number of approximation order for differentiator operator
-nDiffOrder = 2;
+nDiffOrder = 1;
 
 % Define analog frequency parameter for ricker wavelet
 f = 20;
+% f = w(550)/(2*pi);
 
 
 %% Shot data recording at the surface
@@ -189,36 +190,26 @@ dataDeltaFreq = zeros(nRecs, nShots, nfft);
 % receiver positions on extended velocity model
 xr = xRecGrid + nBoundary;
 
+for ixs = 1:nShots %21:nx+20 % shot loop
 
-%% Start a pool of Matlab workers
-numCores = feature('numcores');
-if isempty(gcp('nocreate')) % checking to see if my pool is already open
-    myPool = parpool(numCores);
-end
-
-
-%% generate shot record and save them in frequency domain
-parfor idx_shot = 1:nShots % shot loop
-
-    curXsPos = xShotGrid(idx_shot) + nBoundary; % shot position on x
-    curZsPos = zShotGrid(idx_shot);             % shot position on z
+    curXsPos = xShotGrid(ixs) + nBoundary; % shot position on x
 
     % generate shot signal
     sourceTime = zeros([size(V), nt]);
-    sourceTime(curZsPos, curXsPos, :) = reshape(rw1dTime, 1, 1, nt);
+    sourceTime(1, curXsPos, :) = reshape(rw1dTime, 1, 1, nt);
 
     % generate shot record
     tic;
     [dataTrue, ~] = fwdTimeCpmlFor2dAw(V, sourceTime, nDiffOrder, nBoundary, dz, dx, dt);
     [dataSmooth, ~] = fwdTimeCpmlFor2dAw(VS, sourceTime, nDiffOrder, nBoundary, dz, dx, dt);
     timeForward = toc;
-    fprintf('Generate Forward Timing Record for Shot No. %d at z = %d, x = %dm, elapsed time = %fs\n', idx_shot, zShot(idx_shot), xShot(idx_shot), timeForward);
+    fprintf('Generate Forward Timing Record for Shot No. %d at x = %dm, elapsed time = %fs\n', curXsPos-nBoundary, x(curXsPos-nBoundary), timeForward);
 
     dataTrue = dataTrue(xr, :);
     dataSmooth = dataSmooth(xr, :);
 
-    dataTrueFreq(:, idx_shot, :) = fftshift(fft(dataTrue, nfft, 2), 2);
-    dataDeltaFreq(:, idx_shot, :) = fftshift(fft(dataTrue - dataSmooth, nfft, 2), 2);
+    dataTrueFreq(:, ixs, :) = fftshift(fft(dataTrue, nfft, 2), 2);
+    dataDeltaFreq(:, ixs, :) = fftshift(fft(dataTrue - dataSmooth, nfft, 2), 2);
 
 end % end shot loop
 
@@ -245,28 +236,35 @@ clear('sourceTime');
 % Green's function is the impulse response of the wave equation.
 
 % generate impulse shot signal
+impTime = [1, zeros(1, nt-1)];
+impFreq = fftshift(fft(impTime, nfft), 2);
 
-modelOld = zeros(nz + nBoundary, nx + 2*nBoundary);
-modelNew = 1./(VS.^2);
+modelOld = zeros(nz, nx);
+modelNew = 1./VS(1:end-nBoundary, nBoundary+1:end-nBoundary).^2;
 
 % shot positions on extended velocity model
 xs = xShotGrid + nBoundary;
-zs = zShotGrid;
 
 
-%% LSRTM main iteration
+%% Start a pool of Matlab workers
+numCores = feature('numcores');
+if isempty(gcp('nocreate')) % checking to see if my pool is already open
+    myPool = parpool(numCores);
+end
+
 iter = 1;
 while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <= MAXITER)
     
     modelOld = modelNew;
     vmOld = 1./sqrt(modelOld);
+    vmOld = extBoundary(vmOld, nBoundary, 2);
     load(filenameDataDeltaFreq);
     
     % an approximated diagonal Hessian matrix
-    hessianDiag = zeros(nLengthWithBoundary, 1);
+    hessianDiag = zeros(nLength, 1);
     % hessianMat = zeros(nLength, nLength);
     % migrated image
-    mig = zeros(nLengthWithBoundary, 1);
+    mig = zeros(nLength, 1);
     
     figure(1);
     imagesc(x, z, vmOld(1:end-nBoundary, nBoundary+1:end-nBoundary));
@@ -285,13 +283,21 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
         
         % Green's function for every shot
         sourceFreq = zeros(nLengthWithBoundary, nShots);
-        sourceFreq((xs-1)*(nz+nBoundary)+zs, :) = impFreq(iw) * eye(nShots, nShots);
-        greenFreqForShot = A \ (-sourceFreq);
+        sourceFreq((xs-1)*(nz+nBoundary)+1, :) = impFreq(iw) * eye(nShots, nShots);
+        greenFreqForShot = A \ sourceFreq;
+        % remove external boundaries
+        greenFreqForShot = reshape(greenFreqForShot, nz + nBoundary, nx + 2*nBoundary, nShots);
+        greenFreqForShot = greenFreqForShot(1:end-nBoundary, nBoundary+1:end-nBoundary, :);
+        greenFreqForShot = reshape(greenFreqForShot, nLength, nShots);
         
         % Green's function for every receiver
         sourceFreq = zeros(nLengthWithBoundary, nRecs);
         sourceFreq((xr-1)*(nz+nBoundary)+1, :) = impFreq(iw) * eye(nRecs, nRecs);
-        greenFreqForRec = A \ (-sourceFreq);
+        greenFreqForRec = A \ sourceFreq;
+        % remove external boundaries
+        greenFreqForRec = reshape(greenFreqForRec, nz + nBoundary, nx + 2*nBoundary, nRecs);
+        greenFreqForRec = greenFreqForRec(1:end-nBoundary, nBoundary+1:end-nBoundary, :);
+        greenFreqForRec = reshape(greenFreqForRec, nLength, nRecs);
         
         % calculate the pseudo-Hessian matrix, which is the diagonal elements of Hessian matrix
         hessianDiag = hessianDiag + w(iw)^4 * abs(rw1dFreq(iw))^2 ...
@@ -334,13 +340,14 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     lambda = 5 * max(hessianDiag);
     
     % updated model
-    modelOld = reshape(modelOld, nLengthWithBoundary, 1);
-    modelNew = modelOld + EPSILON * (real(mig) ./ real(hessianDiag + lambda * ones(nLengthWithBoundary, 1)));
-    modelOld = reshape(modelOld, nz + nBoundary, nx + 2*nBoundary);
-    modelNew = reshape(modelNew, nz + nBoundary, nx + 2*nBoundary);
-    % modelNew(modelNew < 1/vmax^2) = 1/vmax^2;
-    % modelNew(modelNew > 1/vmin^2) = 1/vmin^2;
+    modelOld = reshape(modelOld, nLength, 1);
+    modelNew = modelOld + EPSILON * (real(mig) ./ real(hessianDiag + lambda * ones(nLength, 1)));
+    modelOld = reshape(modelOld, nz, nx);
+    modelNew = reshape(modelNew, nz, nx);
+    modelNew(modelNew < 1/vmax^2) = 1/vmax^2;
+    modelNew(modelNew > 1/vmin^2) = 1/vmin^2;
     vmNew = 1./sqrt(modelNew);
+    vmNew = extBoundary(vmNew, nBoundary, 2);
     
     figure(2);
     imagesc(x, z, vmNew(1:end-nBoundary, nBoundary+1:end-nBoundary));
@@ -386,7 +393,7 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     %         % Green's function for every shot
     %         sourceFreq = zeros(nLengthWithBoundary, nShots);
     %         sourceFreq((xs-1)*(nz+nBoundary)+1, :) = impFreq(iw) * eye(nShots, nShots);
-    %         greenFreqForShot = A \ (-sourceFreq);
+    %         greenFreqForShot = A \ sourceFreq;
     %         % remove external boundaries
     %         greenFreqForShot = reshape(greenFreqForShot, nz + nBoundary, nx + 2*nBoundary, nShots);
     %         greenFreqForShot = greenFreqForShot(1:end-nBoundary, nBoundary+1:end-nBoundary, :);
@@ -395,7 +402,7 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     %         % Green's function for every receiver
     %         sourceFreq = zeros(nLengthWithBoundary, nRecs);
     %         sourceFreq((xr-1)*(nz+nBoundary)+1, :) = impFreq(iw) * eye(nRecs, nRecs);
-    %         greenFreqForRec = A \ (-sourceFreq);
+    %         greenFreqForRec = A \ sourceFreq;
     %         % remove external boundaries
     %         greenFreqForRec = reshape(greenFreqForRec, nz + nBoundary, nx + 2*nBoundary, nRecs);
     %         greenFreqForRec = greenFreqForRec(1:end-nBoundary, nBoundary+1:end-nBoundary, :);
@@ -473,24 +480,23 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     dataDeltaFreq = zeros(nRecs, nShots, nfft);
     
     % update dataDeltaFreq
-    parfor idx_shot = 1:nShots % shot loop
+    for ixs = 1:nShots %21:nx+20 % shot loop
         
-        curXsPos = xShotGrid(idx_shot) + nBoundary; % shot position on x
-        curZsPos = zShotGrid(idx_shot);             % shot position on z
+        curXsPos = xShotGrid(ixs) + nBoundary; % shot position on x
         
         % generate shot signal
         sourceTime = zeros([size(V), nt]);
-        sourceTime(curZsPos, curXsPos, :) = reshape(rw1dTime, 1, 1, nt);
+        sourceTime(1, curXsPos, :) = reshape(rw1dTime, 1, 1, nt);
         
         % generate shot record
         tic;
         [dataSmooth, ~] = fwdTimeCpmlFor2dAw(vmNew, sourceTime, nDiffOrder, nBoundary, dz, dx, dt);
         timeForward = toc;
-        fprintf('Generate Forward Timing Record for Shot No. %d at z = %d, x = %dm, elapsed time = %fs\n', idx_shot, zShot(idx_shot), xShot(idx_shot), timeForward);
+        fprintf('Generate Forward Timing Record for Shot No. %d at x = %dm, elapsed time = %fs\n', curXsPos-nBoundary, x(curXsPos-nBoundary), timeForward);
         
         dataSmooth = dataSmooth(xr, :);
         
-        dataDeltaFreq(:, idx_shot, :) = squeeze(dataTrueFreq(:, idx_shot, :)) - fftshift(fft(dataSmooth, nfft, 2), 2);
+        dataDeltaFreq(:, ixs, :) = squeeze(dataTrueFreq(:, ixs, :)) - fftshift(fft(dataSmooth, nfft, 2), 2);
         
         % % debug begin
         % snapshotSmooth "blows out" when the wave propagates to the "abnormalities" in vmNew
