@@ -1,10 +1,10 @@
-function [value, grad] = misfitFuncSparse(dcoeff, synthesisOp, analysisOp, w, fs, nShots, dataDeltaFreq, greenFreqForShotSet, greenFreqForRecSet)
-% MISFITFUNCSPARSE Calculate the least-squares misfit function with respect
-% to the coefficients of perturbation model dm under sparse transform with
-% transform function
+function [value, grad] = lsBornApproxMisfit(dm, w, fs, nShots, dataDeltaFreq, greenFreqForShotSet, greenFreqForRecSet)
+% LSBORNAPPROXMISFIT Calculates the least-squares misfit function with
+% respect to the perturbation model dm based on the Born approximation
 %
-% value = 1/2 * (L(invTransform(dcoeff)) - delta_d)' * (L(invTransform(dcoeff)) - delta_d)
-% grad = transform(L'(L(transform(dcoeff)) - delta_d))
+% value = 1/2 * (L(dm) - delta_d)' * (L(dm) - delta_d)
+% grad = L'(L(dm) - delta_d)
+% where L is the forward modelling operator based on the Born approximation
 %
 %
 % This matlab source file is free for use in academic research.
@@ -14,15 +14,9 @@ function [value, grad] = misfitFuncSparse(dcoeff, synthesisOp, analysisOp, w, fs
 % Center for Signal and Information Processing, Center for Energy & Geo Processing
 % Georgia Institute of Technology
 
-nw = length(w);
 
-% model after inverse transform (synthesis)
-if ~(isa(synthesisOp, 'function_handle'))
-    dm = synthesisOp * dcoeff;
-else
-    dm = synthesisOp(dcoeff);
-end
 nLength = length(dm);
+nw = length(w);
 
 % value of the cost function
 value = 0;
@@ -49,12 +43,7 @@ parfor iw = 1:nw
     
 end
 
-% analysis on grad
-if ~(isa(analysisOp, 'function_handle'))
-    grad = real(analysisOp * grad);
-else
-    grad = real(analysisOp(grad));
-end
+grad = real(grad);
 
 % fprintf('error function value = %f\n', value);
 
