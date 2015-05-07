@@ -372,7 +372,7 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     colormap(seismic);
     % save current updated velocity model
     filenameVmNew = [pathVelocityModel, sprintf('/vmNew%d.mat', iter)];
-    save(filenameVmNew, 'vmNew', 'modelNew', '-v7.3');
+    save(filenameVmNew, 'vmNew', 'modelNew', 'dm', '-v7.3');
     
     
     %% debug begin
@@ -484,7 +484,7 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     %     colormap(seismic);
     %     % save current updated velocity model
     %     % filenameVmNew = [pathVelocityModel, sprintf('/vmNew%d.mat', iter)];
-    %     % save(filenameVmNew, 'vmNew', 'modelNew', '-v7.3');
+    %     % save(filenameVmNew, 'vmNew', 'modelNew', 'dm', '-v7.3');
     %
     %     dataDeltaFreq = zeros(nRecs, nShots, nfft);
     %% debug end

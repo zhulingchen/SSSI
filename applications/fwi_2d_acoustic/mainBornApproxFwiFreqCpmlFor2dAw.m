@@ -605,7 +605,7 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     colormap(seismic); colorbar; caxis manual; caxis([vmin, vmax]);
     % save current updated velocity model
     filenameVmNew = [pathVelocityModel, sprintf('/vmNew%d.mat', iter)];
-    save(filenameVmNew, 'vmNew', 'modelNew', '-v7.3');
+    save(filenameVmNew, 'vmNew', 'modelNew', 'dm', '-v7.3');
     
     % clear variables and functions from memory
     clear('greenFreqForShotSet');
