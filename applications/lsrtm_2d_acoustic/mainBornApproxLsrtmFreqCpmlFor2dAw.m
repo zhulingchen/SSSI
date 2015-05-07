@@ -21,33 +21,34 @@
 % (m_0(x)(d^2/dt^2) - Laplacian)u_sc(y, t; xs) = - delta_m(x) * (d^2/dt^2)u(x, t; xs)
 %
 % In frequency domain
-% (- m_0(x)w^2 - Laplacian)U_sc(y, w; xs) = w^2 * delta_m(x) * U(x, w; xs)
+% (- m_0(x)w^2 - Laplacian)U_sc(y, jw; xs) = w^2 * delta_m(x) * U(x, jw; xs)
 % whose solution is
-% U_sc(y, w; xs) = w^2 * \sum_x G_0(y, w; x) * delta_m(x) * U(x, w; xs)
-% where G_0(y, w; x) is the Green's function of m_0(x) from source x to
+% U_sc(y, jw; xs) = w^2 * \sum_x G_0(y, jw; x) * delta_m(x) * U(x, jw; xs)
+% where G_0(y, jw; x) is the Green's function of m_0(x) from source x to
 % receiver y
 %
-% U_0(y, w; xs) = U(y, w; xs) - U_sc(y, w; xs)
-%               = U(y, w; xs) - w^2 * \sum_x G_0(y, w; x) * delta_m(x) * U(x, w; xs)
-%               = (I + A)U(y, w; xs)
-% where operator (matrix) A is composed by (rows of) [- w^2 * G_0(y, w; x) * delta_m(x)]
+% U_0(y, jw; xs) = U(y, jw; xs) - U_sc(y, jw; xs)
+%                = U(y, jw; xs) - w^2 * \sum_x G_0(y, jw; x) * delta_m(x) * U(x, jw; xs)
+%                = (I + A)U(y, jw; xs)
+% where operator (matrix) A is composed by (rows of) [- w^2 * G_0(y, jw; x) * delta_m(x)]
 %
 % Therefore, we have
 % U = U_0 + U_sc = (I + A)^{-1} * U_0 ~= U_0 - A * U_0 = U_0 + U_1 by
 % discarding quadratic and higher order approximation of the Taylor
 % expansion and U_1 = - A * U_0 is the Born approximation of U_sc, i.e.,
-% U_1(y, w; xs) = w^2 * \sum_x G_0(y, w; x) * delta_m(x) * U_0(x, w; xs)
+% U_1(y, jw; xs) = w^2 * \sum_x G_0(y, jw; x) * delta_m(x) * U_0(x, jw; xs)
 % which is the solution of
-% (- m_0(x)w^2 - Laplacian)U_1(y, w; xs) = w^2 * delta_m(x) * U_0(x, w; xs)
+% (- m_0(x)w^2 - Laplacian)U_1(y, jw; xs) = w^2 * delta_m(x) * U_0(x, jw; xs)
 %
-% By expanding U_0(x, w; xs) = G_0(x, w; xs) * F(x, w; xs) and the solution
+% By expanding U_0(x, jw; xs) = G_0(x, jw; xs) * F(x, jw; xs) and the solution
 % U_1 can be written in a linear form
-% U_1(y, w; xs) = w^2 * \sum_x F(x, w; xs) * G_0(x, w; xs) * G_0(y, w; x) * delta_m(x), i.e., 
-% U_1(y, w; xs) = L * delta_m(x) where operator (matrix) L is composed of
-% (rows of) [w^2 * F(x, w; xs) * G_0(x, w; xs) * G_0(y, w; x)]
+% U_1(y, jw; xs) = w^2 * \sum_x F(x, jw; xs) * G_0(x, jw; xs) * G_0(y, jw; x) * delta_m(x), i.e., 
+% U_1(y, jw; xs) = L * delta_m(x) where operator (matrix) L is composed of
+% (rows of) [w^2 * F(x, jw; xs) * G_0(x, jw; xs) * G_0(y, jw; x)]
 %
 % The cost function is:
-% J = 1/2 * \sum_w \sum_xs \sum_xr |U_1(xs, xr, jw) - U_sc(xs, xr, jw)|^2 + lambda * |delta_m(x)|^2
+% J = 1/2 * \sum_w \sum_xs \sum_xr |U_1(xr, jw; xs) - U_sc(xr, jw; xs)|^2 + lambda * |delta_m(x)|^2
+% where lambda * |delta_m(x)|^2 is for normalization
 %
 % ====================================================================================================
 %
