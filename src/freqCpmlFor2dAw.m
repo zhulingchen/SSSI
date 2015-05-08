@@ -13,7 +13,7 @@ function [A, snapshot] = freqCpmlFor2dAw(v, source, w, nDiffOrder, nBoundary, dz
 %
 % input arguments
 % v(nz,nx)          velocity model
-% source(nz,nx)     source vector (e.g., shots)
+% source            source vector (e.g., shots)
 % w                 analog angular frequency \omega = [-pi, pi)/dt
 % nDiffOrder        number of approximation order for differentiator operator
 % nBoundary         thickness of the absorbing boundary
@@ -38,7 +38,9 @@ function [A, snapshot] = freqCpmlFor2dAw(v, source, w, nDiffOrder, nBoundary, dz
 
 [nz, nx] = size(v);
 nLength = nz * nx;
-s = reshape(source, nLength, 1);
+if (ndims(source) > 1)
+    s = reshape(source, nLength, []);
+end
 coeff = dCoef(nDiffOrder, 's');
 k = 2 * nDiffOrder - 1;
 
@@ -139,6 +141,4 @@ A = A(idxRowInternal, idxRowInternal);
 snapshot = A \ (-s);
 % toc;
 
-% snapshot = reshape(snapshot, nz, nx);
-
-% snapshot = snapshot(1:end-nBoundary, nBoundary+1:end-nBoundary);
+snapshot = reshape(snapshot, size(source));

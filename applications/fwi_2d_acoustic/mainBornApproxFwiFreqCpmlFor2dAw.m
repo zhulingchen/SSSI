@@ -146,10 +146,9 @@ elseif (strcmpi(recArrType, 'random'))
 else
     error('Receiver array deployment type error!');
 end
+zRecGrid = ones(1, nRecs); % receivers are on the surface
 xRec = xRecGrid * dx;
-
-xShotAndRecGrid = union(xShotGrid, xRecGrid);
-nShotsAndRecs = length(xShotAndRecGrid);
+zRec = zRecGrid * dz;
 
 
 %% Create shot gathers
@@ -212,10 +211,16 @@ rw1dFreq = fftshift(fft(rw1dTime, nfft), 2);
 activeW = find(abs(rw1dFreq) > FREQTHRES);
 activeW = activeW(activeW > nfft / 2 + 1); % choose f > 0Hz
 
-dataTrueFreq = zeros(nRecs, nShots, nfft);
-dataDeltaFreq = zeros(nRecs, nShots, nfft);
+dataTrueFreq = zeros(nRecs, nShots, length(activeW));
+dataDeltaFreq = zeros(nRecs, nShots, length(activeW));
+
+% shot positions on extended velocity model
+xs = xShotGrid + nBoundary;
+zs = zShotGrid;
+
 % receiver positions on extended velocity model
 xr = xRecGrid + nBoundary;
+zr = zRecGrid;
 
 
 %% Start a pool of Matlab workers
@@ -226,28 +231,31 @@ end
 
 
 %% generate shot record and save them in frequency domain
-parfor idx_shot = 1:nShots % shot loop
+parfor idx_w = 1:length(activeW)
     
-    curXsPos = xShotGrid(idx_shot) + nBoundary; % shot position on x
-    curZsPos = zShotGrid(idx_shot);             % shot position on z
+    iw = activeW(idx_w);
     
-    % generate shot signal
-    sourceTime = zeros([size(V), nt]);
-    sourceTime(curZsPos, curXsPos, :) = reshape(rw1dTime, 1, 1, nt);
-    
+    fprintf('Generate %d frequency responses at f(%d) = %fHz ... ', nShots, iw, w(iw)/(2*pi));
     tic;
-    [dataTrue, ~] = fwdTimeCpmlFor2dAw(V, sourceTime, nDiffOrder, nBoundary, dz, dx, dt);
-    [dataSmooth, ~] = fwdTimeCpmlFor2dAw(VS, sourceTime, nDiffOrder, nBoundary, dz, dx, dt);
-    timeForward = toc;
-    fprintf('Generate Forward Timing Record for Shot No. %d at z = %d, x = %dm, elapsed time = %fs\n', idx_shot, zShot(idx_shot), xShot(idx_shot), timeForward);
     
-    dataTrue = dataTrue(xr, :);
-    dataSmooth = dataSmooth(xr, :);
+    % received true data for all shots in frequency domain for current frequency
+    sourceFreq = zeros(nLengthWithBoundary, nShots);
+    sourceFreq((xs-1)*(nz+nBoundary)+zs, :) = rw1dFreq(iw) * eye(nShots, nShots);
+    [~, snapshotTrueFreq] = freqCpmlFor2dAw(V, sourceFreq, w(iw), nDiffOrder, nBoundary, dz, dx);
+    % get received data on the receivers
+    dataTrueFreq(:, :, idx_w) = snapshotTrueFreq((xr-1)*(nz+nBoundary)+zr, :);
     
-    dataTrueFreq(:, idx_shot, :) = fftshift(fft(dataTrue, nfft, 2), 2);
-    dataDeltaFreq(:, idx_shot, :) = fftshift(fft(dataTrue - dataSmooth, nfft, 2), 2);
+    % calculate smooth data for all shots in frequency domain for current frequency
+    sourceFreq = zeros(nLengthWithBoundary, nShots);
+    sourceFreq((xs-1)*(nz+nBoundary)+zs, :) = rw1dFreq(iw) * eye(nShots, nShots);
+    [~, snapshotSmoothFreq] = freqCpmlFor2dAw(VS, sourceFreq, w(iw), nDiffOrder, nBoundary, dz, dx);
+    % get calculated data on the receivers
+    dataDeltaFreq(:, :, idx_w) = dataTrueFreq(:, :, idx_w) - snapshotSmoothFreq((xr-1)*(nz+nBoundary)+zr, :);
     
-end % end shot loop
+    timePerFreq = toc;
+    fprintf('elapsed time = %fs\n', timePerFreq);
+    
+end
 
 % save received surface data
 filenameDataTrueFreq = [pathVelocityModel, '/dataTrueFreq.mat'];
@@ -261,6 +269,7 @@ clear('dataTrueFreq');
 clear('dataDeltaFreq');
 clear('sourceTime');
 
+
 %% Full wave inversion (FWI)
 % (1/v^2)*(d^2)u(z, x, t)/dt^2  = (d^2)u(z, x, t)/dz^2 + (d^2)u(z, x, t)/dx^2 + s(z, x, t)
 %                                           |
@@ -273,10 +282,6 @@ clear('sourceTime');
 
 modelOld = zeros(nz + nBoundary, nx + 2*nBoundary);
 modelNew = 1./(VS.^2);
-
-% shot positions on extended velocity model
-xs = xShotGrid + nBoundary;
-zs = zShotGrid;
 
 hFigPanel = figure(1);
 set(hFigPanel, 'Position', [100, 100, 1000, 500]);
@@ -406,19 +411,18 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
         
         iw = activeW(idx_w);
         
-        fprintf('Generate Green''s functions for f(%d) = %fHz ... ', iw, w(iw)/(2*pi));
+        fprintf('Generate %d Green''s functions at f(%d) = %fHz ... ', nShots, iw, w(iw)/(2*pi));
         tic;
-        [A, ~] = freqCpmlFor2dAw(vmOld, zeros(nz + nBoundary, nx + 2*nBoundary), w(iw), nDiffOrder, nBoundary, dz, dx);
         
         % Green's function for every shot
         sourceFreq = zeros(nLengthWithBoundary, nShots);
         sourceFreq((xs-1)*(nz+nBoundary)+zs, :) = eye(nShots, nShots);
-        greenFreqForShotSet{idx_w} = A \ (-sourceFreq);
+        [~, greenFreqForShotSet{idx_w}] = freqCpmlFor2dAw(vmOld, sourceFreq, w(iw), nDiffOrder, nBoundary, dz, dx);
         
         % Green's function for every receiver
         sourceFreq = zeros(nLengthWithBoundary, nRecs);
-        sourceFreq((xr-1)*(nz+nBoundary)+1, :) = eye(nRecs, nRecs);
-        greenFreqForRecSet{idx_w} = A \ (-sourceFreq);
+        sourceFreq((xr-1)*(nz+nBoundary)+zr, :) = eye(nRecs, nRecs);
+        [~, greenFreqForRecSet{idx_w}] = freqCpmlFor2dAw(vmOld, sourceFreq, w(iw), nDiffOrder, nBoundary, dz, dx);
         
         timePerFreq = toc;
         fprintf('elapsed time = %fs\n', timePerFreq);
@@ -448,7 +452,7 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     caxis manual; caxis([vmin, vmax]);
     
     %% minimization using PQN toolbox in model (physical) domain
-    func = @(dm) lsBornApproxMisfit(dm, w(activeW), rw1dFreq(activeW), dataDeltaFreq(:, :, activeW), greenFreqForShotSet, greenFreqForRecSet);
+    func = @(dm) lsBornApproxMisfit(dm, w(activeW), rw1dFreq(activeW), dataDeltaFreq, greenFreqForShotSet, greenFreqForRecSet);
     lowerBound = -inf(nLengthWithBoundary, 1); % 1/vmax^2*ones(nLengthWithBoundary, 1) - reshape(modelOld, nLengthWithBoundary, 1);
     upperBound = +inf(nLengthWithBoundary, 1); % 1/vmin^2*ones(nLengthWithBoundary, 1) - reshape(modelOld, nLengthWithBoundary, 1);
     funProj = @(x) boundProject(x, lowerBound, upperBound);
@@ -480,7 +484,7 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     
     
     %% minimization using PQN toolbox in Wavelet domain
-%     func = @(dcoeff) lsBornApproxMisfitTransform(dcoeff, @(x)waveletFunc(x, 1), @(x)waveletFunc(x, 2), w(activeW), rw1dFreq(activeW), dataDeltaFreq(:, :, activeW), greenFreqForShotSet, greenFreqForRecSet);
+%     func = @(dcoeff) lsBornApproxMisfitTransform(dcoeff, @(x)waveletFunc(x, 1), @(x)waveletFunc(x, 2), w(activeW), rw1dFreq(activeW), dataDeltaFreq, greenFreqForShotSet, greenFreqForRecSet);
 %     tau = norm(vecWaveletCoeff, 1);
 %     funProj = @(x) sign(x).*projectRandom2C(abs(x), tau);
 %     options.verbose = 3;
@@ -514,7 +518,7 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     
     
     %% minimization using PQN toolbox in Curvelet domain
-%     func = @(dcoeff) lsBornApproxMisfitTransform(dcoeff, @(x)fdctFunc(x, 1), @(x)fdctFunc(x, 2), w(activeW), rw1dFreq(activeW), dataDeltaFreq(:, :, activeW), greenFreqForShotSet, greenFreqForRecSet);
+%     func = @(dcoeff) lsBornApproxMisfitTransform(dcoeff, @(x)fdctFunc(x, 1), @(x)fdctFunc(x, 2), w(activeW), rw1dFreq(activeW), dataDeltaFreq, greenFreqForShotSet, greenFreqForRecSet);
 %     % lowerBound = -inf(length(vecCurveletCoeff), 1); % 1/vmax^2*ones(nLengthWithBoundary, 1) - reshape(modelOld, nLengthWithBoundary, 1);
 %     % upperBound = inf(length(vecCurveletCoeff), 1);  % 1/vmin^2*ones(nLengthWithBoundary, 1) - reshape(modelOld, nLengthWithBoundary, 1);
 %     % funProj = @(x) boundProject(x, lowerBound, upperBound);
@@ -551,7 +555,7 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     
     
     %% minimization using PQN toolbox in Contourlet domain
-%     func = @(dcoeff) lsBornApproxMisfitTransform(dcoeff, @(x)pdfbFunc(x, 1), @(x)pdfbFunc(x, 2), w(activeW), rw1dFreq(activeW), dataDeltaFreq(:, :, activeW), greenFreqForShotSet, greenFreqForRecSet);
+%     func = @(dcoeff) lsBornApproxMisfitTransform(dcoeff, @(x)pdfbFunc(x, 1), @(x)pdfbFunc(x, 2), w(activeW), rw1dFreq(activeW), dataDeltaFreq, greenFreqForShotSet, greenFreqForRecSet);
 %     % lowerBound = -inf(length(vecPdfbCoeff), 1); % 1/vmax^2*ones(nLengthWithBoundary, 1) - reshape(modelOld, nLengthWithBoundary, 1);
 %     % upperBound = inf(length(vecPdfbCoeff), 1);  % 1/vmin^2*ones(nLengthWithBoundary, 1) - reshape(modelOld, nLengthWithBoundary, 1);
 %     % funProj = @(x) boundProject(x, lowerBound, upperBound);
@@ -615,29 +619,27 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     % load received surface data
     load(filenameDataTrueFreq);
     
+    % update dataDeltaFreq based on
     dataDeltaFreq = zeros(nRecs, nShots, nfft);
-    
-    % update dataDeltaFreq
-    parfor idx_shot = 1:nShots % shot loop
+    parfor idx_w = 1:length(activeW)
         
-        curXsPos = xShotGrid(idx_shot) + nBoundary; % shot position on x
-        curZsPos = zShotGrid(idx_shot);             % shot position on z
+        iw = activeW(idx_w);
         
-        % generate shot signal
-        sourceTime = zeros([size(V), nt]);
-        sourceTime(curZsPos, curXsPos, :) = reshape(rw1dTime, 1, 1, nt);
-        
-        % generate shot record
+        fprintf('Generate %d frequency responses at f(%d) = %fHz ... ', nShots, iw, w(iw)/(2*pi));
         tic;
-        [dataSmooth, ~] = fwdTimeCpmlFor2dAw(vmNew, sourceTime, nDiffOrder, nBoundary, dz, dx, dt);
-        timeForward = toc;
-        fprintf('Generate Forward Timing Record for Shot No. %d at z = %d, x = %dm, elapsed time = %fs\n', idx_shot, zShot(idx_shot), xShot(idx_shot), timeForward);
         
-        dataSmooth = dataSmooth(xr, :);
+        % calculate smooth data for all shots in frequency domain for current frequency
+        sourceFreq = zeros(nLengthWithBoundary, nShots);
+        sourceFreq((xs-1)*(nz+nBoundary)+zs, :) = rw1dFreq(iw) * eye(nShots, nShots);
+        [ASmooth, snapshotSmoothFreq] = freqCpmlFor2dAw(vmNew, sourceFreq, w(iw), nDiffOrder, nBoundary, dz, dx);
+        % get calculated data on the receivers
+        dataDeltaFreq(:, :, idx_w) = dataTrueFreq(:, :, idx_w) - snapshotSmoothFreq((xr-1)*(nz+nBoundary)+zr, :);
         
-        dataDeltaFreq(:, idx_shot, :) = squeeze(dataTrueFreq(:, idx_shot, :)) - fftshift(fft(dataSmooth, nfft, 2), 2);
+        timePerFreq = toc;
+        fprintf('elapsed time = %fs\n', timePerFreq);
         
-    end % end shot loop
+    end
+
     filenameDataDeltaFreq = [pathVelocityModel, sprintf('/dataDeltaFreq%d.mat', iter)];
     save(filenameDataDeltaFreq, 'dataDeltaFreq', '-v7.3');
     
