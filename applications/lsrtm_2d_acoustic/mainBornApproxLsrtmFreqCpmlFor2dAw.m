@@ -259,12 +259,12 @@ clear('dataDeltaFreq');
 clear('sourceTime');
 
 %% Full wave inversion (FWI)
-% (1/v^2)*(d^2)u(z, x, t)/dt^2 + s(z, x, t) = (d^2)u(z, x, t)/dz^2 + (d^2)u(z, x, t)/dx^2
+% (1/v^2)*(d^2)u(z, x, t)/dt^2  = (d^2)u(z, x, t)/dz^2 + (d^2)u(z, x, t)/dx^2 + s(z, x, t)
 %                                           |
 %                                   (Fourier transform), (d^n)f(t)/dt^n -> ((jw)^n)F(jw)
 %                                           |
 %                                           V
-% (w^2)/(v^2)*U(z, x, jw) + (d^2)U(z, x, jw)/dz^2 + (d^2)U(z, x, jw)/dx^2 = S(z, x, jw)
+% (w^2)/(v^2)*U(z, x, jw) + (d^2)U(z, x, jw)/dz^2 + (d^2)U(z, x, jw)/dx^2 = -S(z, x, jw)
 %
 % Green's function is the impulse response of the wave equation.
 

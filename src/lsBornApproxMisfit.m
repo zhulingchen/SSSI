@@ -1,9 +1,9 @@
-function [value, grad] = lsBornApproxMisfit(dm, w, fs, nShots, dataDeltaFreq, greenFreqForShotSet, greenFreqForRecSet)
+function [value, grad] = lsBornApproxMisfit(dm, w, fs, dataDeltaFreq, greenFreqForShotSet, greenFreqForRecSet)
 % LSBORNAPPROXMISFIT Calculates the least-squares misfit function with
 % respect to the perturbation model dm based on the Born approximation
 %
 % value = 1/2 * (L(dm) - delta_d)' * (L(dm) - delta_d)
-% grad = L'(L(dm) - delta_d)
+% grad = real(L'(L(dm) - delta_d))
 % where L is the forward modelling operator based on the Born approximation
 %
 %
@@ -17,6 +17,7 @@ function [value, grad] = lsBornApproxMisfit(dm, w, fs, nShots, dataDeltaFreq, gr
 
 nLength = length(dm);
 nw = length(w);
+nShots = size(dataDeltaFreq, 2);
 
 % value of the cost function
 value = 0;
@@ -46,5 +47,3 @@ end
 grad = real(grad);
 
 % fprintf('error function value = %f\n', value);
-
-end

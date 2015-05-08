@@ -1,10 +1,10 @@
-function [value, grad] = lsBornApproxMisfitTransform(dcoeff, synthesisOp, analysisOp, w, fs, nShots, dataDeltaFreq, greenFreqForShotSet, greenFreqForRecSet)
+function [value, grad] = lsBornApproxMisfitTransform(dcoeff, synthesisOp, analysisOp, w, fs, dataDeltaFreq, greenFreqForShotSet, greenFreqForRecSet)
 % LSBORNAPPROXMISFITTRANSFORM Calculate the least-squares misfit function
 % with respect to the coefficients of perturbation model dm under (sparse)
 % transform with transform function based on the Born approximation
 %
 % value = 1/2 * (L(invTransform(dcoeff)) - delta_d)' * (L(invTransform(dcoeff)) - delta_d)
-% grad = transform(L'(L(transform(dcoeff)) - delta_d))
+% grad = real(transform(L'(L(transform(dcoeff)) - delta_d)))
 % where L is the forward modelling operator based on the Born approximation
 %
 %
@@ -24,6 +24,7 @@ else
     dm = synthesisOp(dcoeff);
 end
 nLength = length(dm);
+nShots = size(dataDeltaFreq, 2);
 
 % value of the cost function
 value = 0;
@@ -58,5 +59,3 @@ else
 end
 
 % fprintf('error function value = %f\n', value);
-
-end

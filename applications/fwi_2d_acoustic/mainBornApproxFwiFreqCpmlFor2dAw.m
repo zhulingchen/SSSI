@@ -262,12 +262,12 @@ clear('dataDeltaFreq');
 clear('sourceTime');
 
 %% Full wave inversion (FWI)
-% (1/v^2)*(d^2)u(z, x, t)/dt^2 + s(z, x, t) = (d^2)u(z, x, t)/dz^2 + (d^2)u(z, x, t)/dx^2
+% (1/v^2)*(d^2)u(z, x, t)/dt^2  = (d^2)u(z, x, t)/dz^2 + (d^2)u(z, x, t)/dx^2 + s(z, x, t)
 %                                           |
 %                                   (Fourier transform), (d^n)f(t)/dt^n -> ((jw)^n)F(jw)
 %                                           |
 %                                           V
-% (w^2)/(v^2)*U(z, x, jw) + (d^2)U(z, x, jw)/dz^2 + (d^2)U(z, x, jw)/dx^2 = S(z, x, jw)
+% (w^2)/(v^2)*U(z, x, jw) + (d^2)U(z, x, jw)/dz^2 + (d^2)U(z, x, jw)/dx^2 = -S(z, x, jw)
 %
 % Green's function is the impulse response of the wave equation.
 
@@ -278,10 +278,10 @@ modelNew = 1./(VS.^2);
 xs = xShotGrid + nBoundary;
 zs = zShotGrid;
 
-hFig1 = figure(1);
-hFig2 = figure(2);
-set(hFig2, 'Position', [100, 100, 1000, 500]);
-
+hFigPanel = figure(1);
+set(hFigPanel, 'Position', [100, 100, 1000, 500]);
+hFigOld = figure(2);
+hFigNew = figure(3);
 
 %% FWI main iteration
 iter = 1;
@@ -292,7 +292,7 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     load(filenameDataDeltaFreq);
     
     % plot the velocity model
-    figure(hFig1);
+    figure(hFigOld);
     imagesc(x, z, vmOld(1:end-nBoundary, nBoundary+1:end-nBoundary));
     xlabel('Distance (m)'); ylabel('Depth (m)');
     title('Previous Velocity Model');
@@ -399,7 +399,7 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     %     %% debug end
     
     
-    % generate Green's functions
+    %% generate Green's functions
     greenFreqForShotSet = cell(1, length(activeW));
     greenFreqForRecSet = cell(1, length(activeW));
     parfor idx_w = 1:length(activeW)
@@ -425,14 +425,14 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
         
     end
     
-    filenameGreenFreqForShotSet = [pathVelocityModel, sprintf('/greenFreqForShotSet%d.mat', iter)];
-    save(filenameGreenFreqForShotSet, 'greenFreqForShotSet', '-v7.3');
+    % filenameGreenFreqForShotSet = [pathVelocityModel, sprintf('/greenFreqForShotSet%d.mat', iter)];
+    % save(filenameGreenFreqForShotSet, 'greenFreqForShotSet', '-v7.3');
     
-    filenameGreenFreqForRecSet = [pathVelocityModel, sprintf('/greenFreqForRecSet%d.mat', iter)];
-    save(filenameGreenFreqForRecSet, 'greenFreqForRecSet', '-v7.3');
+    % filenameGreenFreqForRecSet = [pathVelocityModel, sprintf('/greenFreqForRecSet%d.mat', iter)];
+    % save(filenameGreenFreqForRecSet, 'greenFreqForRecSet', '-v7.3');
     
     %% plot updated model optimized in different domains
-    figure(hFig2);
+    figure(hFigPanel);
     subplot(3, 3, 1);
     imagesc(x, z, velocityModel);
     xlabel('Distance (m)'); ylabel('Depth (m)');
@@ -448,7 +448,7 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     caxis manual; caxis([vmin, vmax]);
     
     %% minimization using PQN toolbox in model (physical) domain
-    func = @(dm) lsBornApproxMisfit(dm, w(activeW), rw1dFreq(activeW), nShots, dataDeltaFreq(:, :, activeW), greenFreqForShotSet, greenFreqForRecSet);
+    func = @(dm) lsBornApproxMisfit(dm, w(activeW), rw1dFreq(activeW), dataDeltaFreq(:, :, activeW), greenFreqForShotSet, greenFreqForRecSet);
     lowerBound = -inf(nLengthWithBoundary, 1); % 1/vmax^2*ones(nLengthWithBoundary, 1) - reshape(modelOld, nLengthWithBoundary, 1);
     upperBound = +inf(nLengthWithBoundary, 1); % 1/vmin^2*ones(nLengthWithBoundary, 1) - reshape(modelOld, nLengthWithBoundary, 1);
     funProj = @(x) boundProject(x, lowerBound, upperBound);
@@ -480,7 +480,7 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     
     
     %% minimization using PQN toolbox in Wavelet domain
-%     func = @(dcoeff) lsBornApproxMisfitTransform(dcoeff, @(x)waveletFunc(x, 1), @(x)waveletFunc(x, 2), w(activeW), rw1dFreq(activeW), nShots, dataDeltaFreq(:, :, activeW), greenFreqForShotSet, greenFreqForRecSet);
+%     func = @(dcoeff) lsBornApproxMisfitTransform(dcoeff, @(x)waveletFunc(x, 1), @(x)waveletFunc(x, 2), w(activeW), rw1dFreq(activeW), dataDeltaFreq(:, :, activeW), greenFreqForShotSet, greenFreqForRecSet);
 %     tau = norm(vecWaveletCoeff, 1);
 %     funProj = @(x) sign(x).*projectRandom2C(abs(x), tau);
 %     options.verbose = 3;
@@ -514,7 +514,7 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     
     
     %% minimization using PQN toolbox in Curvelet domain
-%     func = @(dcoeff) lsBornApproxMisfitTransform(dcoeff, @(x)fdctFunc(x, 1), @(x)fdctFunc(x, 2), w(activeW), rw1dFreq(activeW), nShots, dataDeltaFreq(:, :, activeW), greenFreqForShotSet, greenFreqForRecSet);
+%     func = @(dcoeff) lsBornApproxMisfitTransform(dcoeff, @(x)fdctFunc(x, 1), @(x)fdctFunc(x, 2), w(activeW), rw1dFreq(activeW), dataDeltaFreq(:, :, activeW), greenFreqForShotSet, greenFreqForRecSet);
 %     % lowerBound = -inf(length(vecCurveletCoeff), 1); % 1/vmax^2*ones(nLengthWithBoundary, 1) - reshape(modelOld, nLengthWithBoundary, 1);
 %     % upperBound = inf(length(vecCurveletCoeff), 1);  % 1/vmin^2*ones(nLengthWithBoundary, 1) - reshape(modelOld, nLengthWithBoundary, 1);
 %     % funProj = @(x) boundProject(x, lowerBound, upperBound);
@@ -551,7 +551,7 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     
     
     %% minimization using PQN toolbox in Contourlet domain
-%     func = @(dcoeff) lsBornApproxMisfitTransform(dcoeff, @(x)pdfbFunc(x, 1), @(x)pdfbFunc(x, 2), w(activeW), rw1dFreq(activeW), nShots, dataDeltaFreq(:, :, activeW), greenFreqForShotSet, greenFreqForRecSet);
+%     func = @(dcoeff) lsBornApproxMisfitTransform(dcoeff, @(x)pdfbFunc(x, 1), @(x)pdfbFunc(x, 2), w(activeW), rw1dFreq(activeW), dataDeltaFreq(:, :, activeW), greenFreqForShotSet, greenFreqForRecSet);
 %     % lowerBound = -inf(length(vecPdfbCoeff), 1); % 1/vmax^2*ones(nLengthWithBoundary, 1) - reshape(modelOld, nLengthWithBoundary, 1);
 %     % upperBound = inf(length(vecPdfbCoeff), 1);  % 1/vmin^2*ones(nLengthWithBoundary, 1) - reshape(modelOld, nLengthWithBoundary, 1);
 %     % funProj = @(x) boundProject(x, lowerBound, upperBound);
@@ -598,7 +598,8 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     % modelNew(modelNew > 1/vmin^2) = 1/vmin^2;
     vmNew = sqrt(1./modelNew);
     
-    figure(3);
+    % plot the velocity model
+    figure(hFigNew);
     imagesc(x, z, vmNew(1:end-nBoundary, nBoundary+1:end-nBoundary));
     xlabel('Distance (m)'); ylabel('Depth (m)');
     title('Updated Velocity Model');
