@@ -78,7 +78,7 @@ clc;
 ALPHA = 0.75;
 DELTA = 1e-4;
 FREQTHRES = 2;
-MAXITER = 20;
+MAXITER = 10;
 
 
 %% Set path
@@ -257,33 +257,8 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     title('Previous Velocity Model');
     colormap(seismic); colorbar; caxis manual; caxis([vmin, vmax]);
     
-%     %% generate Green's functions
-%     greenFreqForShotSet = cell(1, length(activeW));
-%     greenFreqForRecSet = cell(1, length(activeW));
-%     parfor idx_w = 1:length(activeW)
-%         
-%         iw = activeW(idx_w);
-%         
-%         fprintf('Generate %d Green''s functions at f(%d) = %fHz ... ', nShots, iw, w(iw)/(2*pi));
-%         tic;
-%         
-%         % Green's function for every shot
-%         sourceFreq = zeros(nLengthWithBoundary, nShots);
-%         sourceFreq((xs-1)*(nz+nBoundary)+zs, :) = eye(nShots, nShots);
-%         [~, greenFreqForShotSet{idx_w}] = freqCpmlFor2dAw(vmOld, sourceFreq, w(iw), nDiffOrder, nBoundary, dz, dx);
-%         
-%         % Green's function for every receiver
-%         sourceFreq = zeros(nLengthWithBoundary, nRecs);
-%         sourceFreq((xr-1)*(nz+nBoundary)+zr, :) = eye(nRecs, nRecs);
-%         [~, greenFreqForRecSet{idx_w}] = freqCpmlFor2dAw(vmOld, sourceFreq, w(iw), nDiffOrder, nBoundary, dz, dx);
-%         
-%         timePerFreq = toc;
-%         fprintf('elapsed time = %fs\n', timePerFreq);
-%         
-%     end
-    
     % test begin
-    [f_opt, g_opt] = lsMisfit(1./(V.^2), w(activeW), rw1dFreq(activeW), dataTrueFreq, nz, nx, xs, zs, xr, zr, nDiffOrder, nBoundary, dz, dx);
+    % [f_opt, g_opt] = lsMisfit(1./(V.^2), w(activeW), rw1dFreq(activeW), dataTrueFreq, nz, nx, xs, zs, xr, zr, nDiffOrder, nBoundary, dz, dx);
     % test end
     
     %% minimization using PQN toolbox in model (physical) domain
@@ -293,11 +268,11 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     funProj = @(x) boundProject(x, lowerBound, upperBound);
     options.verbose = 3;
     options.optTol = 1e-8;
-    options.SPGoptTol = 1e-25;
-    options.SPGiters = 100;
+    options.SPGoptTol = 1e-8;
+    options.SPGiters = 1000;
     options.adjustStep = 1;
     options.bbInit = 0;
-    options.maxIter = 10;
+    options.maxIter = 100;
     
     [modelNew, value_pqn_model] = minConF_PQN_new(func, reshape(modelOld, nLengthWithBoundary, 1), funProj, options);
     modelNew = reshape(modelNew, nz + nBoundary, nx + 2*nBoundary);
@@ -316,8 +291,8 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     % clear variables and functions from memory
     clear('dataTrueFreq');
     
-    fprintf('Full-wave inversion iteration no. %d, model norm difference = %.6f\n', ...
-        iter, norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro'));
+    fprintf('Full-wave inversion iteration no. %d, misfit error = %f, model norm difference = %.6f\n', ...
+        iter, value_pqn_model, norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro'));
     
     iter = iter + 1;
     
