@@ -316,6 +316,11 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     % clear variables and functions from memory
     clear('dataTrueFreq');
     
+    fprintf('Full-wave inversion iteration no. %d, model norm difference = %.6f\n', ...
+        iter, norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro'));
+    
+    iter = iter + 1;
+    
 end
 
 
