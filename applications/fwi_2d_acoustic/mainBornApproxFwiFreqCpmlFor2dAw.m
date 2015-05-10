@@ -267,7 +267,6 @@ save(filenameDataDeltaFreq, 'dataDeltaFreq', '-v7.3');
 % clear variables and functions from memory
 clear('dataTrueFreq');
 clear('dataDeltaFreq');
-clear('sourceTime');
 
 
 %% Full wave inversion (FWI)
@@ -646,7 +645,6 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     % clear variables and functions from memory
     clear('dataTrueFreq');
     clear('dataDeltaFreq');
-    clear('sourceTime');
     
     fprintf('Full-wave inversion iteration no. %d, model norm difference = %.6f\n', ...
         iter, norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro'));

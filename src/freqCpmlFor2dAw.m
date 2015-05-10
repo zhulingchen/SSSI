@@ -38,9 +38,7 @@ function [A, snapshot] = freqCpmlFor2dAw(v, source, w, nDiffOrder, nBoundary, dz
 
 [nz, nx] = size(v);
 nLength = nz * nx;
-if (ndims(source) > 1)
-    s = reshape(source, nLength, []);
-end
+s = reshape(source, nLength, []);
 coeff = dCoef(nDiffOrder, 's');
 k = 2 * nDiffOrder - 1;
 

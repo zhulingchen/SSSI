@@ -70,3 +70,254 @@
 close all;
 clear;
 clc;
+
+
+%% Full Wave Inversion Example
+% in frequency domain
+
+ALPHA = 0.75;
+DELTA = 1e-4;
+FREQTHRES = 2;
+MAXITER = 20;
+
+
+%% Set path
+run([fileparts(pwd), '/setpath']);
+
+
+%% Read in velocity model data
+filenameVelocityModel = [model_data_path, '/velocityModel.mat'];
+[pathVelocityModel, nameVelocityModel] = fileparts(filenameVelocityModel);
+load(filenameVelocityModel); % velocityModel
+[nz, nx] = size(velocityModel);
+
+% smooth velocity model used average filter
+filenameVelocityModelSmooth = [model_data_path, '/velocityModelSmooth.mat'];
+load(filenameVelocityModelSmooth); % velocityModelSmooth
+
+nBoundary = 20;
+
+dx = 10;
+dz = 10;
+x = (1:nx) * dx;
+z = (1:nz) * dz;
+
+% grids and positions of shot array
+shotArrType = 'uniform';
+idxShotArrLeft = 1;
+idxShotArrRight = nx;
+nShots = nx;
+if (strcmpi(shotArrType, 'uniform'))
+    xShotGrid = (idxShotArrLeft:ceil((idxShotArrRight - idxShotArrLeft + 1)/nShots):idxShotArrRight);
+elseif (strcmpi(shotArrType, 'random'))
+    xShotGrid = (idxShotArrLeft:idxShotArrRight);
+    xShotGrid = sort(xShotGrid(randperm(idxShotArrRight - idxShotArrLeft + 1, nShots)));
+else
+    error('Shot array deployment type error!');
+end
+zShotGrid = ones(1, nShots); % shots are on the surface
+xShot = xShotGrid * dx;
+zShot = zShotGrid * dz;
+
+% grids and positions of receiver array (all on the surface)
+recArrType = 'uniform';
+idxRecArrLeft = 1;
+idxRecArrRight = nx;
+nRecs = nx;
+if (strcmpi(recArrType, 'uniform'))
+    xRecGrid = (idxRecArrLeft:ceil((idxRecArrRight - idxRecArrLeft + 1)/nRecs):idxRecArrRight);
+elseif (strcmpi(recArrType, 'random'))
+    xRecGrid = (idxRecArrLeft:idxRecArrRight);
+    xRecGrid = sort(xRecGrid(randperm(idxRecArrRight - idxRecArrLeft + 1, nRecs)));
+else
+    error('Receiver array deployment type error!');
+end
+zRecGrid = ones(1, nRecs); % receivers are on the surface
+xRec = xRecGrid * dx;
+zRec = zRecGrid * dz;
+
+
+%% Create shot gathers
+% Use the velocity model to simulate a seismic survey.  The wave equations
+% is solved using finite differences with a continuous source function
+vmin = min(velocityModel(:));
+vmax = max(velocityModel(:));
+
+% calculate time step dt from stability crierion for finite difference
+% solution of the wave equation.
+dt = ALPHA * (dz/vmax/sqrt(2));
+
+% determine time samples nt from wave travelime to depth and back to
+% surface
+nt = round(sqrt((dx*nx)^2 + (dz*nz)^2)*2/vmin/dt + 1);
+t  = (0:nt-1).*dt;
+nfft = 2^(nextpow2(nt));
+dw = 2*pi/nfft;
+w = (-pi:dw:pi-dw)/dt; % analog angular frequency \omega = [-pi, pi)/dt
+
+% add region around model for applying absorbing boundary conditions
+V = extBoundary(velocityModel, nBoundary, 2);
+VS = extBoundary(velocityModelSmooth, nBoundary, 2);
+
+% dimension of frequency-domain solution
+nLength = nz * nx;
+nLengthWithBoundary = (nz + nBoundary) * (nx + 2*nBoundary);
+
+% number of approximation order for differentiator operator
+nDiffOrder = 2;
+
+% Define analog frequency parameter for ricker wavelet
+f = 20;
+
+
+%% Shot data recording at the surface
+% generate shot signal
+rw1dTime = zeros(1, nt);
+for ifreq = 1:length(f)
+    rw1dTime = rw1dTime + ricker(f(ifreq), nt, dt);
+end
+rw1dFreq = fftshift(fft(rw1dTime, nfft), 2);
+% find active frequency set with FFT amplitude larger than the threshold
+activeW = find(abs(rw1dFreq) > FREQTHRES);
+activeW = activeW(activeW > nfft / 2 + 1); % choose f > 0Hz
+
+dataTrueFreq = zeros(nRecs, nShots, length(activeW));
+
+% shot positions on extended velocity model
+xs = xShotGrid + nBoundary;
+zs = zShotGrid;
+
+% receiver positions on extended velocity model
+xr = xRecGrid + nBoundary;
+zr = zRecGrid;
+
+
+%% Start a pool of Matlab workers
+numCores = feature('numcores');
+if isempty(gcp('nocreate')) % checking to see if my pool is already open
+    myPool = parpool(numCores);
+end
+
+
+%% generate shot record and save them in frequency domain
+parfor idx_w = 1:length(activeW)
+    
+    iw = activeW(idx_w);
+    
+    fprintf('Generate %d frequency responses at f(%d) = %fHz ... ', nShots, iw, w(iw)/(2*pi));
+    tic;
+    
+    % received true data for all shots in frequency domain for current frequency
+    sourceFreq = zeros(nLengthWithBoundary, nShots);
+    sourceFreq((xs-1)*(nz+nBoundary)+zs, :) = rw1dFreq(iw) * eye(nShots, nShots);
+    [~, snapshotTrueFreq] = freqCpmlFor2dAw(V, sourceFreq, w(iw), nDiffOrder, nBoundary, dz, dx);
+    % get received data on the receivers
+    dataTrueFreq(:, :, idx_w) = snapshotTrueFreq((xr-1)*(nz+nBoundary)+zr, :);
+    
+    timePerFreq = toc;
+    fprintf('elapsed time = %fs\n', timePerFreq);
+    
+end
+
+% save received surface data
+filenameDataTrueFreq = [pathVelocityModel, '/dataTrueFreq.mat'];
+save(filenameDataTrueFreq, 'dataTrueFreq', '-v7.3');
+
+% clear variables and functions from memory
+clear('dataTrueFreq');
+
+
+%% Full wave inversion (FWI)
+% (1/v^2)*(d^2)u(z, x, t)/dt^2  = (d^2)u(z, x, t)/dz^2 + (d^2)u(z, x, t)/dx^2 + s(z, x, t)
+%                                           |
+%                                   (Fourier transform), (d^n)f(t)/dt^n -> ((jw)^n)F(jw)
+%                                           |
+%                                           V
+% (w^2)/(v^2)*U(z, x, jw) + (d^2)U(z, x, jw)/dz^2 + (d^2)U(z, x, jw)/dx^2 = -S(z, x, jw)
+
+modelOld = zeros(nz + nBoundary, nx + 2*nBoundary);
+modelNew = 1./(VS.^2);
+
+hFigOld = figure(1);
+hFigNew = figure(2);
+
+
+%% FWI main iteration
+iter = 1;
+while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <= MAXITER)
+    
+    modelOld = modelNew;
+    vmOld = sqrt(1./modelOld);
+    load(filenameDataTrueFreq);
+    
+    % plot the velocity model
+    figure(hFigOld);
+    imagesc(x, z, vmOld(1:end-nBoundary, nBoundary+1:end-nBoundary));
+    xlabel('Distance (m)'); ylabel('Depth (m)');
+    title('Previous Velocity Model');
+    colormap(seismic); colorbar; caxis manual; caxis([vmin, vmax]);
+    
+%     %% generate Green's functions
+%     greenFreqForShotSet = cell(1, length(activeW));
+%     greenFreqForRecSet = cell(1, length(activeW));
+%     parfor idx_w = 1:length(activeW)
+%         
+%         iw = activeW(idx_w);
+%         
+%         fprintf('Generate %d Green''s functions at f(%d) = %fHz ... ', nShots, iw, w(iw)/(2*pi));
+%         tic;
+%         
+%         % Green's function for every shot
+%         sourceFreq = zeros(nLengthWithBoundary, nShots);
+%         sourceFreq((xs-1)*(nz+nBoundary)+zs, :) = eye(nShots, nShots);
+%         [~, greenFreqForShotSet{idx_w}] = freqCpmlFor2dAw(vmOld, sourceFreq, w(iw), nDiffOrder, nBoundary, dz, dx);
+%         
+%         % Green's function for every receiver
+%         sourceFreq = zeros(nLengthWithBoundary, nRecs);
+%         sourceFreq((xr-1)*(nz+nBoundary)+zr, :) = eye(nRecs, nRecs);
+%         [~, greenFreqForRecSet{idx_w}] = freqCpmlFor2dAw(vmOld, sourceFreq, w(iw), nDiffOrder, nBoundary, dz, dx);
+%         
+%         timePerFreq = toc;
+%         fprintf('elapsed time = %fs\n', timePerFreq);
+%         
+%     end
+    
+    % test begin
+    [f_opt, g_opt] = lsMisfit(1./(V.^2), w(activeW), rw1dFreq(activeW), dataTrueFreq, nz, nx, xs, zs, xr, zr, nDiffOrder, nBoundary, dz, dx);
+    % test end
+    
+    %% minimization using PQN toolbox in model (physical) domain
+    func = @(m) lsMisfit(m, w(activeW), rw1dFreq(activeW), dataTrueFreq, nz, nx, xs, zs, xr, zr, nDiffOrder, nBoundary, dz, dx);
+    lowerBound = -inf(nLengthWithBoundary, 1);
+    upperBound = +inf(nLengthWithBoundary, 1);
+    funProj = @(x) boundProject(x, lowerBound, upperBound);
+    options.verbose = 3;
+    options.optTol = 1e-8;
+    options.SPGoptTol = 1e-25;
+    options.SPGiters = 100;
+    options.adjustStep = 1;
+    options.bbInit = 0;
+    options.maxIter = 10;
+    
+    [modelNew, value_pqn_model] = minConF_PQN_new(func, reshape(modelOld, nLengthWithBoundary, 1), funProj, options);
+    modelNew = reshape(modelNew, nz + nBoundary, nx + 2*nBoundary);
+    vmNew = sqrt(1./modelNew);
+    
+    % plot the velocity model
+    figure(hFigNew);
+    imagesc(x, z, vmNew(1:end-nBoundary, nBoundary+1:end-nBoundary));
+    xlabel('Distance (m)'); ylabel('Depth (m)');
+    title('Updated Velocity Model');
+    colormap(seismic); colorbar; caxis manual; caxis([vmin, vmax]);
+    % save current updated velocity model
+    filenameVmNew = [pathVelocityModel, sprintf('/vmNew%d.mat', iter)];
+    save(filenameVmNew, 'vmNew', 'modelNew', '-v7.3');
+    
+    % clear variables and functions from memory
+    clear('dataTrueFreq');
+    
+end
+
+
+%% Terminate the pool of Matlab workers
+delete(gcp('nocreate'));
