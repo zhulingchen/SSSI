@@ -267,11 +267,11 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     upperBound = +inf(nLengthWithBoundary, 1);
     funProj = @(x) boundProject(x, lowerBound, upperBound);
     options.verbose = 3;
-    options.optTol = 1e-8;
-    options.SPGoptTol = 1e-8;
-    options.SPGiters = 1000;
+    options.optTol = 1e-10;
+    options.SPGoptTol = 1e-10;
+    options.SPGiters = 5000;
     options.adjustStep = 1;
-    options.bbInit = 0;
+    options.bbInit = 1;
     options.maxIter = 100;
     
     [modelNew, value_pqn_model] = minConF_PQN_new(func, reshape(modelOld, nLengthWithBoundary, 1), funProj, options);

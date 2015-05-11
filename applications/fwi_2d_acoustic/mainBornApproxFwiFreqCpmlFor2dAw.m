@@ -456,11 +456,11 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     upperBound = +inf(nLengthWithBoundary, 1); % 1/vmin^2*ones(nLengthWithBoundary, 1) - reshape(modelOld, nLengthWithBoundary, 1);
     funProj = @(x) boundProject(x, lowerBound, upperBound);
     options.verbose = 3;
-    options.optTol = 1e-8;
-    options.SPGoptTol = 1e-25;
-    options.SPGiters = 100;
+    options.optTol = 1e-10;
+    options.SPGoptTol = 1e-10;
+    options.SPGiters = 5000;
     options.adjustStep = 1;
-    options.bbInit = 0;
+    options.bbInit = 1;
     options.maxIter = 10;
     
     [dm_pqn_model, value_pqn_model] = minConF_PQN_new(func, zeros(nLengthWithBoundary, 1), funProj, options);
@@ -646,8 +646,8 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     clear('dataTrueFreq');
     clear('dataDeltaFreq');
     
-    fprintf('Full-wave inversion iteration no. %d, model norm difference = %.6f\n', ...
-        iter, norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro'));
+    fprintf('Full-wave inversion iteration no. %d, misfit error = %f, model norm difference = %.6f\n', ...
+        iter, value_pqn_model, norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro'));
     
     iter = iter + 1;
     
