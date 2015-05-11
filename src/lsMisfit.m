@@ -49,7 +49,7 @@ parfor iw = 1:nw
     bias = dataCal - dataTrueFreq(:, :, iw); % dataTrueFreq(1:nRecs, 1:nShots, 1:nw)
     value = value + 1/2 * norm(bias, 'fro')^2;
     
-    grad = grad + w(iw)^2 * fs(iw) * sum(greenFreqForShot .* (greenFreqForRec * conj(bias.')), 2);
+    grad = grad + w(iw)^2 * fs(iw) * sum(greenFreqForShot .* (greenFreqForRec * conj(bias)), 2);
     
 end
 
