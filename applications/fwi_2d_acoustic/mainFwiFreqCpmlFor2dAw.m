@@ -78,7 +78,7 @@ clc;
 ALPHA = 0.75;
 DELTA = 1e-4;
 FREQTHRES = 2;
-MAXITER = 10;
+MAXITER = 1;    % actually no need to do more than 1 iteration outside PQN (or L-BFGS) optimization iterations
 
 
 %% Set path
@@ -263,7 +263,7 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     
     %% minimization using PQN toolbox in model (physical) domain
     func = @(m) lsMisfit(m, w(activeW), rw1dFreq(activeW), dataTrueFreq, nz, nx, xs, zs, xr, zr, nDiffOrder, nBoundary, dz, dx);
-    lowerBound = -inf(nLengthWithBoundary, 1);
+    lowerBound = zeros(nLengthWithBoundary, 1);
     upperBound = +inf(nLengthWithBoundary, 1);
     funProj = @(x) boundProject(x, lowerBound, upperBound);
     options.verbose = 3;

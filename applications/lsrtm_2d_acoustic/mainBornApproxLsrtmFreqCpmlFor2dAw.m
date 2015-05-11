@@ -212,7 +212,6 @@ xr = xRecGrid + nBoundary;
 zr = zRecGrid;
 
 
-
 %% Start a pool of Matlab workers
 numCores = feature('numcores');
 if isempty(gcp('nocreate')) % checking to see if my pool is already open
