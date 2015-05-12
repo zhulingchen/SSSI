@@ -454,7 +454,7 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     
     %% minimization using PQN toolbox in model (physical) domain
     func = @(dm) lsBornApproxMisfit(dm, w(activeW), rw1dFreq(activeW), dataDeltaFreq, greenFreqForShotSet, greenFreqForRecSet);
-    lowerBound = -inf(nLengthWithBoundary, 1); % 1/vmax^2*ones(nLengthWithBoundary, 1) - reshape(modelOld, nLengthWithBoundary, 1);
+    lowerBound = -reshape(modelOld, nLengthWithBoundary, 1); % 1/vmax^2*ones(nLengthWithBoundary, 1) - reshape(modelOld, nLengthWithBoundary, 1);
     upperBound = +inf(nLengthWithBoundary, 1); % 1/vmin^2*ones(nLengthWithBoundary, 1) - reshape(modelOld, nLengthWithBoundary, 1);
     funProj = @(x) boundProject(x, lowerBound, upperBound);
     options.verbose = 3;
@@ -463,7 +463,7 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     options.SPGiters = 5000;
     options.adjustStep = 1;
     options.bbInit = 0;
-    options.maxIter = 10;
+    options.maxIter = 5;
     
     [dm_pqn_model, misfit_pqn_model] = minConF_PQN_new(func, zeros(nLengthWithBoundary, 1), funProj, options);
     
@@ -494,7 +494,7 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
 %     options.SPGiters = 100;
 %     options.adjustStep = 1;
 %     options.bbInit = 0;
-%     options.maxIter = 10;
+%     options.maxIter = 5;
 %     
 %     [dcoeff_pqn_wavelet, misfit_pqn_wavelet] = minConF_PQN_new(func, zeros(length(vecWaveletCoeff), 1), funProj, options);
 %     
@@ -528,7 +528,7 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
 %     options.SPGiters = 100;
 %     options.adjustStep = 1;
 %     options.bbInit = 0;
-%     options.maxIter = 10;
+%     options.maxIter = 5;
 %     
 %     [dcoeff_pqn_curvelet, misfit_pqn_curvelet] = minConF_PQN_new(func, zeros(length(vecCurveletCoeff), 1), funProj, options);
 %     
@@ -562,7 +562,7 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
 %     options.SPGiters = 100;
 %     options.adjustStep = 1;
 %     options.bbInit = 0;
-%     options.maxIter = 10;
+%     options.maxIter = 5;
 %     
 %     [dcoeff_pqn_pdfb, misfit_pqn_pdfb] = minConF_PQN_new(func, zeros(length(vecPdfbCoeff), 1), funProj, options);
 %     

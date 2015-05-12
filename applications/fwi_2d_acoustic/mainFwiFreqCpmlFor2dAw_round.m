@@ -77,7 +77,7 @@ clc;
 
 ALPHA = 0.75;
 DELTA = 1e-4;
-FREQTHRES = 2;
+FREQTHRES = 10;
 MAXITER = 1;    % actually no need to do more than 1 iteration outside PQN (or L-BFGS) optimization iterations
 
 
@@ -103,18 +103,18 @@ z = (1:nz) * dz;
 
 % grids and positions of shot array
 shotArrType = 'uniform';
-idxShotArrLeft = 10;
+idxShotArrLeft = 1;
 idxShotArrRight = nx;
-nShots = nx/10;
+nShots = nx;
 if (strcmpi(shotArrType, 'uniform'))
-    xShotGrid = (idxShotArrLeft:ceil((idxShotArrRight - idxShotArrLeft + 1)/nShots):idxShotArrRight);
+    zShotGrid = (idxShotArrLeft:ceil((idxShotArrRight - idxShotArrLeft + 1)/nShots):idxShotArrRight);
 elseif (strcmpi(shotArrType, 'random'))
-    xShotGrid = (idxShotArrLeft:idxShotArrRight);
-    xShotGrid = sort(xShotGrid(randperm(idxShotArrRight - idxShotArrLeft + 1, nShots)));
+    zShotGrid = (idxShotArrLeft:idxShotArrRight);
+    zShotGrid = sort(zShotGrid(randperm(idxShotArrRight - idxShotArrLeft + 1, nShots)));
 else
     error('Shot array deployment type error!');
 end
-zShotGrid = nz * ones(1, nShots); % shots are on the surface
+xShotGrid = 1 * ones(1, nShots); % shots are on the surface
 xShot = xShotGrid * dx;
 zShot = zShotGrid * dz;
 
@@ -124,14 +124,14 @@ idxRecArrLeft = 1;
 idxRecArrRight = nx;
 nRecs = nx;
 if (strcmpi(recArrType, 'uniform'))
-    xRecGrid = (idxRecArrLeft:ceil((idxRecArrRight - idxRecArrLeft + 1)/nRecs):idxRecArrRight);
+    zRecGrid = (idxRecArrLeft:ceil((idxRecArrRight - idxRecArrLeft + 1)/nRecs):idxRecArrRight);
 elseif (strcmpi(recArrType, 'random'))
-    xRecGrid = (idxRecArrLeft:idxRecArrRight);
-    xRecGrid = sort(xRecGrid(randperm(idxRecArrRight - idxRecArrLeft + 1, nRecs)));
+    zRecGrid = (idxRecArrLeft:idxRecArrRight);
+    zRecGrid = sort(zRecGrid(randperm(idxRecArrRight - idxRecArrLeft + 1, nRecs)));
 else
     error('Receiver array deployment type error!');
 end
-zRecGrid = ones(1, nRecs); % receivers are on the surface
+xRecGrid = nx * ones(1, nRecs); % receivers are on the surface
 xRec = xRecGrid * dx;
 zRec = zRecGrid * dz;
 
@@ -264,19 +264,18 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     
     %% minimization using PQN toolbox in model (physical) domain
     func = @(m) lsMisfit(m, w(activeW), rw1dFreq(activeW), dataTrueFreq, nz, nx, xs, zs, xr, zr, nDiffOrder, nBoundary, dz, dx);
-%     lowerBound = -inf(nLengthWithBoundary, 1);
-%     upperBound = +inf(nLengthWithBoundary, 1);
-%     funProj = @(x) boundProject(x, lowerBound, upperBound);
-%     options.verbose = 3;
-%     options.optTol = 1e-10;
-%     options.SPGoptTol = 1e-10;
-%     options.SPGiters = 5000;
-%     options.adjustStep = 1;
-%     options.bbInit = 0;
-%     options.maxIter = 100;
-%     
-%     [modelNew, misfit_model] = minConF_PQN_new(func, reshape(modelOld, nLengthWithBoundary, 1), funProj, options);
-    [modelNew, misfit_model] = lbfgs(func, reshape(modelOld, nLengthWithBoundary, 1), struct('itermax',20));
+    lowerBound = zeros(nLengthWithBoundary, 1);
+    upperBound = +inf(nLengthWithBoundary, 1);
+    funProj = @(x) boundProject(x, lowerBound, upperBound);
+    options.verbose = 3;
+    options.optTol = 1e-10;
+    options.SPGoptTol = 1e-10;
+    options.SPGiters = 5000;
+    options.adjustStep = 1;
+    options.bbInit = 0;
+    options.maxIter = 100;
+    
+    [modelNew, misfit_model] = minConF_PQN_new(func, reshape(modelOld, nLengthWithBoundary, 1), funProj, options);
     modelNew = reshape(modelNew, nz + nBoundary, nx + 2*nBoundary);
     vmNew = sqrt(1./modelNew);
     
