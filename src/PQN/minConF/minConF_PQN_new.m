@@ -75,21 +75,21 @@ projects = 1;
 [f,g] = funObj(x);
 funEvals = 1;
 
-% % Check Optimality of Initial Point
-% projects = projects+1;
-% if sum(abs(funProj(x-g)-x)) < optTol
-%     if verbose >= 1
-%         fprintf('First-Order Optimality Conditions Below optTol at Initial Point\n');
-%     end
-%     return;
-% end
+% Check Optimality of Initial Point
+projects = projects+1;
+if sum(abs(funProj(x-g)-x)) < optTol
+    if verbose >= 1
+        fprintf('First-Order Optimality Conditions Below optTol at Initial Point\n');
+    end
+    return;
+end
 
 i = 1;
 while funEvals <= maxIter
     
     % Compute Step Direction
     if i == 1
-        p = x-g;
+        p = funProj(x-g);
         projects = projects+1;
         S = zeros(nVars,0);
         Y = zeros(nVars,0);
@@ -112,7 +112,7 @@ while funEvals <= maxIter
         if bbInit
             % Use Barzilai-Borwein step to initialize sub-problem
             alpha = (s'*s)/(s'*y);
-            if alpha <= 1e-20 || alpha > 1e20
+            if alpha <= 1e-20 || alpha > 1e20 % if (alpha <= 1e-10 || alpha > 1e10)
                 alpha = 1/norm(g);
             end
             
@@ -221,11 +221,11 @@ while funEvals <= maxIter
         fprintf('%10d %10d %10d %15.5e %15.5e %15.5e\n',i,funEvals*funEvalMultiplier,projects,t,f,optCond);
     end
     
-%     % Check optimality
-%     if optCond < optTol
-%         fprintf('First-Order Optimality Conditions Below optTol\n');
-%         break;
-%     end
+    % Check optimality
+    if optCond < optTol
+        fprintf('First-Order Optimality Conditions Below optTol\n');
+        break;
+    end
     
     if sum(abs(t*d)) < optTol
         if verbose >= 1
@@ -262,7 +262,7 @@ end
 
 function [p,subProjects] = solveSubProblem(x,g,H,funProj,optTol,maxIter,testOpt,feasibleInit,x_init)
 % Uses SPG to solve for projected quasi-Newton direction
-options.verbose = 2; %0;
+options.verbose = 2; % 0;
 options.optTol = optTol;
 options.maxIter = maxIter;
 options.testOpt = testOpt;

@@ -92,8 +92,6 @@ while funEvals <= maxIter
     % Compute Step Direction
     if i == 1 || ~useSpectral
         alpha = 1;
-        % alpha = norm(x, 2) / norm(g, 2);
-        % alpha = 1 / norm(g, 2);
     else
         y = g-g_old;
         s = x-x_old;
@@ -102,10 +100,8 @@ while funEvals <= maxIter
         else
             alpha = (s'*y)/(y'*y);
         end
-        if alpha <= 1e-20 || alpha > 1e20
+        if alpha <= 1e-20 || alpha > 1e20 % if (alpha <= 1e-10 || alpha > 1e10)
             alpha = 1;
-            % alpha = norm(x, 2) / norm(g, 2);
-            % alpha = 1 / norm(g, 2);
         end
     end
     d = -alpha*g;
