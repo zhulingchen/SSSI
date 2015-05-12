@@ -484,7 +484,7 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     load(filenameDataTrueFreq);
     
     % update dataDeltaFreq
-    dataDeltaFreq = zeros(nRecs, nShots, nfft);
+    dataDeltaFreq = zeros(nRecs, nShots, length(activeW));
     parfor idx_w = 1:length(activeW)
         
         iw = activeW(idx_w);
@@ -495,7 +495,7 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
         % calculate smooth data for all shots in frequency domain for current frequency
         sourceFreq = zeros(nLengthWithBoundary, nShots);
         sourceFreq((xs-1)*(nz+nBoundary)+zs, :) = rw1dFreq(iw) * eye(nShots, nShots);
-        [ASmooth, snapshotSmoothFreq] = freqCpmlFor2dAw(vmNew, sourceFreq, w(iw), nDiffOrder, nBoundary, dz, dx);
+        [~, snapshotSmoothFreq] = freqCpmlFor2dAw(vmNew, sourceFreq, w(iw), nDiffOrder, nBoundary, dz, dx);
         % get calculated data on the receivers
         dataDeltaFreq(:, :, idx_w) = dataTrueFreq(:, :, idx_w) - snapshotSmoothFreq((xr-1)*(nz+nBoundary)+zr, :);
         
