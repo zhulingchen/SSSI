@@ -86,14 +86,13 @@ run([fileparts(pwd), '/setpath']);
 
 
 %% Read in velocity model data
-filenameVelocityModel = [model_data_path, '/velocityModel.mat'];
-[pathVelocityModel, nameVelocityModel] = fileparts(filenameVelocityModel);
-load(filenameVelocityModel); % velocityModel
+velocityModel = 2500 * ones(100, 100);
+velocityModelSmooth = velocityModel;
 [nz, nx] = size(velocityModel);
+[zz, xx] = meshgrid(1:nz, 1:nx);
+velocityModel((xx-nx/2).^2 + (zz-nz/2).^2 <= round(nx/4)^2) = 3000;
 
-% smooth velocity model used average filter
-filenameVelocityModelSmooth = [model_data_path, '/velocityModelSmooth.mat'];
-load(filenameVelocityModelSmooth); % velocityModelSmooth
+pathVelocityModel = model_data_path;
 
 nBoundary = 20;
 
@@ -104,9 +103,9 @@ z = (1:nz) * dz;
 
 % grids and positions of shot array
 shotArrType = 'uniform';
-idxShotArrLeft = 1;
+idxShotArrLeft = 10;
 idxShotArrRight = nx;
-nShots = nx;
+nShots = nx/10;
 if (strcmpi(shotArrType, 'uniform'))
     xShotGrid = (idxShotArrLeft:ceil((idxShotArrRight - idxShotArrLeft + 1)/nShots):idxShotArrRight);
 elseif (strcmpi(shotArrType, 'random'))
@@ -115,7 +114,7 @@ elseif (strcmpi(shotArrType, 'random'))
 else
     error('Shot array deployment type error!');
 end
-zShotGrid = ones(1, nShots); % shots are on the surface
+zShotGrid = nz * ones(1, nShots); % shots are on the surface
 xShot = xShotGrid * dx;
 zShot = zShotGrid * dz;
 
@@ -260,7 +259,7 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     colormap(seismic); colorbar; caxis manual; caxis([vmin, vmax]);
     
     % test begin
-    % [f_opt, g_opt] = lsMisfit(1./(V.^2), w(activeW), rw1dFreq(activeW), dataTrueFreq, nz, nx, xs, zs, xr, zr, nDiffOrder, nBoundary, dz, dx);
+    % [f_opt, g_opt] = lsMisfit(M, w(activeW), rw1dFreq(activeW), dataTrueFreq, nz, nx, xs, zs, xr, zr, nDiffOrder, nBoundary, dz, dx);
     % test end
     
     %% minimization using PQN toolbox in model (physical) domain

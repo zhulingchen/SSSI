@@ -22,9 +22,8 @@ nw = length(w);
 nShots = length(xs);
 nRecs = length(xr);
 
-% velocity model
-v = sqrt(1./m);
-v = reshape(v, nz + nBoundary, nx + 2*nBoundary);
+% velocity model (slowness)
+m = reshape(m, nz + nBoundary, nx + 2*nBoundary);
 
 % value of the cost function
 value = 0;
@@ -37,12 +36,12 @@ parfor iw = 1:nw
     % received true data for all shots in frequency domain for current frequency
     sourceFreq = zeros(nLength, nShots);
     sourceFreq((xs-1)*(nz+nBoundary)+zs, :) = eye(nShots, nShots);
-    [~, greenFreqForShot] = freqCpmlFor2dAw(v, sourceFreq, w(iw), nDiffOrder, nBoundary, dz, dx);
+    [~, greenFreqForShot] = freqCpmlFor2dAw(m, sourceFreq, w(iw), nDiffOrder, nBoundary, dz, dx);
     
     % Green's function for every receiver
     sourceFreq = zeros(nLength, nRecs);
     sourceFreq((xr-1)*(nz+nBoundary)+zr, :) = eye(nRecs, nRecs);
-    [~, greenFreqForRec] = freqCpmlFor2dAw(v, sourceFreq, w(iw), nDiffOrder, nBoundary, dz, dx);
+    [~, greenFreqForRec] = freqCpmlFor2dAw(m, sourceFreq, w(iw), nDiffOrder, nBoundary, dz, dx);
     
     % get received data on the receivers
     dataCal = fs(iw) * greenFreqForShot((xr-1)*(nz+nBoundary)+zr, :);

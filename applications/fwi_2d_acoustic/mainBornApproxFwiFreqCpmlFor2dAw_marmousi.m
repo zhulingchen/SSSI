@@ -93,13 +93,13 @@ run([fileparts(pwd), '/setpath']);
 
 
 %% Read in velocity model data
-filenameVelocityModel = [model_data_path, '/velocityModel.mat'];
+filenameVelocityModel = [model_data_path, '/marmousi/velocityModelMarmousi.mat'];
 [pathVelocityModel, nameVelocityModel] = fileparts(filenameVelocityModel);
 load(filenameVelocityModel); % velocityModel
 [nz, nx] = size(velocityModel);
 
 % smooth velocity model used average filter
-filenameVelocityModelSmooth = [model_data_path, '/velocityModelSmooth.mat'];
+filenameVelocityModelSmooth = [model_data_path, '/marmousi/velocityModelMarmousiSmooth.mat'];
 load(filenameVelocityModelSmooth); % velocityModelSmooth
 
 nBoundary = 20;
@@ -165,7 +165,7 @@ dt = ALPHA * (dz/vmax/sqrt(2));
 % surface
 nt = round(sqrt((dx*nx)^2 + (dz*nz)^2)*2/vmin/dt + 1);
 t  = (0:nt-1).*dt;
-nfft = 2^(nextpow2(nt));
+nfft = 1024;
 dw = 2*pi/nfft;
 w = (-pi:dw:pi-dw)/dt; % analog angular frequency \omega = [-pi, pi)/dt
 

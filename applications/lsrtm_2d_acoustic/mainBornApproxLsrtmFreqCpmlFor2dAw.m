@@ -176,7 +176,9 @@ w = (-pi:dw:pi-dw)/dt; % analog angular frequency \omega = [-pi, pi)/dt
 
 % add region around model for applying absorbing boundary conditions
 V = extBoundary(velocityModel, nBoundary, 2);
+M = 1./(V.^2);
 VS = extBoundary(velocityModelSmooth, nBoundary, 2);
+MS = 1./(VS.^2);
 
 % dimension of frequency-domain solution
 nLength = nz * nx;
@@ -230,14 +232,14 @@ parfor idx_w = 1:length(activeW)
     % received true data for all shots in frequency domain for current frequency
     sourceFreq = zeros(nLengthWithBoundary, nShots);
     sourceFreq((xs-1)*(nz+nBoundary)+zs, :) = rw1dFreq(iw) * eye(nShots, nShots);
-    [~, snapshotTrueFreq] = freqCpmlFor2dAw(V, sourceFreq, w(iw), nDiffOrder, nBoundary, dz, dx);
+    [~, snapshotTrueFreq] = freqCpmlFor2dAw(M, sourceFreq, w(iw), nDiffOrder, nBoundary, dz, dx);
     % get received data on the receivers
     dataTrueFreq(:, :, idx_w) = snapshotTrueFreq((xr-1)*(nz+nBoundary)+zr, :);
     
     % calculate smooth data for all shots in frequency domain for current frequency
     sourceFreq = zeros(nLengthWithBoundary, nShots);
     sourceFreq((xs-1)*(nz+nBoundary)+zs, :) = rw1dFreq(iw) * eye(nShots, nShots);
-    [~, snapshotSmoothFreq] = freqCpmlFor2dAw(VS, sourceFreq, w(iw), nDiffOrder, nBoundary, dz, dx);
+    [~, snapshotSmoothFreq] = freqCpmlFor2dAw(MS, sourceFreq, w(iw), nDiffOrder, nBoundary, dz, dx);
     % get calculated data on the receivers
     dataDeltaFreq(:, :, idx_w) = dataTrueFreq(:, :, idx_w) - snapshotSmoothFreq((xr-1)*(nz+nBoundary)+zr, :);
     
@@ -271,7 +273,7 @@ clear('dataDeltaFreq');
 % generate impulse shot signal
 
 modelOld = zeros(nz + nBoundary, nx + 2*nBoundary);
-modelNew = 1./(VS.^2);
+modelNew = MS;
 
 hFigOld = figure(1);
 hFigNew = figure(2);
@@ -307,12 +309,12 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
         % Green's function for every shot
         sourceFreq = zeros(nLengthWithBoundary, nShots);
         sourceFreq((xs-1)*(nz+nBoundary)+zs, :) = eye(nShots, nShots);
-        [~, greenFreqForShot] = freqCpmlFor2dAw(vmOld, sourceFreq, w(iw), nDiffOrder, nBoundary, dz, dx);
+        [~, greenFreqForShot] = freqCpmlFor2dAw(modelOld, sourceFreq, w(iw), nDiffOrder, nBoundary, dz, dx);
         
         % Green's function for every receiver
         sourceFreq = zeros(nLengthWithBoundary, nRecs);
         sourceFreq((xr-1)*(nz+nBoundary)+zr, :) = eye(nRecs, nRecs);
-        [~, greenFreqForRec] = freqCpmlFor2dAw(vmOld, sourceFreq, w(iw), nDiffOrder, nBoundary, dz, dx);
+        [~, greenFreqForRec] = freqCpmlFor2dAw(modelOld, sourceFreq, w(iw), nDiffOrder, nBoundary, dz, dx);
         
         % calculate the pseudo-Hessian matrix, which is the diagonal elements of Hessian matrix
         hessianDiag = hessianDiag + w(iw)^4 * abs(rw1dFreq(iw))^2 ...
@@ -407,12 +409,12 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     %         % Green's function for every shot
     %         sourceFreq = zeros(nLengthWithBoundary, nShots);
     %         sourceFreq((xs-1)*(nz+nBoundary)+zs, :) = eye(nShots, nShots);
-    %         [~, greenFreqForShot] = freqCpmlFor2dAw(vmOld, sourceFreq, w(iw), nDiffOrder, nBoundary, dz, dx);
+    %         [~, greenFreqForShot] = freqCpmlFor2dAw(modelOld, sourceFreq, w(iw), nDiffOrder, nBoundary, dz, dx);
     %         
     %         % Green's function for every receiver
     %         sourceFreq = zeros(nLengthWithBoundary, nRecs);
     %         sourceFreq((xr-1)*(nz+nBoundary)+zr, :) = eye(nRecs, nRecs);
-    %         [~, greenFreqForRec] = freqCpmlFor2dAw(vmOld, sourceFreq, w(iw), nDiffOrder, nBoundary, dz, dx);
+    %         [~, greenFreqForRec] = freqCpmlFor2dAw(modelOld, sourceFreq, w(iw), nDiffOrder, nBoundary, dz, dx);
     %
     %         % calculate bigL matrix
     %         [meshXRec, meshXShot] = meshgrid(xRecGrid, xShotGrid);
@@ -495,7 +497,7 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
         % calculate smooth data for all shots in frequency domain for current frequency
         sourceFreq = zeros(nLengthWithBoundary, nShots);
         sourceFreq((xs-1)*(nz+nBoundary)+zs, :) = rw1dFreq(iw) * eye(nShots, nShots);
-        [~, snapshotSmoothFreq] = freqCpmlFor2dAw(vmNew, sourceFreq, w(iw), nDiffOrder, nBoundary, dz, dx);
+        [~, snapshotSmoothFreq] = freqCpmlFor2dAw(modelNew, sourceFreq, w(iw), nDiffOrder, nBoundary, dz, dx);
         % get calculated data on the receivers
         dataDeltaFreq(:, :, idx_w) = dataTrueFreq(:, :, idx_w) - snapshotSmoothFreq((xr-1)*(nz+nBoundary)+zr, :);
         
