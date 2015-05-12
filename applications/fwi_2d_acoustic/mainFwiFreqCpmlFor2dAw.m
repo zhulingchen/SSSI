@@ -260,7 +260,7 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     colormap(seismic); colorbar; caxis manual; caxis([vmin, vmax]);
     
     % test begin
-    % [f_opt, g_opt] = lsMisfit(1./(V.^2), w(activeW), rw1dFreq(activeW), dataTrueFreq, nz, nx, xs, zs, xr, zr, nDiffOrder, nBoundary, dz, dx);
+    % [f_opt, g_opt] = lsMisfit(M, w(activeW), rw1dFreq(activeW), dataTrueFreq, nz, nx, xs, zs, xr, zr, nDiffOrder, nBoundary, dz, dx);
     % test end
     
     %% minimization using PQN toolbox in model (physical) domain
@@ -276,7 +276,7 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     options.bbInit = 0;
     options.maxIter = 100;
     
-    [modelNew, value_pqn_model] = minConF_PQN_new(func, reshape(modelOld, nLengthWithBoundary, 1), funProj, options);
+    [modelNew, misfit_model] = minConF_PQN_new(func, reshape(modelOld, nLengthWithBoundary, 1), funProj, options);
     modelNew = reshape(modelNew, nz + nBoundary, nx + 2*nBoundary);
     vmNew = sqrt(1./modelNew);
     
@@ -294,7 +294,7 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     clear('dataTrueFreq');
     
     fprintf('Full-wave inversion iteration no. %d, misfit error = %f, model norm difference = %.6f\n', ...
-        iter, value_pqn_model, norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro'));
+        iter, misfit_model, norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro'));
     
     iter = iter + 1;
     

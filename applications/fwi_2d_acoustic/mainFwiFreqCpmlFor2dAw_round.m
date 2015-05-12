@@ -264,18 +264,19 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     
     %% minimization using PQN toolbox in model (physical) domain
     func = @(m) lsMisfit(m, w(activeW), rw1dFreq(activeW), dataTrueFreq, nz, nx, xs, zs, xr, zr, nDiffOrder, nBoundary, dz, dx);
-    lowerBound = -inf(nLengthWithBoundary, 1);
-    upperBound = +inf(nLengthWithBoundary, 1);
-    funProj = @(x) boundProject(x, lowerBound, upperBound);
-    options.verbose = 3;
-    options.optTol = 1e-10;
-    options.SPGoptTol = 1e-10;
-    options.SPGiters = 5000;
-    options.adjustStep = 1;
-    options.bbInit = 0;
-    options.maxIter = 100;
-    
-    [modelNew, value_pqn_model] = minConF_PQN_new(func, reshape(modelOld, nLengthWithBoundary, 1), funProj, options);
+%     lowerBound = -inf(nLengthWithBoundary, 1);
+%     upperBound = +inf(nLengthWithBoundary, 1);
+%     funProj = @(x) boundProject(x, lowerBound, upperBound);
+%     options.verbose = 3;
+%     options.optTol = 1e-10;
+%     options.SPGoptTol = 1e-10;
+%     options.SPGiters = 5000;
+%     options.adjustStep = 1;
+%     options.bbInit = 0;
+%     options.maxIter = 100;
+%     
+%     [modelNew, misfit_model] = minConF_PQN_new(func, reshape(modelOld, nLengthWithBoundary, 1), funProj, options);
+    [modelNew, misfit_model] = lbfgs(func, reshape(modelOld, nLengthWithBoundary, 1), struct('itermax',20));
     modelNew = reshape(modelNew, nz + nBoundary, nx + 2*nBoundary);
     vmNew = sqrt(1./modelNew);
     
@@ -293,7 +294,7 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     clear('dataTrueFreq');
     
     fprintf('Full-wave inversion iteration no. %d, misfit error = %f, model norm difference = %.6f\n', ...
-        iter, value_pqn_model, norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro'));
+        iter, misfit_model, norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro'));
     
     iter = iter + 1;
     

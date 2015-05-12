@@ -465,7 +465,7 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     options.bbInit = 0;
     options.maxIter = 10;
     
-    [dm_pqn_model, value_pqn_model] = minConF_PQN_new(func, zeros(nLengthWithBoundary, 1), funProj, options);
+    [dm_pqn_model, misfit_pqn_model] = minConF_PQN_new(func, zeros(nLengthWithBoundary, 1), funProj, options);
     
     % updated model
     modelOld = reshape(modelOld, nLengthWithBoundary, 1);
@@ -496,7 +496,7 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
 %     options.bbInit = 0;
 %     options.maxIter = 10;
 %     
-%     [dcoeff_pqn_wavelet, value_pqn_wavelet] = minConF_PQN_new(func, zeros(length(vecWaveletCoeff), 1), funProj, options);
+%     [dcoeff_pqn_wavelet, misfit_pqn_wavelet] = minConF_PQN_new(func, zeros(length(vecWaveletCoeff), 1), funProj, options);
 %     
 %     dm_pqn_wavelet = real(waveletFunc(dcoeff_pqn_wavelet, 1));
 %     
@@ -530,7 +530,7 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
 %     options.bbInit = 0;
 %     options.maxIter = 10;
 %     
-%     [dcoeff_pqn_curvelet, value_pqn_curvelet] = minConF_PQN_new(func, zeros(length(vecCurveletCoeff), 1), funProj, options);
+%     [dcoeff_pqn_curvelet, misfit_pqn_curvelet] = minConF_PQN_new(func, zeros(length(vecCurveletCoeff), 1), funProj, options);
 %     
 %     dm_pqn_curvelet = real(fdctFunc(dcoeff_pqn_curvelet, 1));
 %     
@@ -564,7 +564,7 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
 %     options.bbInit = 0;
 %     options.maxIter = 10;
 %     
-%     [dcoeff_pqn_pdfb, value_pqn_pdfb] = minConF_PQN_new(func, zeros(length(vecPdfbCoeff), 1), funProj, options);
+%     [dcoeff_pqn_pdfb, misfit_pqn_pdfb] = minConF_PQN_new(func, zeros(length(vecPdfbCoeff), 1), funProj, options);
 %     
 %     dm_pqn_pdfb = real(pdfbFunc(dcoeff_pqn_pdfb, 1));
 %     
@@ -588,6 +588,7 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     
     %% updated model
     dm = dm_pqn_model;
+    misfit = misfit_pqn_model;
     
     modelOld = reshape(modelOld, nLengthWithBoundary, 1);
     modelNew = modelOld + dm;
@@ -643,7 +644,7 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     clear('dataDeltaFreq');
     
     fprintf('Full-wave inversion iteration no. %d, misfit error = %f, model norm difference = %.6f\n', ...
-        iter, value_pqn_model, norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro'));
+        iter, misfit, norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro'));
     
     iter = iter + 1;
     
