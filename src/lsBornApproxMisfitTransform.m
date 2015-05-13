@@ -41,10 +41,10 @@ parfor iw = 1:nw
     greenFreqForRec = greenFreqForRecSet{iw};
     
     fieldScatter = w(iw)^2 * fs(iw) * (repmat(dm, 1, nShots) .* greenFreqForShot).' * greenFreqForRec;
-    bias = fieldScatter - dataDeltaFreq(:, :, iw).';
+    bias = fieldScatter.' - dataDeltaFreq(:, :, iw);
     value = value + 1/2 * norm(bias, 'fro')^2;
     
-    grad = grad + w(iw)^2 * fs(iw) * sum(greenFreqForShot .* (greenFreqForRec * conj(bias.')), 2);
+    grad = grad + w(iw)^2 * fs(iw) * sum(greenFreqForShot .* (greenFreqForRec * conj(bias)), 2);
     
     % timePerFreq = toc;
     % fprintf('elapsed time = %fs\n', timePerFreq);
