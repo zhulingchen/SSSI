@@ -78,7 +78,7 @@ clc;
 ALPHA = 0.75;
 DELTA = 1e-4;
 FREQTHRES = 2;
-MAXITER = 1;    % actually no need to do more than 1 iteration outside PQN (or L-BFGS) optimization iterations
+MAXITER = 1;    % actually no need to do more than one iteration outside PQN (or L-BFGS) optimization iterations since m itself is kept optimized inside
 
 
 %% Set path

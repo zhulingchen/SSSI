@@ -85,7 +85,7 @@ clc;
 ALPHA = 0.75;
 DELTA = 1e-4;
 FREQTHRES = 2;
-MAXITER = 20;
+MAXITER = 100;  % dm is being optimized inside PQN (or L-BFGS) optimization
 
 
 %% Set path
