@@ -91,6 +91,12 @@ velocityModelSmooth = velocityModel;
 [nz, nx] = size(velocityModel);
 [zz, xx] = meshgrid(1:nz, 1:nx);
 velocityModel((xx-nx/2).^2 + (zz-nz/2).^2 <= round(nx/4)^2) = 3000;
+% % a smooth velocity model for FWI
+% velocityModelSmooth = velocityModel;
+% for ii = 1:100
+%     filterSmooth = fspecial('average', 9);
+%     velocityModelSmooth = imfilter(velocityModelSmooth, filterSmooth, 'replicate');
+% end
 
 pathVelocityModel = model_data_path;
 
@@ -264,7 +270,7 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     
     %% minimization using PQN toolbox in model (physical) domain
     func = @(m) lsMisfit(m, w(activeW), rw1dFreq(activeW), dataTrueFreq, nz, nx, xs, zs, xr, zr, nDiffOrder, nBoundary, dz, dx);
-    lowerBound = zeros(nLengthWithBoundary, 1);
+    lowerBound = 1e-8 * ones(nLengthWithBoundary, 1);
     upperBound = +inf(nLengthWithBoundary, 1);
     funProj = @(x) boundProject(x, lowerBound, upperBound);
     options.verbose = 3;
