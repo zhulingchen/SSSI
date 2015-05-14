@@ -1,11 +1,12 @@
 % MAINBORNAPPROXFWIFREQCPMLFOR2DAW simulates the full waveform inversion
 % (FWI) with 2-d acoustic wave in frequency domain based on the CPML
-% absorbing boundary condition, based on the Born approximation
+% absorbing boundary condition and the Born approximation.
 %
 % The FWI in frequency domain is used to solve the following problem:
 % Given a smooth but obscure velocity model and the received data on
 % surface, the true but unknown velocity model is to be approximated by
 % estimating the scatter field during iterations.
+%
 %
 % System background
 % ====================================================================================================
@@ -83,7 +84,7 @@ clc;
 % in frequency domain
 
 ALPHA = 0.75;
-DELTA = 1e-4;
+DELTA = 1e-5;
 FREQTHRES = 2;
 MAXITER = 100;  % dm is being optimized inside PQN (or L-BFGS) optimization
 
@@ -103,13 +104,6 @@ filenameVelocityModelSmooth = [model_data_path, '/velocityModelSmooth.mat'];
 load(filenameVelocityModelSmooth); % velocityModelSmooth
 
 nBoundary = 20;
-% % a more smooth velocity model for FWI
-% VS = extBoundary(velocityModelSmooth, nBoundary, 2);
-% VS = [repmat(VS(1, :), nBoundary, 1); VS];
-% nAvgSize = [1, 1];
-% hImageSmooth = fspecial('average', nAvgSize);
-% VS = imfilter(VS, hImageSmooth);
-% velocityModelSmooth = VS(nBoundary+1:end-nBoundary, nBoundary+1:end-nBoundary);
 
 dx = 10;
 dz = 10;
@@ -184,22 +178,6 @@ nDiffOrder = 2;
 
 % Define analog frequency parameter for ricker wavelet
 f = 20;
-
-
-%% Wavelet transform parameters
-nlevels_wavelet = 0;            % Decomposition level, all 0 means wavelet
-pfilter_wavelet = 'pkva' ;      % Pyramidal filter
-dfilter_wavelet = 'pkva' ;      % Directional filter
-
-
-%% Curvelet transform parameters
-is_real = 1;
-
-
-%% Contourlet transform parameters
-nlevels = [2, 3] ;      % Decomposition level
-pfilter = 'pkva' ;      % Pyramidal filter
-dfilter = 'pkva' ;      % Directional filter
 
 
 %% Shot data recording at the surface
@@ -304,106 +282,6 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     title('Previous Velocity Model');
     colormap(seismic); colorbar; caxis manual; caxis([vmin, vmax]);
     
-    % Wavelet decomposition
-    waveletCoeff = pdfbdec(modelOld, pfilter_wavelet, dfilter_wavelet, nlevels_wavelet);
-    [vecWaveletCoeff, sWavelet] = pdfb2vec(waveletCoeff);
-    waveletFunc = @(x, mode) pdfb(x, sWavelet, pfilter_wavelet, dfilter_wavelet, nlevels_wavelet, nz, nx, mode);
-    
-    % Curvelet decomposition
-    curveletCoeff = fdct_wrapping(modelOld, is_real);
-    [vecCurveletCoeff, sCurvelet] = curvelet2vec(curveletCoeff);
-    fdctFunc = @(x, mode) fdct(x, sCurvelet, is_real, nz, nx, mode);
-    
-    % Contourlet decomposition
-    pdfbCoeff = pdfbdec(modelOld, pfilter, dfilter, nlevels);
-    [vecPdfbCoeff, sPdfb] = pdfb2vec(pdfbCoeff);
-    pdfbFunc = @(x, mode) pdfb(x, sPdfb, pfilter, dfilter, nlevels, nz, nx, mode);
-    
-    %     %% debug begin
-    %     % Wavelet l1-optimization
-    %     % lasso: min ||waveletFunc(x, 1) - b||_2^2 s.t. ||x||_1 < \tau
-    %     b = waveletFunc(vecWaveletCoeff, 1);
-    %     tau = norm(vecWaveletCoeff, 1);
-    %     opts = spgSetParms('verbosity', 1, 'optTol', 1e-12);
-    %     vw_spg = spg_lasso(waveletFunc, b, tau, opts);
-    %
-    %     waveletCoeff_spg = vec2pdfb(vw_spg, sWavelet);
-    %     modelOldWavelet_spg = pdfbrec(waveletCoeff_spg, pfilter_wavelet, dfilter_wavelet);
-    %     delta = modelOld - modelOldWavelet_spg;
-    %     display(max(abs(delta(:))));
-    %
-    %     % Curvelet l1-optimization
-    %     % lasso: min ||fdctFunc(x, 1) - b||_2^2 s.t. ||x||_1 < \tau
-    %     b = fdctFunc(vecCurveletCoeff, 1);
-    %     tau = norm(vecCurveletCoeff, 1);
-    %     opts = spgSetParms('verbosity', 1, 'optTol', 1e-12);
-    %     vc_spg = spg_lasso(fdctFunc, b, tau, opts);
-    %
-    %     curveletCoeff_spg = vec2curvelet(vc_spg, sCurvelet);
-    %     modelOldCurvelet_spg = ifdct_wrapping(curveletCoeff_spg, is_real);
-    %     delta = modelOld - modelOldCurvelet_spg;
-    %     display(max(abs(delta(:))));
-    %
-    %     % Contourlet l1-optimization
-    %     % lasso: min ||pdfbFunc(x, 1) - b||_2^2 s.t. ||x||_1 < \tau
-    %     b = pdfbFunc(vecPdfbCoeff, 1);
-    %     tau = norm(vecPdfbCoeff, 1);
-    %     opts = spgSetParms('verbosity', 1, 'optTol', 1e-12);
-    %     vp_spg = spg_lasso(pdfbFunc, b, tau, opts);
-    %
-    %     pdfbCoeff_spg = vec2pdfb(vp_spg, sPdfb);
-    %     modelOldPdfb_spg = pdfbrec(pdfbCoeff_spg, pfilter, dfilter);
-    %     delta = modelOld - modelOldPdfb_spg;
-    %     display(max(abs(delta(:))));
-    %     %% debug end
-    
-    %     %% debug start
-    %     % Wavelet matrix
-    %     [v, s] = pdfb2vec(waveletCoeff);
-    %     nVec = length(v);
-    %     PhiWavelet = zeros(nz * nx, nVec);
-    %     for iv = 1:nVec
-    %         vtmp = zeros(nVec, 1);
-    %         vtmp(iv) = 1;
-    %         imtmp = pdfbrec( vec2pdfb(vtmp, s), pfilter_wavelet, dfilter_wavelet ) ;
-    %         PhiWavelet(:, iv) = imtmp(:);
-    %     end
-    %     modelOld2 = PhiWavelet * v;
-    %     modelOld2 = reshape(modelOld2, nz, nx);
-    %     delta = modelOld2 - modelOld;
-    %     display(max(abs(delta(:))));
-    %
-    %     % Curvelet matrix
-    %     [v, s] = curvelet2vec(curveletCoeff);
-    %     nVec = length(v);
-    %     PhiCurvelet = zeros(nz * nx, nVec);
-    %     for iv = 1:nVec
-    %         vtmp = zeros(nVec, 1);
-    %         vtmp(iv) = 1;
-    %         imtmp = ifdct_wrapping( vec2curvelet(vtmp, s), is_real) ;
-    %         PhiCurvelet(:, iv) = imtmp(:);
-    %     end
-    %     modelOld2 = PhiCurvelet * v;
-    %     modelOld2 = reshape(modelOld2, nz, nx);
-    %     delta = modelOld2 - modelOld;
-    %     display(max(abs(delta(:))));
-    %
-    %     % Contourlet matrix
-    %     [v, s] = pdfb2vec(pdfbCoeff);
-    %     nVec = length(v);
-    %     PhiPdfb = zeros(nz * nx, nVec);
-    %     for iv = 1:nVec
-    %         vtmp = zeros(nVec, 1);
-    %         vtmp(iv) = 1;
-    %         imtmp = pdfbrec( vec2pdfb(vtmp, s), pfilter, dfilter ) ;
-    %         PhiPdfb(:, iv) = imtmp(:);
-    %     end
-    %     modelOld2 = PhiPdfb * v;
-    %     modelOld2 = reshape(modelOld2, nz, nx);
-    %     delta = modelOld2 - modelOld;
-    %     display(max(abs(delta(:))));
-    %     %% debug end
-    
     
     %% generate Green's functions
     greenFreqForShotSet = cell(1, length(activeW));
@@ -435,6 +313,7 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     
     % filenameGreenFreqForRecSet = [pathVelocityModel, sprintf('/greenFreqForRecSet%d.mat', iter)];
     % save(filenameGreenFreqForRecSet, 'greenFreqForRecSet', '-v7.3');
+    
     
     %% plot updated model optimized in different domains
     figure(hFigPanel);
@@ -484,108 +363,6 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     caxis manual; caxis([vmin, vmax]);
     
     
-    %% minimization using PQN toolbox in Wavelet domain
-%     func = @(dcoeff) lsBornApproxMisfitTransform(dcoeff, @(x)waveletFunc(x, 1), @(x)waveletFunc(x, 2), w(activeW), rw1dFreq(activeW), dataDeltaFreq, greenFreqForShotSet, greenFreqForRecSet);
-%     tau = norm(vecWaveletCoeff, 1);
-%     funProj = @(x) sign(x).*projectRandom2C(abs(x), tau);
-%     options.verbose = 3;
-%     options.optTol = 1e-8;
-%     options.SPGoptTol = 1e-25;
-%     options.SPGiters = 100;
-%     options.adjustStep = 1;
-%     options.bbInit = 0;
-%     options.maxIter = 10;
-%     
-%     [dcoeff_pqn_wavelet, misfit_pqn_wavelet] = minConF_PQN_new(func, zeros(length(vecWaveletCoeff), 1), funProj, options);
-%     
-%     dm_pqn_wavelet = real(waveletFunc(dcoeff_pqn_wavelet, 1));
-%     
-%     % updated model
-%     modelOld = reshape(modelOld, nLengthWithBoundary, 1);
-%     modelNew = modelOld + dm_pqn_wavelet;
-%     modelOld = reshape(modelOld, nz + nBoundary, nx + 2*nBoundary);
-%     modelNew = reshape(modelNew, nz + nBoundary, nx + 2*nBoundary);
-%     % modelNew(modelNew < 1/vmax^2) = 1/vmax^2;
-%     % modelNew(modelNew > 1/vmin^2) = 1/vmin^2;
-%     vmNew = sqrt(1./modelNew);
-%     vmNew = extBoundary(vmNew, nBoundary, 2);
-%     
-%     subplot(3, 3, 5);
-%     imagesc(x, z, vmNew(1:end-nBoundary, nBoundary+1:end-nBoundary));
-%     xlabel('Distance (m)'); ylabel('Depth (m)');
-%     title('Updated Velocity Model (updated by PQN toolbox in Contourlet domain)');
-%     colormap(seismic); colorbar;
-%     caxis manual; caxis([vmin, vmax]);
-    
-    
-    %% minimization using PQN toolbox in Curvelet domain
-%     func = @(dcoeff) lsBornApproxMisfitTransform(dcoeff, @(x)fdctFunc(x, 1), @(x)fdctFunc(x, 2), w(activeW), rw1dFreq(activeW), dataDeltaFreq, greenFreqForShotSet, greenFreqForRecSet);
-%     tau = norm(vecCurveletCoeff, 1);
-%     funProj = @(x) sign(x).*projectRandom2C(abs(x), tau);
-%     options.verbose = 3;
-%     options.optTol = 1e-8;
-%     options.SPGoptTol = 1e-25;
-%     options.SPGiters = 100;
-%     options.adjustStep = 1;
-%     options.bbInit = 0;
-%     options.maxIter = 10;
-%     
-%     [dcoeff_pqn_curvelet, misfit_pqn_curvelet] = minConF_PQN_new(func, zeros(length(vecCurveletCoeff), 1), funProj, options);
-%     
-%     dm_pqn_curvelet = real(fdctFunc(dcoeff_pqn_curvelet, 1));
-%     
-%     % updated model
-%     modelOld = reshape(modelOld, nLengthWithBoundary, 1);
-%     modelNew = modelOld + dm_pqn_curvelet;
-%     modelOld = reshape(modelOld, nz + nBoundary, nx + 2*nBoundary);
-%     modelNew = reshape(modelNew, nz + nBoundary, nx + 2*nBoundary);
-%     % modelNew(modelNew < 1/vmax^2) = 1/vmax^2;
-%     % modelNew(modelNew > 1/vmin^2) = 1/vmin^2;
-%     vmNew = sqrt(1./modelNew);
-%     vmNew = extBoundary(vmNew, nBoundary, 2);
-%     
-%     subplot(3, 3, 6);
-%     imagesc(x, z, vmNew(1:end-nBoundary, nBoundary+1:end-nBoundary));
-%     xlabel('Distance (m)'); ylabel('Depth (m)');
-%     title('Updated Velocity Model (updated by PQN toolbox in Curvelet domain)');
-%     colormap(seismic); colorbar;
-%     caxis manual; caxis([vmin, vmax]);
-    
-    
-    %% minimization using PQN toolbox in Contourlet domain
-%     func = @(dcoeff) lsBornApproxMisfitTransform(dcoeff, @(x)pdfbFunc(x, 1), @(x)pdfbFunc(x, 2), w(activeW), rw1dFreq(activeW), dataDeltaFreq, greenFreqForShotSet, greenFreqForRecSet);
-%     tau = norm(vecPdfbCoeff, 1);
-%     funProj = @(x) sign(x).*projectRandom2C(abs(x), tau);
-%     options.verbose = 3;
-%     options.optTol = 1e-8;
-%     options.SPGoptTol = 1e-25;
-%     options.SPGiters = 100;
-%     options.adjustStep = 1;
-%     options.bbInit = 0;
-%     options.maxIter = 10;
-%     
-%     [dcoeff_pqn_pdfb, misfit_pqn_pdfb] = minConF_PQN_new(func, zeros(length(vecPdfbCoeff), 1), funProj, options);
-%     
-%     dm_pqn_pdfb = real(pdfbFunc(dcoeff_pqn_pdfb, 1));
-%     
-%     % updated model
-%     modelOld = reshape(modelOld, nLengthWithBoundary, 1);
-%     modelNew = modelOld + dm_pqn_pdfb;
-%     modelOld = reshape(modelOld, nz + nBoundary, nx + 2*nBoundary);
-%     modelNew = reshape(modelNew, nz + nBoundary, nx + 2*nBoundary);
-%     % modelNew(modelNew < 1/vmax^2) = 1/vmax^2;
-%     % modelNew(modelNew > 1/vmin^2) = 1/vmin^2;
-%     vmNew = sqrt(1./modelNew);
-%     vmNew = extBoundary(vmNew, nBoundary, 2);
-%     
-%     subplot(3, 3, 7);
-%     imagesc(x, z, vmNew(1:end-nBoundary, nBoundary+1:end-nBoundary));
-%     xlabel('Distance (m)'); ylabel('Depth (m)');
-%     title('Updated Velocity Model (updated by PQN toolbox in Contourlet domain)');
-%     colormap(seismic); colorbar;
-%     caxis manual; caxis([vmin, vmax]);
-    
-    
     %% updated model
     dm = dm_pqn_model;
     misfit = misfit_pqn_model;
@@ -615,7 +392,7 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     % load received surface data
     load(filenameDataTrueFreq);
     
-    % update dataDeltaFreq based on
+    %% update dataDeltaFreq based on the new velocity model
     dataDeltaFreq = zeros(nRecs, nShots, length(activeW));
     parfor idx_w = 1:length(activeW)
         

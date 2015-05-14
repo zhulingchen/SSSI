@@ -1,6 +1,6 @@
 % MAINFWIFREQCPMLFOR2DAW simulates the full waveform inversion (FWI) with
 % 2-d acoustic wave in frequency domain based on the CPML absorbing
-% boundary condition
+% boundary condition.
 %
 % The FWI in frequency domain is used to solve the following problem: Given
 % a smooth but obscure velocity model as a starting point and then minimize
@@ -76,7 +76,7 @@ clc;
 % in frequency domain
 
 ALPHA = 0.75;
-DELTA = 1e-4;
+DELTA = 1e-5;
 FREQTHRES = 2;
 MAXITER = 1;    % actually no need to do more than one iteration outside PQN (or L-BFGS) optimization iterations since m itself is kept optimized inside
 
