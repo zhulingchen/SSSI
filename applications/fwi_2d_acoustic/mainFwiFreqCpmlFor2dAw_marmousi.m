@@ -77,7 +77,7 @@ clc;
 
 ALPHA = 0.75;
 DELTA = 1e-4;
-FREQTHRES = 10;
+FREQTHRES = 2;
 MAXITER = 1;    % actually no need to do more than one iteration outside PQN (or L-BFGS) optimization iterations since m itself is kept optimized inside
 
 
@@ -86,19 +86,14 @@ run([fileparts(pwd), '/setpath']);
 
 
 %% Read in velocity model data
-velocityModel = 2500 * ones(100, 100);
-velocityModelSmooth = velocityModel;
+filenameVelocityModel = [model_data_path, '/marmousi/velocityModelMarmousi.mat'];
+[pathVelocityModel, nameVelocityModel] = fileparts(filenameVelocityModel);
+load(filenameVelocityModel); % velocityModel
 [nz, nx] = size(velocityModel);
-[zz, xx] = meshgrid(1:nz, 1:nx);
-velocityModel((xx-nx/2).^2 + (zz-nz/2).^2 <= round(nx/4)^2) = 3000;
-% % a smooth velocity model for FWI
-% velocityModelSmooth = velocityModel;
-% for ii = 1:100
-%     filterSmooth = fspecial('average', 9);
-%     velocityModelSmooth = imfilter(velocityModelSmooth, filterSmooth, 'replicate');
-% end
 
-pathVelocityModel = model_data_path;
+% smooth velocity model used average filter
+filenameVelocityModelSmooth = [model_data_path, '/marmousi/velocityModelMarmousiSmooth.mat'];
+load(filenameVelocityModelSmooth); % velocityModelSmooth
 
 nBoundary = 20;
 
@@ -113,14 +108,14 @@ idxShotArrLeft = 1;
 idxShotArrRight = nx;
 nShots = nx;
 if (strcmpi(shotArrType, 'uniform'))
-    zShotGrid = (idxShotArrLeft:ceil((idxShotArrRight - idxShotArrLeft + 1)/nShots):idxShotArrRight);
+    xShotGrid = (idxShotArrLeft:ceil((idxShotArrRight - idxShotArrLeft + 1)/nShots):idxShotArrRight);
 elseif (strcmpi(shotArrType, 'random'))
-    zShotGrid = (idxShotArrLeft:idxShotArrRight);
-    zShotGrid = sort(zShotGrid(randperm(idxShotArrRight - idxShotArrLeft + 1, nShots)));
+    xShotGrid = (idxShotArrLeft:idxShotArrRight);
+    xShotGrid = sort(xShotGrid(randperm(idxShotArrRight - idxShotArrLeft + 1, nShots)));
 else
     error('Shot array deployment type error!');
 end
-xShotGrid = 1 * ones(1, nShots); % shots are on the surface
+zShotGrid = ones(1, nShots); % shots are on the surface
 xShot = xShotGrid * dx;
 zShot = zShotGrid * dz;
 
@@ -130,14 +125,14 @@ idxRecArrLeft = 1;
 idxRecArrRight = nx;
 nRecs = nx;
 if (strcmpi(recArrType, 'uniform'))
-    zRecGrid = (idxRecArrLeft:ceil((idxRecArrRight - idxRecArrLeft + 1)/nRecs):idxRecArrRight);
+    xRecGrid = (idxRecArrLeft:ceil((idxRecArrRight - idxRecArrLeft + 1)/nRecs):idxRecArrRight);
 elseif (strcmpi(recArrType, 'random'))
-    zRecGrid = (idxRecArrLeft:idxRecArrRight);
-    zRecGrid = sort(zRecGrid(randperm(idxRecArrRight - idxRecArrLeft + 1, nRecs)));
+    xRecGrid = (idxRecArrLeft:idxRecArrRight);
+    xRecGrid = sort(xRecGrid(randperm(idxRecArrRight - idxRecArrLeft + 1, nRecs)));
 else
     error('Receiver array deployment type error!');
 end
-xRecGrid = nx * ones(1, nRecs); % receivers are on the surface
+zRecGrid = ones(1, nRecs); % receivers are on the surface
 xRec = xRecGrid * dx;
 zRec = zRecGrid * dz;
 
@@ -156,7 +151,7 @@ dt = ALPHA * (dz/vmax/sqrt(2));
 % surface
 nt = round(sqrt((dx*nx)^2 + (dz*nz)^2)*2/vmin/dt + 1);
 t  = (0:nt-1).*dt;
-nfft = 2^(nextpow2(nt));
+nfft = 1024;
 dw = 2*pi/nfft;
 w = (-pi:dw:pi-dw)/dt; % analog angular frequency \omega = [-pi, pi)/dt
 
@@ -270,7 +265,7 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     
     %% minimization using PQN toolbox in model (physical) domain
     func = @(m) lsMisfit(m, w(activeW), rw1dFreq(activeW), dataTrueFreq, nz, nx, xs, zs, xr, zr, nDiffOrder, nBoundary, dz, dx);
-    lowerBound = 1e-8 * ones(nLengthWithBoundary, 1);
+    lowerBound = zeros(nLengthWithBoundary, 1);
     upperBound = +inf(nLengthWithBoundary, 1);
     funProj = @(x) boundProject(x, lowerBound, upperBound);
     options.verbose = 3;
