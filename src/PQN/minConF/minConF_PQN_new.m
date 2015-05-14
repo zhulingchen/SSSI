@@ -89,8 +89,8 @@ while funEvals <= maxIter
     
     % Compute Step Direction
     if i == 1
-        p = funProj(x-g);
-        projects = projects+1;
+        p = x-g; % funProj(x-g);
+        % projects = projects+1;
         S = zeros(nVars,0);
         Y = zeros(nVars,0);
         Hdiag = 1;
@@ -153,7 +153,10 @@ while funEvals <= maxIter
     end
     
     % Evaluate the Objective and Gradient at the Initial Step
-    x_new = x + t*d;
+    % x_new = x + t*d;
+    x_new = funProj(x + t*d);
+    projects = projects+1;
+    
     [f_new,g_new] = funObj(x_new);
     funEvals = funEvals+1;
     
@@ -202,7 +205,10 @@ while funEvals <= maxIter
         % Evaluate New Point
         f_prev = f_new;
         t_prev = temp;
-        x_new = x + t*d;
+        % x_new = x + t*d;
+        x_new = funProj(x + t*d);
+        projects = projects+1;
+        
         [f_new,g_new] = funObj(x_new);
         funEvals = funEvals+1;
         
@@ -266,6 +272,7 @@ options.verbose = 2; % 0;
 options.optTol = optTol;
 options.maxIter = maxIter;
 options.testOpt = testOpt;
+options.curvilinear = 1;
 options.feasibleInit = feasibleInit;
 
 funObj = @(p)subHv(p,x,g,H);

@@ -67,12 +67,13 @@ if numDiff
     funEvalMultiplier = nVars+1-useComplex;
 end
 
+projects = 0;
 % Evaluate Initial Point
 if ~feasibleInit
     x = funProj(x);
+    projects = projects+1;
 end
 [f,g] = funObj(x);
-projects = 1;
 funEvals = 1;
 
 % Optionally check optimality
