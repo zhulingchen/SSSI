@@ -265,7 +265,7 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     
     %% minimization using PQN toolbox in model (physical) domain
     func = @(m) lsMisfit(m, w(activeW), rw1dFreq(activeW), dataTrueFreq, nz, nx, xs, zs, xr, zr, nDiffOrder, nBoundary, dz, dx);
-    lowerBound = zeros(nLengthWithBoundary, 1);
+    lowerBound = 1e-8 * ones(nLengthWithBoundary, 1);	% maximum velocity constraint
     upperBound = +inf(nLengthWithBoundary, 1);
     funProj = @(x) boundProject(x, lowerBound, upperBound);
     options.verbose = 3;

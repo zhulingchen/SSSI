@@ -463,7 +463,7 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     options.SPGiters = 5000;
     options.adjustStep = 1;
     options.bbInit = 0;
-    options.maxIter = 1;
+    options.maxIter = 10;
     
     [dm_pqn_model, misfit_pqn_model] = minConF_PQN_new(func, zeros(nLengthWithBoundary, 1), funProj, options);
     
@@ -494,7 +494,7 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
 %     options.SPGiters = 100;
 %     options.adjustStep = 1;
 %     options.bbInit = 0;
-%     options.maxIter = 1;
+%     options.maxIter = 10;
 %     
 %     [dcoeff_pqn_wavelet, misfit_pqn_wavelet] = minConF_PQN_new(func, zeros(length(vecWaveletCoeff), 1), funProj, options);
 %     
@@ -528,7 +528,7 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
 %     options.SPGiters = 100;
 %     options.adjustStep = 1;
 %     options.bbInit = 0;
-%     options.maxIter = 1;
+%     options.maxIter = 10;
 %     
 %     [dcoeff_pqn_curvelet, misfit_pqn_curvelet] = minConF_PQN_new(func, zeros(length(vecCurveletCoeff), 1), funProj, options);
 %     
@@ -562,7 +562,7 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
 %     options.SPGiters = 100;
 %     options.adjustStep = 1;
 %     options.bbInit = 0;
-%     options.maxIter = 1;
+%     options.maxIter = 10;
 %     
 %     [dcoeff_pqn_pdfb, misfit_pqn_pdfb] = minConF_PQN_new(func, zeros(length(vecPdfbCoeff), 1), funProj, options);
 %     
