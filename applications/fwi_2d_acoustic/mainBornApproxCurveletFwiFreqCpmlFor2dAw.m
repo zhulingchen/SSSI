@@ -43,7 +43,7 @@
 %
 % By expanding U_0(x, jw; xs) = G_0(x, jw; xs) * F(x, jw; xs) and the solution
 % U_1 can be written in a linear form
-% U_1(y, jw; xs) = w^2 * \sum_x F(x, jw; xs) * G_0(x, jw; xs) * G_0(y, jw; x) * delta_m(x), i.e., 
+% U_1(y, jw; xs) = w^2 * \sum_x F(x, jw; xs) * G_0(x, jw; xs) * G_0(y, jw; x) * delta_m(x), i.e.,
 % U_1(y, jw; xs) = L * delta_m(x) where operator (matrix) L is composed of
 % (rows of) [w^2 * F(x, jw; xs) * G_0(x, jw; xs) * G_0(y, jw; x)]
 %
@@ -435,7 +435,7 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
         fprintf('elapsed time = %fs\n', timePerFreq);
         
     end
-
+    
     filenameDataDeltaFreq = [pathVelocityModel, sprintf('/dataDeltaFreq%d.mat', iter)];
     save(filenameDataDeltaFreq, 'dataDeltaFreq', '-v7.3');
     
