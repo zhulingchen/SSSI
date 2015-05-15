@@ -262,10 +262,9 @@ clear('dataDeltaFreq');
 modelOld = zeros(nz + nBoundary, nx + 2*nBoundary);
 modelNew = MS;
 
-hFigPanel = figure(1);
-set(hFigPanel, 'Position', [100, 100, 1000, 500]);
-hFigOld = figure(2);
-hFigNew = figure(3);
+hFigOld = figure(1);
+hFigNew = figure(2);
+
 
 %% FWI main iteration
 iter = 1;
@@ -315,25 +314,9 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     % save(filenameGreenFreqForRecSet, 'greenFreqForRecSet', '-v7.3');
     
     
-    %% plot updated model optimized in different domains
-    figure(hFigPanel);
-    subplot(3, 3, 1);
-    imagesc(x, z, velocityModel);
-    xlabel('Distance (m)'); ylabel('Depth (m)');
-    title('Actual Velocity Model');
-    colormap(seismic); colorbar;
-    caxis manual; caxis([vmin, vmax]);
-    
-    subplot(3, 3, 2);
-    imagesc(x, z, vmOld(1:end-nBoundary, nBoundary+1:end-nBoundary));
-    xlabel('Distance (m)'); ylabel('Depth (m)');
-    title('Smooth Velocity Model');
-    colormap(seismic); colorbar;
-    caxis manual; caxis([vmin, vmax]);
-    
     %% minimization using PQN toolbox in model (physical) domain
     func = @(dm) lsBornApproxMisfit(dm, w(activeW), rw1dFreq(activeW), dataDeltaFreq, greenFreqForShotSet, greenFreqForRecSet);
-    lowerBound = -reshape(modelOld, nLengthWithBoundary, 1); % 1/vmax^2*ones(nLengthWithBoundary, 1) - reshape(modelOld, nLengthWithBoundary, 1);
+    lowerBound = 1e-8 * ones(nLengthWithBoundary, 1) - reshape(modelOld, nLengthWithBoundary, 1); % 1/vmax^2*ones(nLengthWithBoundary, 1) - reshape(modelOld, nLengthWithBoundary, 1);
     upperBound = +inf(nLengthWithBoundary, 1); % 1/vmin^2*ones(nLengthWithBoundary, 1) - reshape(modelOld, nLengthWithBoundary, 1);
     funProj = @(x) boundProject(x, lowerBound, upperBound);
     options.verbose = 3;
@@ -345,22 +328,6 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     options.maxIter = 10;
     
     [dm_pqn_model, misfit_pqn_model] = minConF_PQN_new(func, zeros(nLengthWithBoundary, 1), funProj, options);
-    
-    % updated model
-    modelOld = reshape(modelOld, nLengthWithBoundary, 1);
-    modelNew = modelOld + dm_pqn_model;
-    modelOld = reshape(modelOld, nz + nBoundary, nx + 2*nBoundary);
-    modelNew = reshape(modelNew, nz + nBoundary, nx + 2*nBoundary);
-    % modelNew(modelNew < 1/vmax^2) = 1/vmax^2;
-    % modelNew(modelNew > 1/vmin^2) = 1/vmin^2;
-    vmNew = sqrt(1./modelNew);
-    
-    subplot(3, 3, 4);
-    imagesc(x, z, vmNew(1:end-nBoundary, nBoundary+1:end-nBoundary));
-    xlabel('Distance (m)'); ylabel('Depth (m)');
-    title('Updated Velocity Model (updated by PQN toolbox in model domain)');
-    colormap(seismic); colorbar;
-    caxis manual; caxis([vmin, vmax]);
     
     
     %% updated model

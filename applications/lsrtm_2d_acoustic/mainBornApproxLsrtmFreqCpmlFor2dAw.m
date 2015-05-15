@@ -272,6 +272,7 @@ modelNew = MS;
 hFigOld = figure(1);
 hFigNew = figure(2);
 
+
 %% LSRTM main iteration
 iter = 1;
 while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <= MAXITER)
@@ -478,6 +479,7 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     clear('dataDeltaFreq');
     % load received surface data
     load(filenameDataTrueFreq);
+    
     
     %% update dataDeltaFreq based on the new velocity model
     dataDeltaFreq = zeros(nRecs, nShots, length(activeW));

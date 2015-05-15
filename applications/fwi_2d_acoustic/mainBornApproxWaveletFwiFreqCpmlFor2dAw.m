@@ -272,10 +272,9 @@ clear('dataDeltaFreq');
 modelOld = zeros(nz + nBoundary, nx + 2*nBoundary);
 modelNew = MS;
 
-hFigPanel = figure(1);
-set(hFigPanel, 'Position', [100, 100, 1000, 500]);
-hFigOld = figure(2);
-hFigNew = figure(3);
+hFigOld = figure(1);
+hFigNew = figure(2);
+
 
 %% FWI main iteration
 iter = 1;
@@ -330,23 +329,6 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     % save(filenameGreenFreqForRecSet, 'greenFreqForRecSet', '-v7.3');
     
     
-    %% plot updated model optimized in different domains
-    figure(hFigPanel);
-    subplot(3, 3, 1);
-    imagesc(x, z, velocityModel);
-    xlabel('Distance (m)'); ylabel('Depth (m)');
-    title('Actual Velocity Model');
-    colormap(seismic); colorbar;
-    caxis manual; caxis([vmin, vmax]);
-    
-    subplot(3, 3, 2);
-    imagesc(x, z, vmOld(1:end-nBoundary, nBoundary+1:end-nBoundary));
-    xlabel('Distance (m)'); ylabel('Depth (m)');
-    title('Smooth Velocity Model');
-    colormap(seismic); colorbar;
-    caxis manual; caxis([vmin, vmax]);
-    
-    
     %% minimization using PQN toolbox in Wavelet domain
     func = @(dcoeff) lsBornApproxMisfitTransform(dcoeff, @(x)waveletFunc(x, 1), @(x)waveletFunc(x, 2), w(activeW), rw1dFreq(activeW), dataDeltaFreq, greenFreqForShotSet, greenFreqForRecSet);
     tau = norm(vecWaveletCoeff, 1);
@@ -356,29 +338,12 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     options.SPGoptTol = 1e-10;
     options.SPGiters = 5000;
     options.adjustStep = 1;
+    options.testOpt = 0;
     options.bbInit = 0;
     options.maxIter = 10;
     
     [dcoeff_pqn_wavelet, misfit_pqn_wavelet] = minConF_PQN_new(func, zeros(length(vecWaveletCoeff), 1), funProj, options);
-    
     dm_pqn_wavelet = real(waveletFunc(dcoeff_pqn_wavelet, 1));
-    
-    % updated model
-    modelOld = reshape(modelOld, nLengthWithBoundary, 1);
-    modelNew = modelOld + dm_pqn_wavelet;
-    modelOld = reshape(modelOld, nz + nBoundary, nx + 2*nBoundary);
-    modelNew = reshape(modelNew, nz + nBoundary, nx + 2*nBoundary);
-    % modelNew(modelNew < 1/vmax^2) = 1/vmax^2;
-    % modelNew(modelNew > 1/vmin^2) = 1/vmin^2;
-    vmNew = sqrt(1./modelNew);
-    vmNew = extBoundary(vmNew, nBoundary, 2);
-    
-    subplot(3, 3, 5);
-    imagesc(x, z, vmNew(1:end-nBoundary, nBoundary+1:end-nBoundary));
-    xlabel('Distance (m)'); ylabel('Depth (m)');
-    title('Updated Velocity Model (updated by PQN toolbox in Contourlet domain)');
-    colormap(seismic); colorbar;
-    caxis manual; caxis([vmin, vmax]);
     
     
     %% updated model
@@ -410,6 +375,7 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     clear('dataDeltaFreq');
     % load received surface data
     load(filenameDataTrueFreq);
+    
     
     %% update dataDeltaFreq based on the new velocity model
     dataDeltaFreq = zeros(nRecs, nShots, length(activeW));

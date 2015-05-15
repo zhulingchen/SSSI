@@ -22,9 +22,11 @@ function [x,f,funEvals] = minConF_PQN_new(funObj,x,funProj,options)
 %       suffDec: sufficient decrease parameter in Armijo condition (default: 1e-4)
 %       corrections: number of lbfgs corrections to store (default: 10)
 %       adjustStep: use quadratic initialization of line search (default: 0)
+%       testOpt: test optimality condition (default: 1)
 %       bbInit: initialize sub-problem with Barzilai-Borwein step (default: 1)
 %       SPGoptTol: optimality tolerance for SPG direction finding (default: 1e-6)
 %       SPGiters: maximum number of iterations for SPG direction finding (default:10)
+%       SPGtestOpt: test optimality condition for sub-problems to be solved by SPG (default: 0)
 
 nVars = length(x);
 
@@ -32,10 +34,10 @@ nVars = length(x);
 if nargin < 4
     options = [];
 end
-[verbose,numDiff,optTol,maxIter,maxProject,suffDec,corrections,adjustStep,bbInit,SPGoptTol,SPGiters,SPGtestOpt] = ...
+[verbose,numDiff,optTol,maxIter,maxProject,suffDec,corrections,adjustStep,testOpt,bbInit,SPGoptTol,SPGiters,SPGtestOpt] = ...
     myProcessOptions(...
     options,'verbose',2,'numDiff',0,'optTol',1e-6,'maxIter',500,'maxProject',1e6,'suffDec',1e-4,...
-    'corrections',10,'adjustStep',0,'bbInit',0,'SPGoptTol',1e-6,'SPGiters',10,'SPGtestOpt',0);
+    'corrections',10,'adjustStep',0,'testOpt',1,'bbInit',0,'SPGoptTol',1e-6,'SPGiters',10,'SPGtestOpt',0);
 
 % Output Parameter Settings
 if verbose >= 3
@@ -52,7 +54,11 @@ end
 
 % Output Log
 if verbose >= 2
-    fprintf('%10s %10s %10s %15s %15s %15s\n','Iteration','FunEvals','Projections','Step Length','Function Val','Opt Cond');
+    if testOpt
+        fprintf('%10s %10s %10s %15s %15s %15s\n','Iteration','FunEvals','Projections','Step Length','Function Val','Opt Cond');
+    else
+        fprintf('%10s %10s %10s %15s %15s\n','Iteration','FunEvals','Projections','Step Length','Function Val');
+    end
 end
 
 % Make objective function (if using numerical derivatives)
@@ -75,13 +81,15 @@ projects = 1;
 [f,g] = funObj(x);
 funEvals = 1;
 
-% Check Optimality of Initial Point
-projects = projects+1;
-if sum(abs(funProj(x-g)-x)) < optTol
-    if verbose >= 1
-        fprintf('First-Order Optimality Conditions Below optTol at Initial Point\n');
+% Optionally check Optimality of Initial Point
+if testOpt
+    projects = projects+1;
+    if sum(abs(funProj(x-g)-x)) < optTol
+        if verbose >= 1
+            fprintf('First-Order Optimality Conditions Below optTol at Initial Point\n');
+        end
+        return;
     end
-    return;
 end
 
 i = 1;
@@ -219,18 +227,28 @@ while funEvals <= maxIter
     f = f_new;
     g = g_new;
     
-    optCond = sum(abs(funProj(x-g)-x));
-    projects = projects+1;
+    if testOpt
+        optCond = sum(abs(funProj(x-g)-x));
+        projects = projects+1;
+    end
     
     % Output Log
     if verbose >= 2
-        fprintf('%10d %10d %10d %15.5e %15.5e %15.5e\n',i,funEvals*funEvalMultiplier,projects,t,f,optCond);
+        if testOpt
+            fprintf('%10d %10d %10d %15.5e %15.5e %15.5e\n',i,funEvals*funEvalMultiplier,projects,t,f,optCond);
+        else
+            fprintf('%10d %10d %10d %15.5e %15.5e\n',i,funEvals*funEvalMultiplier,projects,t,f);
+        end
     end
     
     % Check optimality
-    if optCond < optTol
-        fprintf('First-Order Optimality Conditions Below optTol\n');
-        break;
+    if testOpt
+        if optCond < optTol
+            if verbose >= 1
+                fprintf('First-Order Optimality Conditions Below optTol\n');
+            end
+            break;
+        end
     end
     
     if sum(abs(t*d)) < optTol
