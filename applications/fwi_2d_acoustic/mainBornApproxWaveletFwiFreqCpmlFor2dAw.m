@@ -340,7 +340,7 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     options.adjustStep = 1;
     options.testOpt = 0;
     options.bbInit = 0;
-    options.maxIter = 10;
+    options.maxIter = 1;
     
     [dcoeff_pqn_wavelet, misfit_pqn_wavelet] = minConF_PQN_new(func, zeros(length(vecWaveletCoeff), 1), funProj, options);
     dm_pqn_wavelet = real(waveletFunc(dcoeff_pqn_wavelet, 1));

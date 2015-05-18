@@ -340,7 +340,7 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     options.adjustStep = 1;
     options.testOpt = 0;
     options.bbInit = 0;
-    options.maxIter = 10;
+    options.maxIter = 1;
     
     [dcoeff_pqn_pdfb, misfit_pqn_pdfb] = minConF_PQN_new(func, zeros(length(vecPdfbCoeff), 1), funProj, options);
     dm_pqn_pdfb = real(pdfbFunc(dcoeff_pqn_pdfb, 1));

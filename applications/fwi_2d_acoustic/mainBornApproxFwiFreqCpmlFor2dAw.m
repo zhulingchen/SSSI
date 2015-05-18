@@ -325,7 +325,7 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     options.SPGiters = 5000;
     options.adjustStep = 1;
     options.bbInit = 0;
-    options.maxIter = 10;
+    options.maxIter = 1;
     
     [dm_pqn_model, misfit_pqn_model] = minConF_PQN_new(func, zeros(nLengthWithBoundary, 1), funProj, options);
     

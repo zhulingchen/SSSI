@@ -344,7 +344,7 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     options.adjustStep = 1;
     options.testOpt = 0;
     options.bbInit = 0;
-    options.maxIter = 10;
+    options.maxIter = 1;
     
     [dcoeff_pqn_curvelet, misfit_pqn_curvelet] = minConF_PQN_new(func, zeros(length(vecCurveletCoeff), 1), funProj, options);
     dm_pqn_curvelet = real(fdctFunc(dcoeff_pqn_curvelet, 1));
