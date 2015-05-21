@@ -294,7 +294,7 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     % Contourlet decomposition
     pdfbCoeff = pdfbdec(modelOld, pfilter, dfilter, nlevels);
     [vecPdfbCoeff, sPdfb] = pdfb2vec(pdfbCoeff);
-    pdfbFunc = @(x, mode) pdfb(x, sPdfb, pfilter, dfilter, nlevels, nz + nBoundary, nx + 2*nBoundary, mode);
+    pdfbFunc = @(x, mode) wrapper_pdfb(x, sPdfb, pfilter, dfilter, nlevels, nz + nBoundary, nx + 2*nBoundary, mode);
     
     
     %% generate Green's functions

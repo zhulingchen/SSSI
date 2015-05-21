@@ -294,7 +294,7 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     % Wavelet decomposition
     waveletCoeff = pdfbdec(modelOld, pfilter_wavelet, dfilter_wavelet, nlevels_wavelet);
     [vecWaveletCoeff, sWavelet] = pdfb2vec(waveletCoeff);
-    waveletFunc = @(x, mode) pdfb(x, sWavelet, pfilter_wavelet, dfilter_wavelet, nlevels_wavelet, nz + nBoundary, nx + 2*nBoundary, mode);
+    waveletFunc = @(x, mode) wrapper_pdfb(x, sWavelet, pfilter_wavelet, dfilter_wavelet, nlevels_wavelet, nz + nBoundary, nx + 2*nBoundary, mode);
     
     
     %% generate Green's functions

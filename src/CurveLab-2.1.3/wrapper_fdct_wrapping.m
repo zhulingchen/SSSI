@@ -1,11 +1,11 @@
-function y = fdct(x, s, is_real, nbscales, nbangles_coarse, nz, nx, mode)
-% FDCT Can be used as a function handle to run Curvelet / inverse
-% Curvelet transforms
+function y = wrapper_fdct_wrapping(x, s, is_real, nbscales, nbangles_coarse, nz, nx, mode)
+% WRAPPER_FDCT_WRAPPING can be used as a wrapper function handle to run
+% Curvelet / inverse Curvelet transforms based on the wrapping version
 %
 % it must have the signature to be used as a function handle in spgl1
 % package for l1-optimization
 %
-% A = @(x, mode) fdct_handle(x, s, is_real, nbscales, nbangles_coarse, nz, nx, mode);
+% A = @(x, mode) wrapper_fdct_wrapping(x, s, is_real, nbscales, nbangles_coarse, nz, nx, mode);
 %
 % y = A(x,mode)   if mode == 1 then y = A x  (y is m-by-1);
 %                 if mode == 2 then y = A'x  (y is n-by-1).

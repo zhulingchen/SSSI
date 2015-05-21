@@ -298,7 +298,7 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
         curveletCoeff = fdct_wrapping(modelOld, is_real, nbscales, nbangles_coarse);
     end
     [vecCurveletCoeff, sCurvelet] = curvelet2vec(curveletCoeff);
-    fdctFunc = @(x, mode) fdct(x, sCurvelet, is_real, nbscales, nbangles_coarse, nz + nBoundary, nx + 2*nBoundary, mode);
+    fdctFunc = @(x, mode) wrapper_fdct_wrapping(x, sCurvelet, is_real, nbscales, nbangles_coarse, nz + nBoundary, nx + 2*nBoundary, mode);
     
     
     %% generate Green's functions

@@ -32,6 +32,14 @@ C{s}{w}(a,b) = 1;
 disp('Take adjoint curvelet transform: ifdct_wrapping');
 tic; Y1 = ifdct_wrapping(C,0); toc;
 
+%display the curvelet
+figure;
+F1 = ifftshift(fft2(fftshift(Y1)));
+subplot(1,2,1); colormap gray; imagesc(real(Y1)); axis('image'); ...
+    title('a curvelet: spatial viewpoint');
+subplot(1,2,2); colormap gray; imagesc(abs(F1)); axis('image'); ...
+    title('a curvelet: frequency viewpoint');
+
 %forward curvelet transform
 disp('Take curvelet transform: fdct_wrapping');
 tic; C = fdct_wrapping(X,0); toc;
@@ -49,10 +57,11 @@ disp('Take adjoint curvelet transform: ifdct_wrapping');
 tic; Y2 = ifdct_wrapping(C,0); toc;
 
 %display the curvelet
-F = ifftshift(fft2(fftshift(Y)));
-subplot(1,2,1); colormap gray; imagesc(real(Y)); axis('image'); ...
+figure;
+F2 = ifftshift(fft2(fftshift(Y2)));
+subplot(1,2,1); colormap gray; imagesc(real(Y2)); axis('image'); ...
     title('a curvelet: spatial viewpoint');
-subplot(1,2,2); colormap gray; imagesc(abs(F)); axis('image'); ...
+subplot(1,2,2); colormap gray; imagesc(abs(F2)); axis('image'); ...
     title('a curvelet: frequency viewpoint');
 
 %get parameters
