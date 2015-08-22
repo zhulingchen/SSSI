@@ -1,52 +1,41 @@
-% MAINBORNAPPROXFWIFREQCPMLFOR2DAW simulates the full waveform inversion
-% (FWI) with 2-d acoustic wave in frequency domain based on the CPML
-% absorbing boundary condition and the Born approximation.
+% MAINFWIFREQCPML2DAW simulates the full waveform inversion (FWI) with 2-d
+% acoustic wave in frequency domain based on the CPML absorbing boundary
+% condition.
 %
-% The FWI in frequency domain is used to solve the following problem:
-% Given a smooth but obscure velocity model and the received data on
-% surface, the true but unknown velocity model is to be approximated by
-% estimating the scatter field during iterations.
+% The FWI in frequency domain is used to solve the following problem: Given
+% a smooth but obscure velocity model as a starting point and then minimize
+% the least-squares misfit function defined by the differences at the
+% receiver positions between the recorded seismic data and the modeled
+% seismic data for each source-receiver pair of the seismic survey.
 %
 %
 % System background
 % ====================================================================================================
 %
-% m = m_0 + delta_m, delta_m is model perturbation
-% PDE for true field u:         (m(x)(d^2/dt^2) - Laplacian)u(x, t; xs) = f(x, t; xs)
-% PDE for incident field u_0:   (m_0(x)(d^2/dt^2) - Laplacian)u_0(x, t; xs) = f(x, t; xs)
-% u = u_0 + u_sc, u_sc is scattered field
+% The true velocity model m is approached by iteratively running the FWI on
+% the currently estimated velocity model m'
 %
-% Therefore, we have
-% (m_0(x)(d^2/dt^2) - Laplacian)u_sc(y, t; xs) = - delta_m(x) * (d^2/dt^2)u(x, t; xs)
+% PDE for true field u_obs:                    (m(x)(d^2/dt^2) - Laplacian)u_obs(x, t; xs) = f(x, t; xs)
+% PDE for calculated (modeled) field u_cal:    (m'(x)(d^2/dt^2) - Laplacian)u_cal(x, t; xs) = f(x, t; xs)
+% u_obs(x, t; xs) is the observed (recorded) data at position x caused by
+% the shot at position xs
+% u_cal(x, t; xs) is the calculated (modeled) data at position x caused by
+% the shot at position xs
 %
 % In frequency domain
-% (- m_0(x)w^2 - Laplacian)U_sc(y, jw; xs) = w^2 * delta_m(x) * U(x, jw; xs)
+% PDE for true field u_obs:                    (- m(x)w^2 - Laplacian)U_obs(x, jw; xs) = F(x, jw; xs)
+% PDE for calculated (modeled) field u_cal:    (- m'(x)w^2 - Laplacian)U_cal(x, jw; xs) = F(x, jw; xs)
 % whose solution is
-% U_sc(y, jw; xs) = w^2 * \sum_x G_0(y, jw; x) * delta_m(x) * U(x, jw; xs)
-% where G_0(y, jw; x) is the Green's function of m_0(x) from source x to
-% receiver y
+% U_cal(x, jw; xs) = G'(x, jw; xs) * F(x, jw; xs)
+% or
+% U_cal(x, jw; xs) = A(jw; xs) \ (-F(x, jw; xs))
+% where G'(y, jw; x) is the Green's function of m' from source xs to
+% receiver x and A(jw; xs) is a discretization matrix (Helmholtz operator)
+% in frequency domain that maps 2D stencils into its columns
 %
-% U_0(y, jw; xs) = U(y, jw; xs) - U_sc(y, jw; xs)
-%                = U(y, jw; xs) - w^2 * \sum_x G_0(y, jw; x) * delta_m(x) * U(x, jw; xs)
-%                = (I + A)U(y, jw; xs)
-% where operator (matrix) A is composed by (rows of) [- w^2 * G_0(y, jw; x) * delta_m(x)]
-%
-% Therefore, we have
-% U = U_0 + U_sc = (I + A)^{-1} * U_0 ~= U_0 - A * U_0 = U_0 + U_1 by
-% discarding quadratic and higher order approximation of the Taylor
-% expansion and U_1 = - A * U_0 is the Born approximation of U_sc, i.e.,
-% U_1(y, jw; xs) = w^2 * \sum_x G_0(y, jw; x) * delta_m(x) * U_0(x, jw; xs)
-% which is the solution of
-% (- m_0(x)w^2 - Laplacian)U_1(y, jw; xs) = w^2 * delta_m(x) * U_0(x, jw; xs)
-%
-% By expanding U_0(x, jw; xs) = G_0(x, jw; xs) * F(x, jw; xs) and the solution
-% U_1 can be written in a linear form
-% U_1(y, jw; xs) = w^2 * \sum_x F(x, jw; xs) * G_0(x, jw; xs) * G_0(y, jw; x) * delta_m(x), i.e.,
-% U_1(y, jw; xs) = L * delta_m(x) where operator (matrix) L is composed of
-% (rows of) [w^2 * F(x, jw; xs) * G_0(x, jw; xs) * G_0(y, jw; x)]
 %
 % The cost function is:
-% J = 1/2 * \sum_w \sum_xs \sum_xr |U_1(xr, jw; xs) - U_sc(xr, jw; xs)|^2
+% J = 1/2 * \sum_w \sum_xs \sum_xr |U_cal(xr, jw; xs) - U_obs(xr, jw; xs)|^2
 %
 % ====================================================================================================
 %
@@ -54,8 +43,11 @@
 % Purpose
 % ====================================================================================================
 %
-% To find an optimized delta_m(x) such that J is minimized and update the
-% velocity model m
+% To find an estimate m' of m such that J is minimized
+%
+% The minimum of the misfit function J is sought in the vicinity of the
+% starting model m_0', m_{k+1}' = m_k' + a_k * g_k where g_k is the
+% gradient of J for m_k'
 %
 % ====================================================================================================
 %
@@ -86,7 +78,7 @@ clc;
 ALPHA = 0.75;
 DELTA = 1e-5;
 FREQTHRES = 2;
-MAXITER = 100;  % dm is being optimized inside PQN (or L-BFGS) optimization
+MAXITER = 1;    % actually no need to do more than one iteration outside PQN (or L-BFGS) optimization iterations since m itself is kept optimized inside
 
 
 %% Set path
@@ -192,7 +184,6 @@ activeW = find(abs(rw1dFreq) > FREQTHRES);
 activeW = activeW(activeW > nfft / 2 + 1); % choose f > 0Hz
 
 dataTrueFreq = zeros(nRecs, nShots, length(activeW));
-dataDeltaFreq = zeros(nRecs, nShots, length(activeW));
 
 % shot positions on extended velocity model
 xs = xShotGrid + nBoundary;
@@ -225,13 +216,6 @@ parfor idx_w = 1:length(activeW)
     % get received data on the receivers
     dataTrueFreq(:, :, idx_w) = snapshotTrueFreq((xr-1)*(nz+nBoundary)+zr, :);
     
-    % calculate smooth data for all shots in frequency domain for current frequency
-    sourceFreq = zeros(nLengthWithBoundary, nShots);
-    sourceFreq((xs-1)*(nz+nBoundary)+zs, :) = rw1dFreq(iw) * eye(nShots, nShots);
-    [~, snapshotSmoothFreq] = freqCpmlFor2dAw(MS, sourceFreq, w(iw), nDiffOrder, nBoundary, dz, dx);
-    % get calculated data on the receivers
-    dataDeltaFreq(:, :, idx_w) = dataTrueFreq(:, :, idx_w) - snapshotSmoothFreq((xr-1)*(nz+nBoundary)+zr, :);
-    
     timePerFreq = toc;
     fprintf('elapsed time = %fs\n', timePerFreq);
     
@@ -241,12 +225,8 @@ end
 filenameDataTrueFreq = [pathVelocityModel, '/dataTrueFreq.mat'];
 save(filenameDataTrueFreq, 'dataTrueFreq', '-v7.3');
 
-filenameDataDeltaFreq = [pathVelocityModel, '/dataDeltaFreq0.mat'];
-save(filenameDataDeltaFreq, 'dataDeltaFreq', '-v7.3');
-
 % clear variables and functions from memory
 clear('dataTrueFreq');
-clear('dataDeltaFreq');
 
 
 %% Full wave inversion (FWI)
@@ -256,8 +236,6 @@ clear('dataDeltaFreq');
 %                                           |
 %                                           V
 % (w^2)/(v^2)*U(z, x, jw) + (d^2)U(z, x, jw)/dz^2 + (d^2)U(z, x, jw)/dx^2 = -S(z, x, jw)
-%
-% Green's function is the impulse response of the wave equation.
 
 modelOld = zeros(nz + nBoundary, nx + 2*nBoundary);
 modelNew = MS;
@@ -272,7 +250,7 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     
     modelOld = modelNew;
     vmOld = sqrt(1./modelOld);
-    load(filenameDataDeltaFreq);
+    load(filenameDataTrueFreq);
     
     % plot the velocity model
     figure(hFigOld);
@@ -281,43 +259,14 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     title('Previous Velocity Model');
     colormap(seismic); colorbar; caxis manual; caxis([vmin, vmax]);
     
-    
-    %% generate Green's functions
-    greenFreqForShotSet = cell(1, length(activeW));
-    greenFreqForRecSet = cell(1, length(activeW));
-    parfor idx_w = 1:length(activeW)
-        
-        iw = activeW(idx_w);
-        
-        fprintf('Generate %d Green''s functions at f(%d) = %fHz ... ', nShots, iw, w(iw)/(2*pi));
-        tic;
-        
-        % Green's function for every shot
-        sourceFreq = zeros(nLengthWithBoundary, nShots);
-        sourceFreq((xs-1)*(nz+nBoundary)+zs, :) = eye(nShots, nShots);
-        [~, greenFreqForShotSet{idx_w}] = freqCpmlFor2dAw(modelOld, sourceFreq, w(iw), nDiffOrder, nBoundary, dz, dx);
-        
-        % Green's function for every receiver
-        sourceFreq = zeros(nLengthWithBoundary, nRecs);
-        sourceFreq((xr-1)*(nz+nBoundary)+zr, :) = eye(nRecs, nRecs);
-        [~, greenFreqForRecSet{idx_w}] = freqCpmlFor2dAw(modelOld, sourceFreq, w(iw), nDiffOrder, nBoundary, dz, dx);
-        
-        timePerFreq = toc;
-        fprintf('elapsed time = %fs\n', timePerFreq);
-        
-    end
-    
-    % filenameGreenFreqForShotSet = [pathVelocityModel, sprintf('/greenFreqForShotSet%d.mat', iter)];
-    % save(filenameGreenFreqForShotSet, 'greenFreqForShotSet', '-v7.3');
-    
-    % filenameGreenFreqForRecSet = [pathVelocityModel, sprintf('/greenFreqForRecSet%d.mat', iter)];
-    % save(filenameGreenFreqForRecSet, 'greenFreqForRecSet', '-v7.3');
-    
+    % test begin
+    % [f_opt, g_opt] = lsMisfit(M, w(activeW), rw1dFreq(activeW), dataTrueFreq, nz, nx, xs, zs, xr, zr, nDiffOrder, nBoundary, dz, dx);
+    % test end
     
     %% minimization using PQN toolbox in model (physical) domain
-    func = @(dm) lsBornApproxMisfit(dm, w(activeW), rw1dFreq(activeW), dataDeltaFreq, greenFreqForShotSet, greenFreqForRecSet);
-    lowerBound = 1e-8 * ones(nLengthWithBoundary, 1) - reshape(modelOld, nLengthWithBoundary, 1); % 1/vmax^2*ones(nLengthWithBoundary, 1) - reshape(modelOld, nLengthWithBoundary, 1);
-    upperBound = +inf(nLengthWithBoundary, 1); % 1/vmin^2*ones(nLengthWithBoundary, 1) - reshape(modelOld, nLengthWithBoundary, 1);
+    func = @(m) lsMisfit(m, w(activeW), rw1dFreq(activeW), dataTrueFreq, nz, nx, xs, zs, xr, zr, nDiffOrder, nBoundary, dz, dx);
+    lowerBound = 1e-8 * ones(nLengthWithBoundary, 1);	% maximum velocity constraint
+    upperBound = +inf(nLengthWithBoundary, 1);
     funProj = @(x) boundProject(x, lowerBound, upperBound);
     options.verbose = 3;
     options.optTol = 1e-10;
@@ -325,21 +274,10 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     options.SPGiters = 5000;
     options.adjustStep = 1;
     options.bbInit = 0;
-    options.maxIter = 1;
+    options.maxIter = 100;
     
-    [dm_pqn_model, misfit_pqn_model] = minConF_PQN_new(func, zeros(nLengthWithBoundary, 1), funProj, options);
-    
-    
-    %% updated model
-    dm = dm_pqn_model;
-    misfit = misfit_pqn_model;
-    
-    modelOld = reshape(modelOld, nLengthWithBoundary, 1);
-    modelNew = modelOld + dm;
-    modelOld = reshape(modelOld, nz + nBoundary, nx + 2*nBoundary);
+    [modelNew, misfit_model] = minConF_PQN_new(func, reshape(modelOld, nLengthWithBoundary, 1), funProj, options);
     modelNew = reshape(modelNew, nz + nBoundary, nx + 2*nBoundary);
-    % modelNew(modelNew < 1/vmax^2) = 1/vmax^2;
-    % modelNew(modelNew > 1/vmin^2) = 1/vmin^2;
     vmNew = sqrt(1./modelNew);
     
     % plot the velocity model
@@ -350,51 +288,18 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     colormap(seismic); colorbar; caxis manual; caxis([vmin, vmax]);
     % save current updated velocity model
     filenameVmNew = [pathVelocityModel, sprintf('/vmNew%d.mat', iter)];
-    save(filenameVmNew, 'vmNew', 'modelNew', 'dm', '-v7.3');
-    
-    % clear variables and functions from memory
-    clear('greenFreqForShotSet');
-    clear('greenFreqForRecSet');
-    clear('dataDeltaFreq');
-    % load received surface data
-    load(filenameDataTrueFreq);
-    
-    
-    %% update dataDeltaFreq based on the new velocity model
-    dataDeltaFreq = zeros(nRecs, nShots, length(activeW));
-    parfor idx_w = 1:length(activeW)
-        
-        iw = activeW(idx_w);
-        
-        fprintf('Generate %d frequency responses at f(%d) = %fHz ... ', nShots, iw, w(iw)/(2*pi));
-        tic;
-        
-        % calculate smooth data for all shots in frequency domain for current frequency
-        sourceFreq = zeros(nLengthWithBoundary, nShots);
-        sourceFreq((xs-1)*(nz+nBoundary)+zs, :) = rw1dFreq(iw) * eye(nShots, nShots);
-        [~, snapshotSmoothFreq] = freqCpmlFor2dAw(modelNew, sourceFreq, w(iw), nDiffOrder, nBoundary, dz, dx);
-        % get calculated data on the receivers
-        dataDeltaFreq(:, :, idx_w) = dataTrueFreq(:, :, idx_w) - snapshotSmoothFreq((xr-1)*(nz+nBoundary)+zr, :);
-        
-        timePerFreq = toc;
-        fprintf('elapsed time = %fs\n', timePerFreq);
-        
-    end
-    
-    filenameDataDeltaFreq = [pathVelocityModel, sprintf('/dataDeltaFreq%d.mat', iter)];
-    save(filenameDataDeltaFreq, 'dataDeltaFreq', '-v7.3');
+    save(filenameVmNew, 'vmNew', 'modelNew', '-v7.3');
     
     % clear variables and functions from memory
     clear('dataTrueFreq');
-    clear('dataDeltaFreq');
     
     fprintf('Full-wave inversion iteration no. %d, misfit error = %f, model norm difference = %.6f\n', ...
-        iter, misfit, norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro'));
+        iter, misfit_model, norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro'));
     
     iter = iter + 1;
     
 end
 
+
 %% Terminate the pool of Matlab workers
 delete(gcp('nocreate'));
-

@@ -12,19 +12,60 @@ nz = 120;
 nx = 140;
 % block size
 blkSize = 20;
+nBlockRows = floor(nz / blkSize);
+nBlockCols = floor(nx / blkSize);
+spgOpts = spgSetParms('optTol', 1e-16); 
 
 D = eye(blkSize * blkSize, blkSize * blkSize);
 A = zeros(blkSize * blkSize, blkSize * blkSize);
-nBlocks = 2000;
+nBlocks = 5000;
 
 hFigDictImg = figure(1);
 hDm = figure(2);
 for ii = 1:nList
     fprintf('Input image no. %d\n', ii);
     Y = dm_list{ii};
-    [D, X, A] = onlineSotTrain(Y, D, ii, A, blkSize, nBlocks, struct('verbosity', 0, 'lambda', 0.2, 'iterations', 100, 'tol', 1e-3));
+    [D, X, A] = onlineSotTrain(Y, D, ii, A, blkSize, nBlocks, struct('verbosity', 0, 'lambda', 0.2, 'iterations', 200, 'tol', 1e-3));
     
-    % test wrapper functions
+%     % test Curvelet
+%     tau = 1;
+%     Y_curvelet_coeff = fdct_wrapping(Y, 1, 2, 4, 16);
+%     [Y_curvelet_coeff_vec, sCurvelet] = curvelet2vec(Y_curvelet_coeff);
+%     P = createSampler(nz * nx, nz * nx / 2, 'rdemod');
+%     fdctFunc = @(x, mode) wrapper_fdct_wrapping(x, sCurvelet, 1, 4, 16, nz, nx, mode);
+%     Phi = zeros(nz * nx, length(Y_curvelet_coeff_vec));
+%     icol = 1;
+%     for icoeff = 1:length(Y_curvelet_coeff_vec)
+%         tmp_coeff = zeros(length(Y_curvelet_coeff_vec), 1);
+%         tmp_coeff(icoeff) = 1;
+%         tmp_img = fdctFunc(tmp_coeff, 1);
+%         Phi(:, icol) = tmp_img(:);
+%         icol = icol + 1;
+%     end
+%     Y_curvelet_coeff_vec_rec_l1 = spg_lasso(Phi, Y(:), tau, spgOpts);
+    
+    
+    % test L1-norm minimization
+    Y_rec_l1 = zeros(nz, nx);
+    tau = 1;
+    for idxBlockCol = 1:nBlockCols
+        idxCol = (idxBlockCol-1)*blkSize+1:idxBlockCol*blkSize;
+        % process block by block in the current column
+        for idxBlockRow = 1:nBlockRows
+            idxRow = (idxBlockRow-1)*blkSize+1:idxBlockRow*blkSize;
+            block = Y(idxRow, idxCol);
+            x_l0 = D' * block(:);   % for reference
+            P = createSampler(blkSize * blkSize, blkSize * blkSize / 8, 'rdemod');
+            x_l1 = spg_lasso(P * D, P * block(:), tau, spgOpts);
+            recBlock_l0 = D * x_l0;
+            recBlock_l0 = reshape(recBlock_l0, blkSize, blkSize);
+            recBlock_l1 = D * x_l1;
+            recBlock_l1 = reshape(recBlock_l1, blkSize, blkSize);
+            Y_rec_l1(idxRow, idxCol) = Y_rec_l1(idxRow, idxCol) + recBlock_l1;
+        end
+    end
+    
+    % test SOT wrapper functions
     Y_coeff_vector = wrapper_sot(Y(:), D, nz, nx, 2);
     Y_rec_vector = wrapper_sot(Y_coeff_vector, D, nz, nx, 1);
     

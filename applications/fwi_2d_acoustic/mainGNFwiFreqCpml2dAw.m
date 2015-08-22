@@ -1,13 +1,11 @@
-% MAINBORNAPPROXCONTOURLETFWIFREQCPMLFOR2DAW simulates the full waveform
-% inversion (FWI) with 2-d acoustic wave in frequency domain based on the
-% CPML absorbing boundary condition, the Born approximation and the
-% Contourlet transform.
+% MAINGNFWIFREQCPML2DAW simulates the full waveform inversion (FWI) with
+% 2-d acoustic wave in frequency domain based on the CPML absorbing
+% boundary condition and the Gauss-Newton method.
 %
 % The FWI in frequency domain is used to solve the following problem:
 % Given a smooth but obscure velocity model and the received data on
 % surface, the true but unknown velocity model is to be approximated by
-% estimating the scatter field during iterations. In this application the
-% model perturbation is assumed sparse under the Contourlet transform.
+% estimating the scatter field during iterations.
 %
 %
 % System background
@@ -58,8 +56,6 @@
 %
 % To find an optimized delta_m(x) such that J is minimized and update the
 % velocity model m
-% delta_m(x) is assumed sparse under the Contourlet transform:
-% delta_m(x) = Phi(c) where Phi is the synthesis Contourlet operator
 %
 % ====================================================================================================
 %
@@ -184,12 +180,6 @@ nDiffOrder = 2;
 f = 20;
 
 
-%% Contourlet transform parameters
-nlevels = [2, 3];      % Decomposition level
-pfilter = 'pkva';      % Pyramidal filter
-dfilter = 'pkva';      % Directional filter
-
-
 %% Shot data recording at the surface
 % generate shot signal
 rw1dTime = zeros(1, nt);
@@ -291,11 +281,6 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     title('Previous Velocity Model');
     colormap(seismic); colorbar; caxis manual; caxis([vmin, vmax]);
     
-    % Contourlet decomposition
-    pdfbCoeff = pdfbdec(modelOld, pfilter, dfilter, nlevels);
-    [vecPdfbCoeff, sPdfb] = pdfb2vec(pdfbCoeff);
-    pdfbFunc = @(x, mode) wrapper_pdfb(x, sPdfb, pfilter, dfilter, nlevels, nz + nBoundary, nx + 2*nBoundary, mode);
-    
     
     %% generate Green's functions
     greenFreqForShotSet = cell(1, length(activeW));
@@ -329,27 +314,25 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     % save(filenameGreenFreqForRecSet, 'greenFreqForRecSet', '-v7.3');
     
     
-    %% minimization using PQN toolbox in Contourlet domain
-    func = @(dcoeff) lsBornApproxMisfitTransform(dcoeff, @(x)pdfbFunc(x, 1), @(x)pdfbFunc(x, 2), w(activeW), rw1dFreq(activeW), dataDeltaFreq, greenFreqForShotSet, greenFreqForRecSet);
-    tau = norm(vecPdfbCoeff, 1);
-    funProj = @(x) sign(x).*projectRandom2C(abs(x), tau);
+    %% minimization using PQN toolbox in model (physical) domain
+    func = @(dm) lsBornApproxMisfit(dm, w(activeW), rw1dFreq(activeW), dataDeltaFreq, greenFreqForShotSet, greenFreqForRecSet);
+    lowerBound = 1e-8 * ones(nLengthWithBoundary, 1) - reshape(modelOld, nLengthWithBoundary, 1); % 1/vmax^2*ones(nLengthWithBoundary, 1) - reshape(modelOld, nLengthWithBoundary, 1);
+    upperBound = +inf(nLengthWithBoundary, 1); % 1/vmin^2*ones(nLengthWithBoundary, 1) - reshape(modelOld, nLengthWithBoundary, 1);
+    funProj = @(x) boundProject(x, lowerBound, upperBound);
     options.verbose = 3;
     options.optTol = 1e-10;
     options.SPGoptTol = 1e-10;
     options.SPGiters = 5000;
     options.adjustStep = 1;
-    options.testOpt = 0;
     options.bbInit = 0;
     options.maxIter = 1;
     
-    [dcoeff_pqn_pdfb, misfit_pqn_pdfb] = minConF_PQN_new(func, zeros(length(vecPdfbCoeff), 1), funProj, options);
-    dm_pqn_pdfb = real(pdfbFunc(dcoeff_pqn_pdfb, 1));
+    [dm_pqn_model, misfit_pqn_model] = minConF_PQN_new(func, zeros(nLengthWithBoundary, 1), funProj, options);
     
     
     %% updated model
-    dcoeff = dcoeff_pqn_pdfb;
-    dm = dm_pqn_pdfb;
-    misfit = misfit_pqn_pdfb;
+    dm = dm_pqn_model;
+    misfit = misfit_pqn_model;
     
     modelOld = reshape(modelOld, nLengthWithBoundary, 1);
     modelNew = modelOld + dm;
@@ -366,8 +349,8 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     title('Updated Velocity Model');
     colormap(seismic); colorbar; caxis manual; caxis([vmin, vmax]);
     % save current updated velocity model
-    filenameVmNew = [pathVelocityModel, sprintf('/vmNew%d_contourlet.mat', iter)];
-    save(filenameVmNew, 'vmNew', 'modelNew', 'dcoeff', 'dm', '-v7.3');
+    filenameVmNew = [pathVelocityModel, sprintf('/vmNew%d.mat', iter)];
+    save(filenameVmNew, 'vmNew', 'modelNew', 'dm', '-v7.3');
     
     % clear variables and functions from memory
     clear('greenFreqForShotSet');
