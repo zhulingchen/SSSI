@@ -174,11 +174,11 @@ f = 20;
 
 %% Shot data recording at the surface
 % generate shot signal
-rw1dTime = zeros(1, nt);
+rw1dTime = zeros(nt, 1);
 for ifreq = 1:length(f)
     rw1dTime = rw1dTime + ricker(f(ifreq), nt, dt);
 end
-rw1dFreq = fftshift(fft(rw1dTime, nfft), 2);
+rw1dFreq = fftshift(fft(rw1dTime, nfft));
 % find active frequency set with FFT amplitude larger than the threshold
 activeW = find(abs(rw1dFreq) > FREQTHRES);
 activeW = activeW(activeW > nfft / 2 + 1); % choose f > 0Hz

@@ -139,7 +139,7 @@ if ~exist(filenameVideoModelShots, 'file')
 end
 
 % generate shot signal
-rw1dTime = zeros(1, nt);
+rw1dTime = zeros(nt, 1);
 for ifreq = 1:length(f)
     rw1dTime = rw1dTime + ricker(f(ifreq), nt, dt);
 end

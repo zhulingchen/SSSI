@@ -18,7 +18,7 @@ function [rw,t] = ricker(f,n,dt,t0,t1)
 %       [RW,T] = RICKER(F)
 %       [RW,T] = RICKER(F,N)
 %       [RW,T] = RICKER(F,N,DT)
-%       
+%
 %   [RW,T] = RICKER(F,N,DT,T0) creates a ricker wavelet with peak centered
 %   at T0.
 %
@@ -65,7 +65,7 @@ end
 
 % Create the wavelet and shift in time if needed
 T = dt*(n-1);
-t = 0:dt:T;
+t = (0:dt:T).';
 tau = t-t0;
 if ~is2d
     s = (1-2*tau.*tau*f^2*pi^2).*exp(-tau.^2*pi^2*f^2);
@@ -75,10 +75,10 @@ else
 end
 
 if nargout == 0
-        plot(t,s)
-        xlabel('Time (s)')
-        ylabel('Amplitude')
-        title('Ricker Wavelet')
+    plot(t,s)
+    xlabel('Time (s)')
+    ylabel('Amplitude')
+    title('Ricker Wavelet')
 else
-        rw = s;
+    rw = s;
 end
