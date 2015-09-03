@@ -325,7 +325,7 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     options.SPGiters = 5000;
     options.adjustStep = 1;
     options.bbInit = 0;
-    options.maxIter = 1;
+    options.maxIter = 20;
     
     [dm_pqn_model, misfit_pqn_model] = minConF_PQN_new(func, zeros(nLengthWithBoundary, 1), funProj, options);
     
@@ -350,7 +350,7 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     colormap(seismic); colorbar; caxis manual; caxis([vmin, vmax]);
     % save current updated velocity model
     filenameVmNew = [pathVelocityModel, sprintf('/vmNew%d.mat', iter)];
-    save(filenameVmNew, 'vmNew', 'modelNew', 'dm', '-v7.3');
+    save(filenameVmNew, 'vmNew', 'modelNew', 'dm', 'misfit', '-v7.3');
     
     % clear variables and functions from memory
     clear('greenFreqForShotSet');
