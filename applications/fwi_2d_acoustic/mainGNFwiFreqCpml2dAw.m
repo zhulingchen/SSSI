@@ -338,8 +338,8 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     modelNew = modelOld + dm;
     modelOld = reshape(modelOld, nz + nBoundary, nx + 2*nBoundary);
     modelNew = reshape(modelNew, nz + nBoundary, nx + 2*nBoundary);
-    % modelNew(modelNew < 1/vmax^2) = 1/vmax^2;
-    % modelNew(modelNew > 1/vmin^2) = 1/vmin^2;
+    modelNew(modelNew < 1/vmax^2) = 1/vmax^2;
+    modelNew(modelNew > 1/vmin^2) = 1/vmin^2;
     vmNew = sqrt(1./modelNew);
     
     % plot the velocity model
