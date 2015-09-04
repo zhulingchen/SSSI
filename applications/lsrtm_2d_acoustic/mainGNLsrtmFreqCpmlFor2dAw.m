@@ -357,8 +357,8 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     modelNew = modelOld + dm;
     modelOld = reshape(modelOld, nz + nBoundary, nx + 2*nBoundary);
     modelNew = reshape(modelNew, nz + nBoundary, nx + 2*nBoundary);
-    % modelNew(modelNew < 1/vmax^2) = 1/vmax^2;
-    % modelNew(modelNew > 1/vmin^2) = 1/vmin^2;
+    modelNew(modelNew < 1/vmax^2) = 1/vmax^2;
+    modelNew(modelNew > 1/vmin^2) = 1/vmin^2;
     vmNew = 1./sqrt(modelNew);
     
     figure(hFigNew);
@@ -381,37 +381,37 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     %     % for reference.
     %
     %     load(filenameDataDeltaFreq);
-    %     L = zeros(1, nLength);
-    %     bigL = zeros(nShots * nRecs, nLength);
-    %     hessianTrue = zeros(nLength, nLength);
-    %     hessianTrue2 = zeros(nLength, nLength);
-    %     mig = zeros(nLength, 1);
-    %     mig2 = zeros(nLength, 1);
+    %     L = zeros(1, nLengthWithBoundary);
+    %     bigL = zeros(nShots * nRecs, nLengthWithBoundary);
+    %     hessianTrue = zeros(nLengthWithBoundary, nLengthWithBoundary);
+    %     hessianTrue2 = zeros(nLengthWithBoundary, nLengthWithBoundary);
+    %     mig = zeros(nLengthWithBoundary, 1);
+    %     mig2 = zeros(nLengthWithBoundary, 1);
     %     u1 = zeros(nShots, nRecs);
     %     u1_bak = zeros(nShots, nRecs);
-    %     gradVerify = zeros(nLength, 1);
-    %     gradVerify_bak = zeros(nLength, 1);
+    %     gradVerify = zeros(nLengthWithBoundary, 1);
+    %     gradVerify_bak = zeros(nLengthWithBoundary, 1);
     %     for idx_w = 1:length(activeW)
-    %         
+    %
     %         iw = activeW(idx_w);
     %         if (iw == nfft / 2 + 1)
     %             % skip f = 0Hz
     %             continue;
     %         end
-    %         
+    %
     %         fprintf('Generate %d Green''s functions at f(%d) = %fHz ... ', nShots, iw, w(iw)/(2*pi));
     %         tic;
-    %         
+    %
     %         % Green's function for every shot
     %         sourceFreq = zeros(nLengthWithBoundary, nShots);
     %         sourceFreq((xs-1)*(nz+nBoundary)+zs, :) = eye(nShots, nShots);
     %         [~, greenFreqForShot] = freqCpmlFor2dAw(modelOld, sourceFreq, w(iw), nDiffOrder, nBoundary, dz, dx);
-    %         
+    %
     %         % Green's function for every receiver
     %         sourceFreq = zeros(nLengthWithBoundary, nRecs);
     %         sourceFreq((xr-1)*(nz+nBoundary)+zr, :) = eye(nRecs, nRecs);
     %         [~, greenFreqForRec] = freqCpmlFor2dAw(modelOld, sourceFreq, w(iw), nDiffOrder, nBoundary, dz, dx);
-    %         
+    %
     %         % calculate bigL matrix
     %         [meshXRec, meshXShot] = meshgrid(xRecGrid, xShotGrid);
     %         bigL = w(iw)^2 * rw1dFreq(iw) * (greenFreqForShot(:, meshXShot(:)).' .* greenFreqForRec(:, meshXRec(:)).');
@@ -420,26 +420,28 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     %         % the true Hessian matrix 2
     %         hessianTrue2 = hessianTrue2 + w(iw)^4 * abs(rw1dFreq(iw))^2 ...
     %             * ((conj(greenFreqForShot) * greenFreqForShot.') .* (conj(greenFreqForRec) * greenFreqForRec.'));
-    %         mig = mig + bigL' * reshape(dataDeltaFreq(:, :, iw).', nShots * nRecs, 1);
-    %         mig2 = mig2 + w(iw)^2 * (-conj(rw1dFreq(iw))) * sum(conj(greenFreqForShot) .* (conj(greenFreqForRec) * dataDeltaFreq(:, :, iw)), 2);
+    %         mig = mig + bigL' * reshape(dataDeltaFreq(:, :, idx_w).', nShots * nRecs, 1);
+    %         mig2 = mig2 + w(iw)^2 * rw1dFreq(iw) * sum(greenFreqForShot .* (greenFreqForRec * conj(dataDeltaFreq(:, :, idx_w))), 2);
+    %         % mig2 = mig2 + w(iw)^2 * (conj(rw1dFreq(iw))) * sum(conj(greenFreqForShot) .* (conj(greenFreqForRec) * dataDeltaFreq(:, :, idx_w)), 2);
+    %
     %         % dm = (real(hessianTrue) \ real(rtm));
-    %         
+    %
     %         % u1 = w(iw)^2 * rw1dFreq(iw) * (repmat(dm, 1, nShots) .* greenFreqForShot).' * greenFreqForRec;
     %         % u1 = bigL * dm;
     %         % u1 = reshape(u1, nShots, nRecs);
-    %         
+    %
     %         % for ixs = 1:nShots
     %         %     for ixr = 1:nRecs
     %         %         L = w(iw)^2 * rw1dFreq(iw) * (greenFreqForShot(:, ixs).' .* greenFreqForRec(:, ixr).');
     %         %         u1_bak(ixs, ixr) = L * dm;
     %         %     end
     %         % end
-    %         
-    %         % bias = u1 - dataDeltaFreq(:, :, iw).';
+    %
+    %         % bias = u1.' - dataDeltaFreq(:, :, iw);
     %         % bias = reshape(bias, nShots * nRecs, 1);
     %         % gradVerify = gradVerify + real(bigL' * bias);
     %         % bias = reshape(bias, nShots, nRecs);
-    %         
+    %
     %         % for ixs = 1:nShots
     %         %     for ixr = 1:nRecs
     %         %         L = w(iw)^2 * rw1dFreq(iw) * (greenFreqForShot(:, ixs).' .* greenFreqForRec(:, ixr).');
@@ -447,23 +449,22 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     %         %             real(L' * bias(ixs, ixr));
     %         %     end
     %         % end
-    %         
+    %
     %         timePerFreq = toc;
     %         fprintf('elapsed time = %fs\n', timePerFreq);
     %     end
     %
     %     lambda = max(diag(hessianTrue));
-    %     hessianTrue = hessianTrue + lambda * eye(nLength, nLength);
+    %     hessianTrue = hessianTrue + lambda * eye(nLengthWithBoundary, nLengthWithBoundary);
     %
     %     % updated model
-    %     modelOld = reshape(modelOld, nLength, 1);
+    %     modelOld = reshape(modelOld, nLengthWithBoundary, 1);
     %     modelNew = modelOld + EPSILON * (real(hessianTrue) \ real(mig));
-    %     modelOld = reshape(modelOld, nz, nx);
-    %     modelNew = reshape(modelNew, nz, nx);
+    %     modelOld = reshape(modelOld, nz + nBoundary, nx + 2*nBoundary);
+    %     modelNew = reshape(modelNew, nz + nBoundary, nx + 2*nBoundary);
     %     modelNew(modelNew < 1/vmax^2) = 1/vmax^2;
     %     modelNew(modelNew > 1/vmin^2) = 1/vmin^2;
     %     vmNew = 1./sqrt(modelNew);
-    %     vmNew = extBoundary(vmNew, nBoundary, 2);
     %
     %     figure(hFigNew);
     %     imagesc(x, z, vmNew(1:end-nBoundary, nBoundary+1:end-nBoundary));
