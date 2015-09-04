@@ -391,26 +391,27 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     %     u1_bak = zeros(nShots, nRecs);
     %     gradVerify = zeros(nLength, 1);
     %     gradVerify_bak = zeros(nLength, 1);
-    %     for iw = activeW
-    %
+    %     for idx_w = 1:length(activeW)
+    %         
+    %         iw = activeW(idx_w);
     %         if (iw == nfft / 2 + 1)
     %             % skip f = 0Hz
     %             continue;
     %         end
-    %
+    %         
     %         fprintf('Generate %d Green''s functions at f(%d) = %fHz ... ', nShots, iw, w(iw)/(2*pi));
     %         tic;
-    %
+    %         
     %         % Green's function for every shot
     %         sourceFreq = zeros(nLengthWithBoundary, nShots);
     %         sourceFreq((xs-1)*(nz+nBoundary)+zs, :) = eye(nShots, nShots);
     %         [~, greenFreqForShot] = freqCpmlFor2dAw(modelOld, sourceFreq, w(iw), nDiffOrder, nBoundary, dz, dx);
-    %
+    %         
     %         % Green's function for every receiver
     %         sourceFreq = zeros(nLengthWithBoundary, nRecs);
     %         sourceFreq((xr-1)*(nz+nBoundary)+zr, :) = eye(nRecs, nRecs);
     %         [~, greenFreqForRec] = freqCpmlFor2dAw(modelOld, sourceFreq, w(iw), nDiffOrder, nBoundary, dz, dx);
-    %
+    %         
     %         % calculate bigL matrix
     %         [meshXRec, meshXShot] = meshgrid(xRecGrid, xShotGrid);
     %         bigL = w(iw)^2 * rw1dFreq(iw) * (greenFreqForShot(:, meshXShot(:)).' .* greenFreqForRec(:, meshXRec(:)).');
@@ -422,23 +423,23 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     %         mig = mig + bigL' * reshape(dataDeltaFreq(:, :, iw).', nShots * nRecs, 1);
     %         mig2 = mig2 + w(iw)^2 * (-conj(rw1dFreq(iw))) * sum(conj(greenFreqForShot) .* (conj(greenFreqForRec) * dataDeltaFreq(:, :, iw)), 2);
     %         % dm = (real(hessianTrue) \ real(rtm));
-    %
+    %         
     %         % u1 = w(iw)^2 * rw1dFreq(iw) * (repmat(dm, 1, nShots) .* greenFreqForShot).' * greenFreqForRec;
     %         % u1 = bigL * dm;
     %         % u1 = reshape(u1, nShots, nRecs);
-    %
+    %         
     %         % for ixs = 1:nShots
     %         %     for ixr = 1:nRecs
     %         %         L = w(iw)^2 * rw1dFreq(iw) * (greenFreqForShot(:, ixs).' .* greenFreqForRec(:, ixr).');
     %         %         u1_bak(ixs, ixr) = L * dm;
     %         %     end
     %         % end
-    %
+    %         
     %         % bias = u1 - dataDeltaFreq(:, :, iw).';
     %         % bias = reshape(bias, nShots * nRecs, 1);
     %         % gradVerify = gradVerify + real(bigL' * bias);
     %         % bias = reshape(bias, nShots, nRecs);
-    %
+    %         
     %         % for ixs = 1:nShots
     %         %     for ixr = 1:nRecs
     %         %         L = w(iw)^2 * rw1dFreq(iw) * (greenFreqForShot(:, ixs).' .* greenFreqForRec(:, ixr).');
@@ -446,7 +447,7 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     %         %             real(L' * bias(ixs, ixr));
     %         %     end
     %         % end
-    %
+    %         
     %         timePerFreq = toc;
     %         fprintf('elapsed time = %fs\n', timePerFreq);
     %     end
