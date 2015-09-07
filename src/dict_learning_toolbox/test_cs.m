@@ -41,9 +41,10 @@ csMat = randn(20, 100);
 funObj = @(w)SquaredError(w,csMat * idctMat, csMat * tmpTime);
 % Set up L1-Ball Projection
 tau = 4;
-funProj = @(w)sign(w).*projectRandom2C(abs(w),tau);
+funProj = @(w)sign(w).*projectRandom2C(abs(w), tau);
+options.optTol = 1e-10;
 
 fprintf('\nComputing optimal Lasso parameters...\n');
-wL1 = zeros(N, 1);
-[wL1, r] = minConF_PQN_new(funObj,wL1,funProj);
-figure; plot(real(wL1));
+tmpFreq_rec_pqn = zeros(N, 1);
+[tmpFreq_rec_pqn, r] = minConF_PQN_new(funObj, tmpFreq_rec_pqn, funProj, options);
+figure; plot(real(tmpFreq_rec_pqn));

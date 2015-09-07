@@ -24,7 +24,9 @@ idx = cell(dim, 1);
 Y = sampgrid(Y, blkSize, idx{:});
 nBlocks = size(Y, 2);
 for iblock = 1:nBlocks
-    Y(:, iblock) = Y(:, iblock) / norm(Y(:, iblock), 2);
+    if (norm(Y(:, iblock), 2))
+        Y(:, iblock) = Y(:, iblock) / norm(Y(:, iblock), 2);
+    end
 end
 
 % parameter setting
