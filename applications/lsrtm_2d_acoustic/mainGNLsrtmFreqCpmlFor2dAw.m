@@ -195,9 +195,10 @@ rw1dFreq = fftshift(fft(rw1dTime, nfft));
 % find active frequency set with FFT amplitude larger than the threshold
 activeW = find(abs(rw1dFreq) > FREQTHRES);
 activeW = activeW(activeW > nfft / 2 + 1); % choose f > 0Hz
+nFreqs = length(activeW);
 
-dataTrueFreq = zeros(nRecs, nShots, length(activeW));
-dataDeltaFreq = zeros(nRecs, nShots, length(activeW));
+dataTrueFreq = zeros(nRecs, nShots, nFreqs);
+dataDeltaFreq = zeros(nRecs, nShots, nFreqs);
 
 % shot positions on extended velocity model
 xs = xShotGrid + nBoundary;
@@ -216,7 +217,7 @@ end
 
 
 %% generate shot record and save them in frequency domain
-parfor idx_w = 1:length(activeW)
+parfor idx_w = 1:nFreqs
     
     iw = activeW(idx_w);
     
@@ -294,7 +295,7 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     colormap(seismic); colorbar; caxis manual; caxis([vmin, vmax]);
     
     % update the velocity model with least-squares
-    parfor idx_w = 1:length(activeW)
+    parfor idx_w = 1:nFreqs
         
         iw = activeW(idx_w);
         
@@ -391,7 +392,7 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     %     u1_bak = zeros(nShots, nRecs);
     %     gradVerify = zeros(nLengthWithBoundary, 1);
     %     gradVerify_bak = zeros(nLengthWithBoundary, 1);
-    %     for idx_w = 1:length(activeW)
+    %     for idx_w = 1:nFreqs
     %
     %         iw = activeW(idx_w);
     %         if (iw == nfft / 2 + 1)
@@ -484,8 +485,8 @@ while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <
     
     
     %% update dataDeltaFreq based on the new velocity model
-    dataDeltaFreq = zeros(nRecs, nShots, length(activeW));
-    parfor idx_w = 1:length(activeW)
+    dataDeltaFreq = zeros(nRecs, nShots, nFreqs);
+    parfor idx_w = 1:nFreqs
         
         iw = activeW(idx_w);
         

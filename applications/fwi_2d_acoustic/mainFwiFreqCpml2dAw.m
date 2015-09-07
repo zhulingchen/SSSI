@@ -182,8 +182,9 @@ rw1dFreq = fftshift(fft(rw1dTime, nfft));
 % find active frequency set with FFT amplitude larger than the threshold
 activeW = find(abs(rw1dFreq) > FREQTHRES);
 activeW = activeW(activeW > nfft / 2 + 1); % choose f > 0Hz
+nFreqs = length(activeW);
 
-dataTrueFreq = zeros(nRecs, nShots, length(activeW));
+dataTrueFreq = zeros(nRecs, nShots, nFreqs);
 
 % shot positions on extended velocity model
 xs = xShotGrid + nBoundary;
@@ -202,7 +203,7 @@ end
 
 
 %% generate shot record and save them in frequency domain
-parfor idx_w = 1:length(activeW)
+parfor idx_w = 1:nFreqs
     
     iw = activeW(idx_w);
     
