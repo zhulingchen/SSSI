@@ -1,4 +1,4 @@
-function y = forwardSot(x, D)
+function y = forwardSot(x, D, blkSize)
 % FORWARDSOT forward sparse orthonormal transform (SOT)
 %
 %
@@ -11,17 +11,16 @@ function y = forwardSot(x, D)
 
 
 [m, n] = size(x);
-blkSize = sqrt(sqrt(numel(D)));
-nBlockRows = floor(m / blkSize);
-nBlockCols = floor(n / blkSize);
+nBlockRows = floor(m / blkSize(1));
+nBlockCols = floor(n / blkSize(2));
 y = cell(nBlockRows, nBlockCols);
 
 for idxBlockCol = 1:nBlockCols
     
-    idxCol = (idxBlockCol-1)*blkSize+1:idxBlockCol*blkSize;
+    idxCol = (idxBlockCol-1)*blkSize(2)+1:idxBlockCol*blkSize(2);
     % process block by block in the current column
     for idxBlockRow = 1:nBlockRows
-        idxRow = (idxBlockRow-1)*blkSize+1:idxBlockRow*blkSize;
+        idxRow = (idxBlockRow-1)*blkSize(1)+1:idxBlockRow*blkSize(1);
         block = x(idxRow, idxCol);
         blockCoeff = D' * block(:);
         y{idxBlockRow, idxBlockCol} = blockCoeff(:);

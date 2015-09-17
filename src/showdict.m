@@ -31,8 +31,8 @@ function x = showdict(D,sz,n,m,varargin)
 %  April 2009
 
 
-if (size(D,2) < n*m)
-    D = [D zeros(size(D,1),n*m-size(D,2))];
+if (size(D, 2) < n*m)
+    D = [D, zeros(size(D,1),n*m-size(D,2))];
 end
 
 
@@ -61,16 +61,12 @@ for i = 1:length(varargin)
 end
 
 
-
 %%%  create dictionary image  %%%
-
-
 if (drawlines)
-    
-    D = [D ; nan(sz(1)*linewidth,size(D,2))];
+    D = [D; nan(sz(1)*linewidth,size(D,2))];
     sz(2) = sz(2)+linewidth;
     x = col2im(D(:,1:n*m),sz,[n m].*sz,'distinct');
-    sz = [sz(2) sz(1)];
+    sz = fliplr(sz);
     D = im2col(x',sz,'distinct');
     D = [D ; nan(sz(1)*linewidth,size(D,2))];
     sz(2) = sz(2)+linewidth;
@@ -79,6 +75,7 @@ if (drawlines)
     x = x(1:end-linewidth,1:end-linewidth);
     
     if (highcontrast)
+        sz = fliplr(sz);
         for i = 0:n-1
             for j = 0:m-1
                 x(i*sz(1)+1:i*sz(1)+sz(1)-linewidth, j*sz(2)+1:j*sz(2)+sz(2)-linewidth) = ...
@@ -92,7 +89,6 @@ if (drawlines)
     x(isnan(x)) = linecolor;
     
 else
-    
     x = col2im(D(:,1:n*m),sz,[n m].*sz,'distinct');
     
     if (highcontrast)
@@ -106,7 +102,6 @@ else
         x = imnormalize(x);
     end
 end
-
 
 if (nargout==0)
     imshow(x);

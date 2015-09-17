@@ -11,13 +11,13 @@ nList = length(dm_list);
 nz = 120;
 nx = 140;
 % block size
-blkSize = 20;
-nBlockRows = floor(nz / blkSize);
-nBlockCols = floor(nx / blkSize);
+blkSize = [10, 20];
+nBlockRows = floor(nz / blkSize(1));
+nBlockCols = floor(nx / blkSize(2));
 spgOpts = spgSetParms('optTol', 1e-16); 
 
-D = eye(blkSize * blkSize, blkSize * blkSize);
-A = zeros(blkSize * blkSize, blkSize * blkSize);
+D = eye(prod(blkSize), prod(blkSize));
+A = zeros(prod(blkSize), prod(blkSize));
 nBlocks = 5000;
 
 hFigDictImg = figure(1);
@@ -46,32 +46,34 @@ for ii = 1:nList
     
     
     % test L1-norm minimization
+    Y_rec_l0 = zeros(nz, nx);
     Y_rec_l1 = zeros(nz, nx);
-    tau = 1;
     for idxBlockCol = 1:nBlockCols
-        idxCol = (idxBlockCol-1)*blkSize+1:idxBlockCol*blkSize;
+        idxCol = (idxBlockCol-1)*blkSize(2)+1:idxBlockCol*blkSize(2);
         % process block by block in the current column
         for idxBlockRow = 1:nBlockRows
-            idxRow = (idxBlockRow-1)*blkSize+1:idxBlockRow*blkSize;
+            idxRow = (idxBlockRow-1)*blkSize(1)+1:idxBlockRow*blkSize(1);
             block = Y(idxRow, idxCol);
             x_l0 = D' * block(:);   % for reference
-            P = createSampler(blkSize * blkSize, blkSize * blkSize / 8, 'rdemod');
+            P = createSampler(prod(blkSize), prod(blkSize) / 2, 'rdemod');
+            tau = norm(x_l0, 1) * 1.05;
             x_l1 = spg_lasso(P * D, P * block(:), tau, spgOpts);
             recBlock_l0 = D * x_l0;
-            recBlock_l0 = reshape(recBlock_l0, blkSize, blkSize);
+            recBlock_l0 = reshape(recBlock_l0, blkSize);
+            Y_rec_l0(idxRow, idxCol) = Y_rec_l0(idxRow, idxCol) + recBlock_l0;
             recBlock_l1 = D * x_l1;
-            recBlock_l1 = reshape(recBlock_l1, blkSize, blkSize);
+            recBlock_l1 = reshape(recBlock_l1, blkSize);
             Y_rec_l1(idxRow, idxCol) = Y_rec_l1(idxRow, idxCol) + recBlock_l1;
         end
     end
     
     % test SOT wrapper functions
-    Y_coeff_vector = wrapper_sot(Y(:), D, nz, nx, 2);
-    Y_rec_vector = wrapper_sot(Y_coeff_vector, D, nz, nx, 1);
+    Y_coeff_vector = wrapper_sot(Y(:), D, blkSize, nz, nx, 2);
+    Y_rec_vector = wrapper_sot(Y_coeff_vector, D, blkSize, nz, nx, 1);
     
     % test SOT functions
-    Y_coeff = forwardSot(Y, D);
-    nRetainCoeffs = blkSize * blkSize;
+    Y_coeff = forwardSot(Y, D, blkSize);
+    nRetainCoeffs = prod(blkSize);
     for idx_r = 1:size(Y_coeff, 1)
         for idx_c = 1:size(Y_coeff, 2)
             c = zeros(size(Y_coeff{idx_r, idx_c}));
@@ -80,7 +82,7 @@ for ii = 1:nList
             Y_coeff{idx_r, idx_c} = c;
         end
     end
-    Y_rec = inverseSot(Y_coeff, D);
+    Y_rec = inverseSot(Y_coeff, D, blkSize);
     
 %     Y_rec = zeros(size(Y));
 %     totalBlockNum = (nz - blkSize + 1) * (nx - blkSize + 1);
@@ -121,7 +123,7 @@ for ii = 1:nList
 %     cnt = countcover([nz, nx], blkSize * [1, 1], blkSize * [1, 1]);
 %     Y_rec = Y_rec ./ cnt;
     
-    dictImg = showdict(D, [1 1]*sqrt(size(D, 1)), round(sqrt(size(D, 2))), round(sqrt(size(D, 2))), 'whitelines', 'highcontrast');
+    dictImg = showdict(D, blkSize, blkSize(1), blkSize(2), 'whitelines', 'highcontrast');
     figure(hFigDictImg); imshow(imresize(dictImg, 2, 'nearest')); title(sprintf('Dictionary Learning Iteration %d', ii));
     figure(hDm);
     ax(1) = subplot(1, 2, 1); imagesc(Y);

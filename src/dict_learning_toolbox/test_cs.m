@@ -2,12 +2,13 @@ close all;
 clear;
 clc;
 
-N = 100;
-M = 20;
+N = 128;
+M = 32;
+
 % Compressive Sampling
 theta = 2*pi * rand(N, 1);
 fftMat = 1/sqrt(N) * fft(eye(N, N));
-csMat = fftMat' * diag(exp(1j*theta)) * fftMat;
+csMat = diag(exp(1j*theta));
 randSign = binornd(1, 0.5, [N, N]);
 randSign(randSign == 0) = -1;
 csMat = randSign .* csMat;
@@ -17,18 +18,19 @@ csMat = csMat(randSrcGrid, :);
 
 % test
 tmpFreq = zeros(N, 1);
-tmpFreq(20:20:80) = 1;
-idctMat = idct(eye(N, N));
-tmpTime = idct(tmpFreq, N);
+tmpFreq(20:20:100) = 1;
+ifftMat = fftMat';
+tmpTime = sqrt(N) * ifft(tmpFreq, N);
 
 % BP (time domain)
-tmpFreq_rec_bpdn = spg_bp(csMat * idctMat, csMat * tmpTime);
+tmpFreq_rec_bpdn = spg_bp(csMat * ifftMat, csMat * tmpTime);
 figure; plot(real(tmpFreq_rec_bpdn));
 % LASSO (time domain)
-tmpFreq_rec_lasso = spg_lasso(csMat * idctMat, csMat * tmpTime, norm(tmpFreq, 1));
+tmpFreq_rec_lasso = spg_lasso(csMat * ifftMat, csMat * tmpTime, norm(tmpFreq, 1));
 figure; plot(real(tmpFreq_rec_lasso));
 
 % BP (freq domain)
+csMat = 1/sqrt(2) * (randn(M, N) + 1j * randn(M, N));
 tmpFreq_rec_bpdn = spg_bp(csMat, csMat * tmpFreq);
 figure; plot(real(tmpFreq_rec_bpdn));
 % LASSO (freq domain)
@@ -37,10 +39,12 @@ figure; plot(real(tmpFreq_rec_lasso));
 
 % PQN
 % Set up Objective Function
-csMat = randn(20, 100);
-funObj = @(w)SquaredError(w,csMat * idctMat, csMat * tmpTime);
+csMat = randn(M, N);
+idctMat = idct(eye(N, N));
+tmpTime = idct(tmpFreq, N);
+funObj = @(w)SquaredError(w, csMat * idctMat, csMat * tmpTime);
 % Set up L1-Ball Projection
-tau = 4;
+tau = norm(tmpFreq, 1);
 funProj = @(w)sign(w).*projectRandom2C(abs(w), tau);
 options.optTol = 1e-10;
 

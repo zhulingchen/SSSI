@@ -1,4 +1,4 @@
-function x = inverseSot(y, D)
+function x = inverseSot(y, D, blkSize)
 % INVERSESOT inverse sparse orthonormal transform (iSOT)
 %
 %
@@ -11,19 +11,18 @@ function x = inverseSot(y, D)
 
 
 [nBlockRows, nBlockCols] = size(y);
-blkSize = sqrt(sqrt(numel(D)));
-m = nBlockRows * blkSize;
-n = nBlockCols * blkSize;
+m = nBlockRows * blkSize(1);
+n = nBlockCols * blkSize(2);
 x = zeros(m, n);
 
 for idxBlockCol = 1:nBlockCols
     
-    idxCol = (idxBlockCol-1)*blkSize+1:idxBlockCol*blkSize;
+    idxCol = (idxBlockCol-1)*blkSize(2)+1:idxBlockCol*blkSize(2);
     % process block by block in the current column
     for idxBlockRow = 1:nBlockRows
-        idxRow = (idxBlockRow-1)*blkSize+1:idxBlockRow*blkSize;
+        idxRow = (idxBlockRow-1)*blkSize(1)+1:idxBlockRow*blkSize(1);
         recBlock = D * y{idxBlockRow, idxBlockCol};
-        recBlock = reshape(recBlock, blkSize, blkSize);
+        recBlock = reshape(recBlock, blkSize);
         x(idxRow, idxCol) = x(idxRow, idxCol) + recBlock;
     end
     
