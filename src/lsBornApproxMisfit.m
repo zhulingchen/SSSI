@@ -24,6 +24,11 @@ value = 0;
 % gradient of the cost function
 grad = zeros(nLength, 1);
 
+% recast vector fs into matrix
+if (isvector(fs))
+   fs = repmat(fs, 1, nShots);
+end
+
 % update the velocity model with least-squares
 parfor iw = 1:nw
     
@@ -33,11 +38,11 @@ parfor iw = 1:nw
     greenFreqForShot = greenFreqForShotSet{iw};
     greenFreqForRec = greenFreqForRecSet{iw};
     
-    fieldScatter = w(iw)^2 * fs(iw) * (repmat(dm, 1, nShots) .* greenFreqForShot).' * greenFreqForRec;
+    fieldScatter = w(iw)^2 * ((dm * fs(iw, :)) .* greenFreqForShot).' * greenFreqForRec;
     bias = fieldScatter.' - dataDeltaFreq(:, :, iw);
     value = value + 1/2 * norm(bias, 'fro')^2;
     
-    grad = grad + w(iw)^2 * fs(iw) * sum(greenFreqForShot .* (greenFreqForRec * conj(bias)), 2);
+    grad = grad + w(iw)^2 * sum((greenFreqForShot * diag(fs(iw, :))) .* (greenFreqForRec * conj(bias)), 2);
     
     % timePerFreq = toc;
     % fprintf('elapsed time = %fs\n', timePerFreq);
