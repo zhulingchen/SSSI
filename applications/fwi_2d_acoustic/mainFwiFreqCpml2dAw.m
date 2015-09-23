@@ -77,7 +77,8 @@ clc;
 
 ALPHA = 0.75;
 DELTA = 1e-5;
-FREQTHRES = 2;
+FREQ_THRES = 1;
+NFREQS_PER_BAND = 10;
 MAXITER = 1;    % actually no need to do more than one iteration outside PQN (or L-BFGS) optimization iterations since m itself is kept optimized inside
 
 
@@ -180,9 +181,13 @@ for ifreq = 1:length(f)
 end
 rw1dFreq = fftshift(fft(rw1dTime, nfft));
 % find active frequency set with FFT amplitude larger than the threshold
-activeW = find(abs(rw1dFreq) > FREQTHRES);
+activeW = find(abs(rw1dFreq) > FREQ_THRES);
 activeW = activeW(activeW > nfft / 2 + 1); % choose f > 0Hz
-nFreqs = length(activeW);
+nBands = floor(length(activeW) / NFREQS_PER_BAND);
+% set up frequency bands such that FWI is carried out in each band sequentially
+activeW = activeW(round(linspace(1, length(activeW), NFREQS_PER_BAND * nBands)));
+activeW = reshape(activeW, NFREQS_PER_BAND, nBands);
+nFreqs = numel(activeW);
 
 dataTrueFreq = zeros(nRecs, nShots, nFreqs);
 
@@ -246,59 +251,63 @@ hFigNew = figure(2);
 
 
 %% FWI main iteration
-iter = 1;
-while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <= MAXITER)
-    
-    modelOld = modelNew;
-    vmOld = sqrt(1./modelOld);
-    load(filenameDataTrueFreq);
-    
-    % plot the velocity model
-    figure(hFigOld);
-    imagesc(x, z, vmOld(1:end-nBoundary, nBoundary+1:end-nBoundary));
-    xlabel('Distance (m)'); ylabel('Depth (m)');
-    title('Previous Velocity Model');
-    colormap(seismic); colorbar; caxis manual; caxis([vmin, vmax]);
-    
-    % test begin
-    % [f_opt, g_opt] = lsMisfit(M, w(activeW), rw1dFreq(activeW), dataTrueFreq, nz, nx, xs, zs, xr, zr, nDiffOrder, nBoundary, dz, dx);
-    % test end
-    
-    %% minimization using PQN toolbox in model (physical) domain
-    func = @(m) lsMisfit(m, w(activeW), rw1dFreq(activeW), dataTrueFreq, nz, nx, xs, zs, xr, zr, nDiffOrder, nBoundary, dz, dx);
-    lowerBound = 1e-8 * ones(nLengthWithBoundary, 1);	% maximum velocity constraint
-    upperBound = +inf(nLengthWithBoundary, 1);
-    funProj = @(x) boundProject(x, lowerBound, upperBound);
-    options.verbose = 3;
-    options.optTol = 1e-10;
-    options.SPGoptTol = 1e-10;
-    options.SPGiters = 5000;
-    options.adjustStep = 1;
-    options.bbInit = 0;
-    options.maxIter = 100;
-    
-    [modelNew, misfit_model] = minConF_PQN_new(func, reshape(modelOld, nLengthWithBoundary, 1), funProj, options);
-    modelNew = reshape(modelNew, nz + nBoundary, nx + 2*nBoundary);
-    vmNew = sqrt(1./modelNew);
-    
-    % plot the velocity model
-    figure(hFigNew);
-    imagesc(x, z, vmNew(1:end-nBoundary, nBoundary+1:end-nBoundary));
-    xlabel('Distance (m)'); ylabel('Depth (m)');
-    title('Updated Velocity Model');
-    colormap(seismic); colorbar; caxis manual; caxis([vmin, vmax]);
-    % save current updated velocity model
-    filenameVmNew = [pathVelocityModel, sprintf('/vmNew%d.mat', iter)];
-    save(filenameVmNew, 'vmNew', 'modelNew', 'misfit_model', '-v7.3');
-    
-    % clear variables and functions from memory
-    clear('dataTrueFreq');
-    
-    fprintf('Full-wave inversion iteration no. %d, misfit error = %f, model norm difference = %.6f\n', ...
-        iter, misfit_model, norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro'));
-    
-    iter = iter + 1;
-    
+for iband = 1:nBands
+    iter = 1;
+    dataTrueFreqCurBand = dataTrueFreq(:, :, (iband-1)*NFREQS_PER_BAND+1:iband*NFREQS_PER_BAND);
+    while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <= MAXITER)
+        
+        modelOld = modelNew;
+        vmOld = sqrt(1./modelOld);
+        load(filenameDataTrueFreq);
+        
+        % plot the velocity model
+        figure(hFigOld);
+        imagesc(x, z, vmOld(1:end-nBoundary, nBoundary+1:end-nBoundary));
+        xlabel('Distance (m)'); ylabel('Depth (m)');
+        title('Previous Velocity Model');
+        colormap(seismic); colorbar; caxis manual; caxis([vmin, vmax]);
+        
+        % test begin
+        % [f_opt, g_opt] = lsMisfit(M, w(activeW), rw1dFreq(activeW), dataTrueFreq, nz, nx, xs, zs, xr, zr, nDiffOrder, nBoundary, dz, dx);
+        % test end
+        
+        %% minimization using PQN toolbox in model (physical) domain
+        func = @(m) lsMisfit(m, w(activeW(:, iband)), rw1dFreq(activeW(:, iband)), dataTrueFreqCurBand, ...
+            nz, nx, xs, zs, xr, zr, nDiffOrder, nBoundary, dz, dx);
+        lowerBound = 1/vmax^2 * ones(nLengthWithBoundary, 1);
+        upperBound = 1/vmin^2 * ones(nLengthWithBoundary, 1);
+        funProj = @(x) boundProject(x, lowerBound, upperBound);
+        options.verbose = 3;
+        options.optTol = 1e-10;
+        options.SPGoptTol = 1e-10;
+        options.SPGiters = 5000;
+        options.adjustStep = 1;
+        options.bbInit = 0;
+        options.maxIter = 20;
+        
+        [modelNew, misfit_model] = minConF_PQN_new(func, reshape(modelOld, nLengthWithBoundary, 1), funProj, options);
+        modelNew = reshape(modelNew, nz + nBoundary, nx + 2*nBoundary);
+        vmNew = sqrt(1./modelNew);
+        
+        % plot the velocity model
+        figure(hFigNew);
+        imagesc(x, z, vmNew(1:end-nBoundary, nBoundary+1:end-nBoundary));
+        xlabel('Distance (m)'); ylabel('Depth (m)');
+        title('Updated Velocity Model');
+        colormap(seismic); colorbar; caxis manual; caxis([vmin, vmax]);
+        % save current updated velocity model
+        filenameVmNew = [pathVelocityModel, sprintf('/vmNew_fband%d_iter%d.mat', iband, iter)];
+        save(filenameVmNew, 'vmNew', 'modelNew', 'misfit_model', '-v7.3');
+        
+        % clear variables and functions from memory
+        clear('dataTrueFreq');
+        
+        fprintf('Full-wave inversion iteration no. %d, misfit error = %f, model norm difference = %.6f\n', ...
+            iter, misfit_model, norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro'));
+        
+        iter = iter + 1;
+        
+    end
 end
 
 

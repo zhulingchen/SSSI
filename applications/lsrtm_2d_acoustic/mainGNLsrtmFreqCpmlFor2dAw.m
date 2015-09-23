@@ -89,9 +89,9 @@ clc;
 
 ALPHA = 0.75;
 DELTA = 1e-5;
-EPSILON = 1;
-FREQTHRES = 2;
-MAXITER = 100;  % dm is being optimized inside PQN (or L-BFGS) optimization
+FREQ_THRES = 1;
+NFREQS_PER_BAND = 10;
+MAXITER = 20;  % dm is being optimized inside PQN (or L-BFGS) optimization
 
 
 %% Set path
@@ -193,12 +193,15 @@ for ifreq = 1:length(f)
 end
 rw1dFreq = fftshift(fft(rw1dTime, nfft));
 % find active frequency set with FFT amplitude larger than the threshold
-activeW = find(abs(rw1dFreq) > FREQTHRES);
+activeW = find(abs(rw1dFreq) > FREQ_THRES);
 activeW = activeW(activeW > nfft / 2 + 1); % choose f > 0Hz
-nFreqs = length(activeW);
+nBands = floor(length(activeW) / NFREQS_PER_BAND);
+% set up frequency bands such that FWI is carried out in each band sequentially
+activeW = activeW(round(linspace(1, length(activeW), NFREQS_PER_BAND * nBands)));
+activeW = reshape(activeW, NFREQS_PER_BAND, nBands);
+nFreqs = numel(activeW);
 
 dataTrueFreq = zeros(nRecs, nShots, nFreqs);
-dataDeltaFreq = zeros(nRecs, nShots, nFreqs);
 
 % shot positions on extended velocity model
 xs = xShotGrid + nBoundary;
@@ -231,28 +234,10 @@ parfor idx_w = 1:nFreqs
     % get received data on the receivers
     dataTrueFreq(:, :, idx_w) = snapshotTrueFreq((xr-1)*(nz+nBoundary)+zr, :);
     
-    % calculate smooth data for all shots in frequency domain for current frequency
-    sourceFreq = zeros(nLengthWithBoundary, nShots);
-    sourceFreq((xs-1)*(nz+nBoundary)+zs, :) = rw1dFreq(iw) * eye(nShots, nShots);
-    [~, snapshotSmoothFreq] = freqCpmlFor2dAw(MS, sourceFreq, w(iw), nDiffOrder, nBoundary, dz, dx);
-    % get calculated data on the receivers
-    dataDeltaFreq(:, :, idx_w) = dataTrueFreq(:, :, idx_w) - snapshotSmoothFreq((xr-1)*(nz+nBoundary)+zr, :);
-    
     timePerFreq = toc;
     fprintf('elapsed time = %fs\n', timePerFreq);
     
 end
-
-% save received surface data
-filenameDataTrueFreq = [pathVelocityModel, '/dataTrueFreq.mat'];
-save(filenameDataTrueFreq, 'dataTrueFreq', '-v7.3');
-
-filenameDataDeltaFreq = [pathVelocityModel, '/dataDeltaFreq0.mat'];
-save(filenameDataDeltaFreq, 'dataDeltaFreq', '-v7.3');
-
-% clear variables and functions from memory
-clear('dataTrueFreq');
-clear('dataDeltaFreq');
 
 
 %% Full wave inversion (FWI)
@@ -275,248 +260,238 @@ hFigNew = figure(2);
 
 
 %% LSRTM main iteration
-iter = 1;
-while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <= MAXITER)
-    
-    modelOld = modelNew;
-    vmOld = 1./sqrt(modelOld);
-    load(filenameDataDeltaFreq);
-    
-    % an approximated diagonal Hessian matrix
-    hessianDiag = zeros(nLengthWithBoundary, 1);
-    % hessianMat = zeros(nLength, nLength);
-    % migrated image
-    mig = zeros(nLengthWithBoundary, 1);
-    
-    figure(hFigOld);
-    imagesc(x, z, vmOld(1:end-nBoundary, nBoundary+1:end-nBoundary));
-    xlabel('Distance (m)'); ylabel('Depth (m)');
-    title('Previous Velocity Model');
-    colormap(seismic); colorbar; caxis manual; caxis([vmin, vmax]);
-    
-    % update the velocity model with least-squares
-    parfor idx_w = 1:nFreqs
+for iband = 1:nBands
+    iter = 1;
+    dataTrueFreqCurBand = dataTrueFreq(:, :, (iband-1)*NFREQS_PER_BAND+1:iband*NFREQS_PER_BAND);
+    dataDeltaFreqCurBand = zeros(nRecs, nShots, NFREQS_PER_BAND);
+    while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <= MAXITER)
         
-        iw = activeW(idx_w);
+        modelOld = modelNew;
+        vmOld = 1./sqrt(modelOld);
         
-        fprintf('Generate %d Green''s functions at f(%d) = %fHz ... ', nShots, iw, w(iw)/(2*pi));
-        tic;
+        % an approximated diagonal Hessian matrix
+        hessianDiag = zeros(nLengthWithBoundary, 1);
+        % hessianMat = zeros(nLength, nLength);
+        % migrated image
+        mig = zeros(nLengthWithBoundary, 1);
         
-        % Green's function for every shot
-        sourceFreq = zeros(nLengthWithBoundary, nShots);
-        sourceFreq((xs-1)*(nz+nBoundary)+zs, :) = eye(nShots, nShots);
-        [~, greenFreqForShot] = freqCpmlFor2dAw(modelOld, sourceFreq, w(iw), nDiffOrder, nBoundary, dz, dx);
+        figure(hFigOld);
+        imagesc(x, z, vmOld(1:end-nBoundary, nBoundary+1:end-nBoundary));
+        xlabel('Distance (m)'); ylabel('Depth (m)');
+        title('Previous Velocity Model');
+        colormap(seismic); colorbar; caxis manual; caxis([vmin, vmax]);
         
-        % Green's function for every receiver
-        sourceFreq = zeros(nLengthWithBoundary, nRecs);
-        sourceFreq((xr-1)*(nz+nBoundary)+zr, :) = eye(nRecs, nRecs);
-        [~, greenFreqForRec] = freqCpmlFor2dAw(modelOld, sourceFreq, w(iw), nDiffOrder, nBoundary, dz, dx);
+        %% update dataDeltaFreq based on the new velocity model
+        parfor idx_w = 1:NFREQS_PER_BAND
+            
+            iw = activeW(idx_w, iband);
+            
+            fprintf('Generate %d frequency responses at f(%d) = %fHz ... ', nShots, iw, w(iw)/(2*pi));
+            tic;
+            
+            % calculate smooth data for all shots in frequency domain for current frequency
+            sourceFreq = zeros(nLengthWithBoundary, nShots);
+            sourceFreq((xs-1)*(nz+nBoundary)+zs, :) = rw1dFreq(iw) * eye(nShots, nShots);
+            [~, snapshotSmoothFreq] = freqCpmlFor2dAw(modelOld, sourceFreq, w(iw), nDiffOrder, nBoundary, dz, dx);
+            % get calculated data on the receivers
+            dataDeltaFreqCurBand(:, :, idx_w) = dataTrueFreqCurBand(:, :, idx_w) - snapshotSmoothFreq((xr-1)*(nz+nBoundary)+zr, :);
+            
+            timePerFreq = toc;
+            fprintf('elapsed time = %fs\n', timePerFreq);
+            
+        end
         
-        % calculate the pseudo-Hessian matrix, which is the diagonal elements of Hessian matrix
-        hessianDiag = hessianDiag + w(iw)^4 * abs(rw1dFreq(iw))^2 ...
-            * sum(abs(greenFreqForShot).^2 .* (abs(greenFreqForRec).^2 * ones(nRecs, nShots)), 2);
+        %% generate Green's functions
+        parfor idx_w = 1:NFREQS_PER_BAND
+            
+            iw = activeW(idx_w, iband);
+            
+            fprintf('Generate %d Green''s functions at f(%d) = %fHz ... ', nShots, iw, w(iw)/(2*pi));
+            tic;
+            
+            % Green's function for every shot
+            sourceFreq = zeros(nLengthWithBoundary, nShots);
+            sourceFreq((xs-1)*(nz+nBoundary)+zs, :) = eye(nShots, nShots);
+            [~, greenFreqForShot] = freqCpmlFor2dAw(modelOld, sourceFreq, w(iw), nDiffOrder, nBoundary, dz, dx);
+            
+            % Green's function for every receiver
+            sourceFreq = zeros(nLengthWithBoundary, nRecs);
+            sourceFreq((xr-1)*(nz+nBoundary)+zr, :) = eye(nRecs, nRecs);
+            [~, greenFreqForRec] = freqCpmlFor2dAw(modelOld, sourceFreq, w(iw), nDiffOrder, nBoundary, dz, dx);
+            
+            % calculate the pseudo-Hessian matrix, which is the diagonal elements of Hessian matrix
+            hessianDiag = hessianDiag + w(iw)^4 * abs(rw1dFreq(iw))^2 ...
+                * sum(abs(greenFreqForShot).^2 .* (abs(greenFreqForRec).^2 * ones(nRecs, nShots)), 2);
+            
+            % % the true Hessian matrix
+            % hessianMat = hessianMat + w(iw)^4 * abs(rw1dFreq(iw))^2 ...
+            %     * (greenFreqForShot * greenFreqForShot') .* (greenFreqForRec * greenFreqForRec');
+            
+            % for ixs = 1:nShots
+            %     for ixr = 1:nRecs
+            %         hessianDiag2 = hessianDiag2 + real(w(iw)^4 * abs(rw1dFreq(iw))^2 ...
+            %             * abs(greenFreqForShot(:, ixs)).^2 .* abs(greenFreqForRec(:, ixr)).^2);
+            %     end
+            % end
+            
+            % calculate the migrated image using dataDeltaFreq
+            mig = mig + w(iw)^2 * rw1dFreq(iw) * sum(greenFreqForShot .* (greenFreqForRec * conj(dataDeltaFreqCurBand(:, :, idx_w))), 2);
+            
+            % for ixs = 1:nShots
+            %     for ixr = 1:nRecs
+            %         grad2 = grad2 + real(w(iw)^2 * rw1dFreq(iw) * conj(dataDeltaFreq(ixr, ixs, iw)) ...
+            %             * greenFreqForShot(:, ixs) .* greenFreqForRec(:, ixr));
+            %     end
+            % end
+            
+            timePerFreq = toc;
+            fprintf('elapsed time = %fs\n', timePerFreq);
+            
+        end
         
-        % % the true Hessian matrix
-        % hessianMat = hessianMat + w(iw)^4 * abs(rw1dFreq(iw))^2 ...
-        %     * (greenFreqForShot * greenFreqForShot') .* (greenFreqForRec * greenFreqForRec');
+        % save the pseudo-Hessian matrix
+        filenameHessianDiag = [pathVelocityModel, sprintf('/hessianDiag%d.mat', iter)];
+        save(filenameHessianDiag, 'hessianDiag', '-v7.3');
         
-        % for ixs = 1:nShots
-        %     for ixr = 1:nRecs
-        %         hessianDiag2 = hessianDiag2 + real(w(iw)^4 * abs(rw1dFreq(iw))^2 ...
-        %             * abs(greenFreqForShot(:, ixs)).^2 .* abs(greenFreqForRec(:, ixr)).^2);
+        % save the migrated image
+        filenameMig = [pathVelocityModel, sprintf('/mig%d.mat', iter)];
+        save(filenameMig, 'mig', '-v7.3');
+        
+        %% update the velocity model
+        lambda = 15 * max(hessianDiag);
+        dm = real(mig) ./ real(hessianDiag + lambda * ones(nLengthWithBoundary, 1));
+        
+        modelOld = reshape(modelOld, nLengthWithBoundary, 1);
+        modelNew = modelOld + dm;
+        modelOld = reshape(modelOld, nz + nBoundary, nx + 2*nBoundary);
+        modelNew = reshape(modelNew, nz + nBoundary, nx + 2*nBoundary);
+        modelNew(modelNew < 1/vmax^2) = 1/vmax^2;
+        modelNew(modelNew > 1/vmin^2) = 1/vmin^2;
+        vmNew = 1./sqrt(modelNew);
+        
+        figure(hFigNew);
+        imagesc(x, z, vmNew(1:end-nBoundary, nBoundary+1:end-nBoundary));
+        xlabel('Distance (m)'); ylabel('Depth (m)');
+        title('Updated Velocity Model');
+        colormap(seismic); colorbar; caxis manual; caxis([vmin, vmax]);
+        % save current updated velocity model
+        filenameVmNew = [pathVelocityModel, sprintf('/vmNew_fband%d_iter%d.mat', iband, iter)];
+        save(filenameVmNew, 'vmNew', 'modelNew', 'dm', '-v7.3');
+        
+        
+        %% debug begin
+        %     % this code fragment implemented the original matrix L and bigL, which
+        %     % is the stack of L's with respect to all xr and xs's. The code and its
+        %     % results are proved to be the same with the above code but runs much
+        %     % slower than that due to lots of large matrix multiplications. You can
+        %     % regard this code fragment as the direct implementation of the
+        %     % gradient and Hessian matrix of the cost function. We leave them here
+        %     % for reference.
+        %
+        %     load(filenameDataDeltaFreq);
+        %     L = zeros(1, nLengthWithBoundary);
+        %     bigL = zeros(nShots * nRecs, nLengthWithBoundary);
+        %     hessianTrue = zeros(nLengthWithBoundary, nLengthWithBoundary);
+        %     hessianTrue2 = zeros(nLengthWithBoundary, nLengthWithBoundary);
+        %     mig = zeros(nLengthWithBoundary, 1);
+        %     mig2 = zeros(nLengthWithBoundary, 1);
+        %     u1 = zeros(nShots, nRecs);
+        %     u1_bak = zeros(nShots, nRecs);
+        %     gradVerify = zeros(nLengthWithBoundary, 1);
+        %     gradVerify_bak = zeros(nLengthWithBoundary, 1);
+        %     for idx_w = 1:nFreqs
+        %
+        %         iw = activeW(idx_w);
+        %         if (iw == nfft / 2 + 1)
+        %             % skip f = 0Hz
+        %             continue;
+        %         end
+        %
+        %         fprintf('Generate %d Green''s functions at f(%d) = %fHz ... ', nShots, iw, w(iw)/(2*pi));
+        %         tic;
+        %
+        %         % Green's function for every shot
+        %         sourceFreq = zeros(nLengthWithBoundary, nShots);
+        %         sourceFreq((xs-1)*(nz+nBoundary)+zs, :) = eye(nShots, nShots);
+        %         [~, greenFreqForShot] = freqCpmlFor2dAw(modelOld, sourceFreq, w(iw), nDiffOrder, nBoundary, dz, dx);
+        %
+        %         % Green's function for every receiver
+        %         sourceFreq = zeros(nLengthWithBoundary, nRecs);
+        %         sourceFreq((xr-1)*(nz+nBoundary)+zr, :) = eye(nRecs, nRecs);
+        %         [~, greenFreqForRec] = freqCpmlFor2dAw(modelOld, sourceFreq, w(iw), nDiffOrder, nBoundary, dz, dx);
+        %
+        %         % calculate bigL matrix
+        %         [meshXRec, meshXShot] = meshgrid(xRecGrid, xShotGrid);
+        %         bigL = w(iw)^2 * rw1dFreq(iw) * (greenFreqForShot(:, meshXShot(:)).' .* greenFreqForRec(:, meshXRec(:)).');
+        %         % the true Hessian matrix 1
+        %         hessianTrue = hessianTrue + bigL' * bigL;
+        %         % the true Hessian matrix 2
+        %         hessianTrue2 = hessianTrue2 + w(iw)^4 * abs(rw1dFreq(iw))^2 ...
+        %             * ((conj(greenFreqForShot) * greenFreqForShot.') .* (conj(greenFreqForRec) * greenFreqForRec.'));
+        %         mig = mig + bigL' * reshape(dataDeltaFreq(:, :, idx_w).', nShots * nRecs, 1);
+        %         mig2 = mig2 + w(iw)^2 * rw1dFreq(iw) * sum(greenFreqForShot .* (greenFreqForRec * conj(dataDeltaFreq(:, :, idx_w))), 2);
+        %         % mig2 = mig2 + w(iw)^2 * (conj(rw1dFreq(iw))) * sum(conj(greenFreqForShot) .* (conj(greenFreqForRec) * dataDeltaFreq(:, :, idx_w)), 2);
+        %
+        %         % dm = (real(hessianTrue) \ real(rtm));
+        %
+        %         % u1 = w(iw)^2 * rw1dFreq(iw) * (repmat(dm, 1, nShots) .* greenFreqForShot).' * greenFreqForRec;
+        %         % u1 = bigL * dm;
+        %         % u1 = reshape(u1, nShots, nRecs);
+        %
+        %         % for ixs = 1:nShots
+        %         %     for ixr = 1:nRecs
+        %         %         L = w(iw)^2 * rw1dFreq(iw) * (greenFreqForShot(:, ixs).' .* greenFreqForRec(:, ixr).');
+        %         %         u1_bak(ixs, ixr) = L * dm;
+        %         %     end
+        %         % end
+        %
+        %         % bias = u1.' - dataDeltaFreq(:, :, iw);
+        %         % bias = reshape(bias, nShots * nRecs, 1);
+        %         % gradVerify = gradVerify + real(bigL' * bias);
+        %         % bias = reshape(bias, nShots, nRecs);
+        %
+        %         % for ixs = 1:nShots
+        %         %     for ixr = 1:nRecs
+        %         %         L = w(iw)^2 * rw1dFreq(iw) * (greenFreqForShot(:, ixs).' .* greenFreqForRec(:, ixr).');
+        %         %         gradVerify_bak = gradVerify_bak + ...
+        %         %             real(L' * bias(ixs, ixr));
+        %         %     end
+        %         % end
+        %
+        %         timePerFreq = toc;
+        %         fprintf('elapsed time = %fs\n', timePerFreq);
         %     end
-        % end
+        %
+        %     lambda = max(diag(hessianTrue));
+        %     hessianTrue = hessianTrue + lambda * eye(nLengthWithBoundary, nLengthWithBoundary);
+        %
+        %     % updated model
+        %     modelOld = reshape(modelOld, nLengthWithBoundary, 1);
+        %     modelNew = modelOld + (real(hessianTrue) \ real(mig));
+        %     modelOld = reshape(modelOld, nz + nBoundary, nx + 2*nBoundary);
+        %     modelNew = reshape(modelNew, nz + nBoundary, nx + 2*nBoundary);
+        %     modelNew(modelNew < 1/vmax^2) = 1/vmax^2;
+        %     modelNew(modelNew > 1/vmin^2) = 1/vmin^2;
+        %     vmNew = 1./sqrt(modelNew);
+        %
+        %     figure(hFigNew);
+        %     imagesc(x, z, vmNew(1:end-nBoundary, nBoundary+1:end-nBoundary));
+        %     xlabel('Distance (m)'); ylabel('Depth (m)');
+        %     title('Updated Velocity Model');
+        %     colormap(seismic); colorbar; caxis manual; caxis([vmin, vmax]);
+        %     % save current updated velocity model
+        %     % filenameVmNew = [pathVelocityModel, sprintf('/vmNew%d.mat', iter)];
+        %     % save(filenameVmNew, 'vmNew', 'modelNew', 'dm', '-v7.3');
+        %
+        %     dataDeltaFreq = zeros(nRecs, nShots, nfft);
+        %% debug end
         
-        % calculate the migrated image using dataDeltaFreq
-        mig = mig + w(iw)^2 * rw1dFreq(iw) * sum(greenFreqForShot .* (greenFreqForRec * conj(dataDeltaFreq(:, :, idx_w))), 2);
+        fprintf('Full-wave inversion iteration no. %d, model norm difference = %.6f\n', ...
+            iter, norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro'));
         
-        % for ixs = 1:nShots
-        %     for ixr = 1:nRecs
-        %         grad2 = grad2 + real(w(iw)^2 * rw1dFreq(iw) * conj(dataDeltaFreq(ixr, ixs, iw)) ...
-        %             * greenFreqForShot(:, ixs) .* greenFreqForRec(:, ixr));
-        %     end
-        % end
-        
-        timePerFreq = toc;
-        fprintf('elapsed time = %fs\n', timePerFreq);
+        iter = iter + 1;
         
     end
-    
-    % save the pseudo-Hessian matrix
-    filenameHessianDiag = [pathVelocityModel, sprintf('/hessianDiag%d.mat', iter)];
-    save(filenameHessianDiag, 'hessianDiag', '-v7.3');
-    
-    % save the migrated image
-    filenameMig = [pathVelocityModel, sprintf('/mig%d.mat', iter)];
-    save(filenameMig, 'mig', '-v7.3');
-    
-    lambda = 5 * max(hessianDiag);
-    dm = EPSILON * (real(mig) ./ real(hessianDiag + lambda * ones(nLengthWithBoundary, 1)));
-    
-    % updated model
-    modelOld = reshape(modelOld, nLengthWithBoundary, 1);
-    modelNew = modelOld + dm;
-    modelOld = reshape(modelOld, nz + nBoundary, nx + 2*nBoundary);
-    modelNew = reshape(modelNew, nz + nBoundary, nx + 2*nBoundary);
-    modelNew(modelNew < 1/vmax^2) = 1/vmax^2;
-    modelNew(modelNew > 1/vmin^2) = 1/vmin^2;
-    vmNew = 1./sqrt(modelNew);
-    
-    figure(hFigNew);
-    imagesc(x, z, vmNew(1:end-nBoundary, nBoundary+1:end-nBoundary));
-    xlabel('Distance (m)'); ylabel('Depth (m)');
-    title('Updated Velocity Model');
-    colormap(seismic); colorbar; caxis manual; caxis([vmin, vmax]);
-    % save current updated velocity model
-    filenameVmNew = [pathVelocityModel, sprintf('/vmNew%d.mat', iter)];
-    save(filenameVmNew, 'vmNew', 'modelNew', 'dm', '-v7.3');
-    
-    
-    %% debug begin
-    %     % this code fragment implemented the original matrix L and bigL, which
-    %     % is the stack of L's with respect to all xr and xs's. The code and its
-    %     % results are proved to be the same with the above code but runs much
-    %     % slower than that due to lots of large matrix multiplications. You can
-    %     % regard this code fragment as the direct implementation of the
-    %     % gradient and Hessian matrix of the cost function. We leave them here
-    %     % for reference.
-    %
-    %     load(filenameDataDeltaFreq);
-    %     L = zeros(1, nLengthWithBoundary);
-    %     bigL = zeros(nShots * nRecs, nLengthWithBoundary);
-    %     hessianTrue = zeros(nLengthWithBoundary, nLengthWithBoundary);
-    %     hessianTrue2 = zeros(nLengthWithBoundary, nLengthWithBoundary);
-    %     mig = zeros(nLengthWithBoundary, 1);
-    %     mig2 = zeros(nLengthWithBoundary, 1);
-    %     u1 = zeros(nShots, nRecs);
-    %     u1_bak = zeros(nShots, nRecs);
-    %     gradVerify = zeros(nLengthWithBoundary, 1);
-    %     gradVerify_bak = zeros(nLengthWithBoundary, 1);
-    %     for idx_w = 1:nFreqs
-    %
-    %         iw = activeW(idx_w);
-    %         if (iw == nfft / 2 + 1)
-    %             % skip f = 0Hz
-    %             continue;
-    %         end
-    %
-    %         fprintf('Generate %d Green''s functions at f(%d) = %fHz ... ', nShots, iw, w(iw)/(2*pi));
-    %         tic;
-    %
-    %         % Green's function for every shot
-    %         sourceFreq = zeros(nLengthWithBoundary, nShots);
-    %         sourceFreq((xs-1)*(nz+nBoundary)+zs, :) = eye(nShots, nShots);
-    %         [~, greenFreqForShot] = freqCpmlFor2dAw(modelOld, sourceFreq, w(iw), nDiffOrder, nBoundary, dz, dx);
-    %
-    %         % Green's function for every receiver
-    %         sourceFreq = zeros(nLengthWithBoundary, nRecs);
-    %         sourceFreq((xr-1)*(nz+nBoundary)+zr, :) = eye(nRecs, nRecs);
-    %         [~, greenFreqForRec] = freqCpmlFor2dAw(modelOld, sourceFreq, w(iw), nDiffOrder, nBoundary, dz, dx);
-    %
-    %         % calculate bigL matrix
-    %         [meshXRec, meshXShot] = meshgrid(xRecGrid, xShotGrid);
-    %         bigL = w(iw)^2 * rw1dFreq(iw) * (greenFreqForShot(:, meshXShot(:)).' .* greenFreqForRec(:, meshXRec(:)).');
-    %         % the true Hessian matrix 1
-    %         hessianTrue = hessianTrue + bigL' * bigL;
-    %         % the true Hessian matrix 2
-    %         hessianTrue2 = hessianTrue2 + w(iw)^4 * abs(rw1dFreq(iw))^2 ...
-    %             * ((conj(greenFreqForShot) * greenFreqForShot.') .* (conj(greenFreqForRec) * greenFreqForRec.'));
-    %         mig = mig + bigL' * reshape(dataDeltaFreq(:, :, idx_w).', nShots * nRecs, 1);
-    %         mig2 = mig2 + w(iw)^2 * rw1dFreq(iw) * sum(greenFreqForShot .* (greenFreqForRec * conj(dataDeltaFreq(:, :, idx_w))), 2);
-    %         % mig2 = mig2 + w(iw)^2 * (conj(rw1dFreq(iw))) * sum(conj(greenFreqForShot) .* (conj(greenFreqForRec) * dataDeltaFreq(:, :, idx_w)), 2);
-    %
-    %         % dm = (real(hessianTrue) \ real(rtm));
-    %
-    %         % u1 = w(iw)^2 * rw1dFreq(iw) * (repmat(dm, 1, nShots) .* greenFreqForShot).' * greenFreqForRec;
-    %         % u1 = bigL * dm;
-    %         % u1 = reshape(u1, nShots, nRecs);
-    %
-    %         % for ixs = 1:nShots
-    %         %     for ixr = 1:nRecs
-    %         %         L = w(iw)^2 * rw1dFreq(iw) * (greenFreqForShot(:, ixs).' .* greenFreqForRec(:, ixr).');
-    %         %         u1_bak(ixs, ixr) = L * dm;
-    %         %     end
-    %         % end
-    %
-    %         % bias = u1.' - dataDeltaFreq(:, :, iw);
-    %         % bias = reshape(bias, nShots * nRecs, 1);
-    %         % gradVerify = gradVerify + real(bigL' * bias);
-    %         % bias = reshape(bias, nShots, nRecs);
-    %
-    %         % for ixs = 1:nShots
-    %         %     for ixr = 1:nRecs
-    %         %         L = w(iw)^2 * rw1dFreq(iw) * (greenFreqForShot(:, ixs).' .* greenFreqForRec(:, ixr).');
-    %         %         gradVerify_bak = gradVerify_bak + ...
-    %         %             real(L' * bias(ixs, ixr));
-    %         %     end
-    %         % end
-    %
-    %         timePerFreq = toc;
-    %         fprintf('elapsed time = %fs\n', timePerFreq);
-    %     end
-    %
-    %     lambda = max(diag(hessianTrue));
-    %     hessianTrue = hessianTrue + lambda * eye(nLengthWithBoundary, nLengthWithBoundary);
-    %
-    %     % updated model
-    %     modelOld = reshape(modelOld, nLengthWithBoundary, 1);
-    %     modelNew = modelOld + EPSILON * (real(hessianTrue) \ real(mig));
-    %     modelOld = reshape(modelOld, nz + nBoundary, nx + 2*nBoundary);
-    %     modelNew = reshape(modelNew, nz + nBoundary, nx + 2*nBoundary);
-    %     modelNew(modelNew < 1/vmax^2) = 1/vmax^2;
-    %     modelNew(modelNew > 1/vmin^2) = 1/vmin^2;
-    %     vmNew = 1./sqrt(modelNew);
-    %
-    %     figure(hFigNew);
-    %     imagesc(x, z, vmNew(1:end-nBoundary, nBoundary+1:end-nBoundary));
-    %     xlabel('Distance (m)'); ylabel('Depth (m)');
-    %     title('Updated Velocity Model');
-    %     colormap(seismic); colorbar; caxis manual; caxis([vmin, vmax]);
-    %     % save current updated velocity model
-    %     % filenameVmNew = [pathVelocityModel, sprintf('/vmNew%d.mat', iter)];
-    %     % save(filenameVmNew, 'vmNew', 'modelNew', 'dm', '-v7.3');
-    %
-    %     dataDeltaFreq = zeros(nRecs, nShots, nfft);
-    %% debug end
-    
-    clear('dataDeltaFreq');
-    % load received surface data
-    load(filenameDataTrueFreq);
-    
-    
-    %% update dataDeltaFreq based on the new velocity model
-    dataDeltaFreq = zeros(nRecs, nShots, nFreqs);
-    parfor idx_w = 1:nFreqs
-        
-        iw = activeW(idx_w);
-        
-        fprintf('Generate %d frequency responses at f(%d) = %fHz ... ', nShots, iw, w(iw)/(2*pi));
-        tic;
-        
-        % calculate smooth data for all shots in frequency domain for current frequency
-        sourceFreq = zeros(nLengthWithBoundary, nShots);
-        sourceFreq((xs-1)*(nz+nBoundary)+zs, :) = rw1dFreq(iw) * eye(nShots, nShots);
-        [~, snapshotSmoothFreq] = freqCpmlFor2dAw(modelNew, sourceFreq, w(iw), nDiffOrder, nBoundary, dz, dx);
-        % get calculated data on the receivers
-        dataDeltaFreq(:, :, idx_w) = dataTrueFreq(:, :, idx_w) - snapshotSmoothFreq((xr-1)*(nz+nBoundary)+zr, :);
-        
-        timePerFreq = toc;
-        fprintf('elapsed time = %fs\n', timePerFreq);
-        
-    end
-    
-    filenameDataDeltaFreq = [pathVelocityModel, sprintf('/dataDeltaFreq%d.mat', iter)];
-    save(filenameDataDeltaFreq, 'dataDeltaFreq', '-v7.3');
-    
-    % clear variables and functions from memory
-    clear('dataTrueFreq');
-    clear('dataDeltaFreq');
-    
-    fprintf('Full-wave inversion iteration no. %d, model norm difference = %.6f\n', ...
-        iter, norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro'));
-    
-    iter = iter + 1;
-    
 end
 
 %% Terminate the pool of Matlab workers

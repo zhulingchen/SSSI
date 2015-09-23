@@ -85,8 +85,9 @@ clc;
 
 ALPHA = 0.75;
 DELTA = 1e-5;
-FREQTHRES = 2;
-MAXITER = 100;  % dm is being optimized inside PQN (or L-BFGS) optimization
+FREQ_THRES = 1;
+NFREQS_PER_BAND = 10;
+MAXITER = 20;  % dm is being optimized inside PQN (or L-BFGS) optimization
 
 
 %% Set path
@@ -188,12 +189,15 @@ for ifreq = 1:length(f)
 end
 rw1dFreq = fftshift(fft(rw1dTime, nfft));
 % find active frequency set with FFT amplitude larger than the threshold
-activeW = find(abs(rw1dFreq) > FREQTHRES);
+activeW = find(abs(rw1dFreq) > FREQ_THRES);
 activeW = activeW(activeW > nfft / 2 + 1); % choose f > 0Hz
-nFreqs = length(activeW);
+nBands = floor(length(activeW) / NFREQS_PER_BAND);
+% set up frequency bands such that FWI is carried out in each band sequentially
+activeW = activeW(round(linspace(1, length(activeW), NFREQS_PER_BAND * nBands)));
+activeW = reshape(activeW, NFREQS_PER_BAND, nBands);
+nFreqs = numel(activeW);
 
 dataTrueFreq = zeros(nRecs, nShots, nFreqs);
-dataDeltaFreq = zeros(nRecs, nShots, nFreqs);
 
 % shot positions on extended velocity model
 xs = xShotGrid + nBoundary;
@@ -226,28 +230,10 @@ parfor idx_w = 1:nFreqs
     % get received data on the receivers
     dataTrueFreq(:, :, idx_w) = snapshotTrueFreq((xr-1)*(nz+nBoundary)+zr, :);
     
-    % calculate smooth data for all shots in frequency domain for current frequency
-    sourceFreq = zeros(nLengthWithBoundary, nShots);
-    sourceFreq((xs-1)*(nz+nBoundary)+zs, :) = rw1dFreq(iw) * eye(nShots, nShots);
-    [~, snapshotSmoothFreq] = freqCpmlFor2dAw(MS, sourceFreq, w(iw), nDiffOrder, nBoundary, dz, dx);
-    % get calculated data on the receivers
-    dataDeltaFreq(:, :, idx_w) = dataTrueFreq(:, :, idx_w) - snapshotSmoothFreq((xr-1)*(nz+nBoundary)+zr, :);
-    
     timePerFreq = toc;
     fprintf('elapsed time = %fs\n', timePerFreq);
     
 end
-
-% save received surface data
-filenameDataTrueFreq = [pathVelocityModel, '/dataTrueFreq.mat'];
-save(filenameDataTrueFreq, 'dataTrueFreq', '-v7.3');
-
-filenameDataDeltaFreq = [pathVelocityModel, '/dataDeltaFreq0.mat'];
-save(filenameDataDeltaFreq, 'dataDeltaFreq', '-v7.3');
-
-% clear variables and functions from memory
-clear('dataTrueFreq');
-clear('dataDeltaFreq');
 
 
 %% Full wave inversion (FWI)
@@ -268,132 +254,111 @@ hFigNew = figure(2);
 
 
 %% FWI main iteration
-iter = 1;
-while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <= MAXITER)
-    
-    modelOld = modelNew;
-    vmOld = sqrt(1./modelOld);
-    load(filenameDataDeltaFreq);
-    
-    % plot the velocity model
-    figure(hFigOld);
-    imagesc(x, z, vmOld(1:end-nBoundary, nBoundary+1:end-nBoundary));
-    xlabel('Distance (m)'); ylabel('Depth (m)');
-    title('Previous Velocity Model');
-    colormap(seismic); colorbar; caxis manual; caxis([vmin, vmax]);
-    
-    
-    %% generate Green's functions
-    greenFreqForShotSet = cell(1, nFreqs);
-    greenFreqForRecSet = cell(1, nFreqs);
-    parfor idx_w = 1:nFreqs
+for iband = 1:nBands
+    iter = 1;
+    dataTrueFreqCurBand = dataTrueFreq(:, :, (iband-1)*NFREQS_PER_BAND+1:iband*NFREQS_PER_BAND);
+    while(norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro') > DELTA && iter <= MAXITER)
         
-        iw = activeW(idx_w);
+        modelOld = modelNew;
+        vmOld = sqrt(1./modelOld);
         
-        fprintf('Generate %d Green''s functions at f(%d) = %fHz ... ', nShots, iw, w(iw)/(2*pi));
-        tic;
+        % plot the velocity model
+        figure(hFigOld);
+        imagesc(x, z, vmOld(1:end-nBoundary, nBoundary+1:end-nBoundary));
+        xlabel('Distance (m)'); ylabel('Depth (m)');
+        title('Previous Velocity Model');
+        colormap(seismic); colorbar; caxis manual; caxis([vmin, vmax]);
         
-        % Green's function for every shot
-        sourceFreq = zeros(nLengthWithBoundary, nShots);
-        sourceFreq((xs-1)*(nz+nBoundary)+zs, :) = eye(nShots, nShots);
-        [~, greenFreqForShotSet{idx_w}] = freqCpmlFor2dAw(modelOld, sourceFreq, w(iw), nDiffOrder, nBoundary, dz, dx);
+        %% update dataDeltaFreq based on the new velocity model
+        dataDeltaFreqCurBand = zeros(nRecs, nShots, NFREQS_PER_BAND);
+        parfor idx_w = 1:NFREQS_PER_BAND
+            
+            iw = activeW(idx_w, iband);
+            
+            fprintf('Generate %d frequency responses at f(%d) = %fHz ... ', nShots, iw, w(iw)/(2*pi));
+            tic;
+            
+            % calculate smooth data for all shots in frequency domain for current frequency
+            sourceFreq = zeros(nLengthWithBoundary, nShots);
+            sourceFreq((xs-1)*(nz+nBoundary)+zs, :) = rw1dFreq(iw) * eye(nShots, nShots);
+            [~, snapshotSmoothFreq] = freqCpmlFor2dAw(modelOld, sourceFreq, w(iw), nDiffOrder, nBoundary, dz, dx);
+            % get calculated data on the receivers
+            dataDeltaFreqCurBand(:, :, idx_w) = dataTrueFreqCurBand(:, :, idx_w) - snapshotSmoothFreq((xr-1)*(nz+nBoundary)+zr, :);
+            
+            timePerFreq = toc;
+            fprintf('elapsed time = %fs\n', timePerFreq);
+            
+        end
         
-        % Green's function for every receiver
-        sourceFreq = zeros(nLengthWithBoundary, nRecs);
-        sourceFreq((xr-1)*(nz+nBoundary)+zr, :) = eye(nRecs, nRecs);
-        [~, greenFreqForRecSet{idx_w}] = freqCpmlFor2dAw(modelOld, sourceFreq, w(iw), nDiffOrder, nBoundary, dz, dx);
+        %% generate Green's functions
+        greenFreqForShotSet = cell(1, NFREQS_PER_BAND);
+        greenFreqForRecSet = cell(1, NFREQS_PER_BAND);
+        parfor idx_w = 1:NFREQS_PER_BAND
+            
+            iw = activeW(idx_w, iband);
+            
+            fprintf('Generate %d Green''s functions at f(%d) = %fHz ... ', nShots, iw, w(iw)/(2*pi));
+            tic;
+            
+            % Green's function for every shot
+            sourceFreq = zeros(nLengthWithBoundary, nShots);
+            sourceFreq((xs-1)*(nz+nBoundary)+zs, :) = eye(nShots, nShots);
+            [~, greenFreqForShotSet{idx_w}] = freqCpmlFor2dAw(modelOld, sourceFreq, w(iw), nDiffOrder, nBoundary, dz, dx);
+            
+            % Green's function for every receiver
+            sourceFreq = zeros(nLengthWithBoundary, nRecs);
+            sourceFreq((xr-1)*(nz+nBoundary)+zr, :) = eye(nRecs, nRecs);
+            [~, greenFreqForRecSet{idx_w}] = freqCpmlFor2dAw(modelOld, sourceFreq, w(iw), nDiffOrder, nBoundary, dz, dx);
+            
+            timePerFreq = toc;
+            fprintf('elapsed time = %fs\n', timePerFreq);
+            
+        end
         
-        timePerFreq = toc;
-        fprintf('elapsed time = %fs\n', timePerFreq);
+        %% minimization using PQN toolbox in model (physical) domain
+        func = @(dm) lsBornApproxMisfit(dm, w(activeW(:, iband)), rw1dFreq(activeW(:, iband)), dataDeltaFreqCurBand, ...
+            greenFreqForShotSet, greenFreqForRecSet);
+        lowerBound = 1e-8 * ones(nLengthWithBoundary, 1) - reshape(modelOld, nLengthWithBoundary, 1); % 1/vmax^2*ones(nLengthWithBoundary, 1) - reshape(modelOld, nLengthWithBoundary, 1);
+        upperBound = +inf(nLengthWithBoundary, 1); % 1/vmin^2*ones(nLengthWithBoundary, 1) - reshape(modelOld, nLengthWithBoundary, 1);
+        funProj = @(x) boundProject(x, lowerBound, upperBound);
+        options.verbose = 3;
+        options.optTol = 1e-10;
+        options.SPGoptTol = 1e-10;
+        options.SPGiters = 5000;
+        options.adjustStep = 1;
+        options.bbInit = 0;
+        options.maxIter = 10;
         
-    end
-    
-    % filenameGreenFreqForShotSet = [pathVelocityModel, sprintf('/greenFreqForShotSet%d.mat', iter)];
-    % save(filenameGreenFreqForShotSet, 'greenFreqForShotSet', '-v7.3');
-    
-    % filenameGreenFreqForRecSet = [pathVelocityModel, sprintf('/greenFreqForRecSet%d.mat', iter)];
-    % save(filenameGreenFreqForRecSet, 'greenFreqForRecSet', '-v7.3');
-    
-    
-    %% minimization using PQN toolbox in model (physical) domain
-    func = @(dm) lsBornApproxMisfit(dm, w(activeW), rw1dFreq(activeW), dataDeltaFreq, greenFreqForShotSet, greenFreqForRecSet);
-    lowerBound = 1e-8 * ones(nLengthWithBoundary, 1) - reshape(modelOld, nLengthWithBoundary, 1); % 1/vmax^2*ones(nLengthWithBoundary, 1) - reshape(modelOld, nLengthWithBoundary, 1);
-    upperBound = +inf(nLengthWithBoundary, 1); % 1/vmin^2*ones(nLengthWithBoundary, 1) - reshape(modelOld, nLengthWithBoundary, 1);
-    funProj = @(x) boundProject(x, lowerBound, upperBound);
-    options.verbose = 3;
-    options.optTol = 1e-10;
-    options.SPGoptTol = 1e-10;
-    options.SPGiters = 5000;
-    options.adjustStep = 1;
-    options.bbInit = 0;
-    options.maxIter = 20;
-    
-    [dm_pqn_model, misfit_pqn_model] = minConF_PQN_new(func, zeros(nLengthWithBoundary, 1), funProj, options);
-    
-    
-    %% updated model
-    dm = dm_pqn_model;
-    misfit = misfit_pqn_model;
-    
-    modelOld = reshape(modelOld, nLengthWithBoundary, 1);
-    modelNew = modelOld + dm;
-    modelOld = reshape(modelOld, nz + nBoundary, nx + 2*nBoundary);
-    modelNew = reshape(modelNew, nz + nBoundary, nx + 2*nBoundary);
-    modelNew(modelNew < 1/vmax^2) = 1/vmax^2;
-    modelNew(modelNew > 1/vmin^2) = 1/vmin^2;
-    vmNew = sqrt(1./modelNew);
-    
-    % plot the velocity model
-    figure(hFigNew);
-    imagesc(x, z, vmNew(1:end-nBoundary, nBoundary+1:end-nBoundary));
-    xlabel('Distance (m)'); ylabel('Depth (m)');
-    title('Updated Velocity Model');
-    colormap(seismic); colorbar; caxis manual; caxis([vmin, vmax]);
-    % save current updated velocity model
-    filenameVmNew = [pathVelocityModel, sprintf('/vmNew%d.mat', iter)];
-    save(filenameVmNew, 'vmNew', 'modelNew', 'dm', 'misfit', '-v7.3');
-    
-    % clear variables and functions from memory
-    clear('greenFreqForShotSet');
-    clear('greenFreqForRecSet');
-    clear('dataDeltaFreq');
-    % load received surface data
-    load(filenameDataTrueFreq);
-    
-    
-    %% update dataDeltaFreq based on the new velocity model
-    dataDeltaFreq = zeros(nRecs, nShots, nFreqs);
-    parfor idx_w = 1:nFreqs
+        [dm_pqn_model, misfit_pqn_model] = minConF_PQN_new(func, zeros(nLengthWithBoundary, 1), funProj, options);
         
-        iw = activeW(idx_w);
+        %% updated model
+        dm = dm_pqn_model;
+        misfit = misfit_pqn_model;
         
-        fprintf('Generate %d frequency responses at f(%d) = %fHz ... ', nShots, iw, w(iw)/(2*pi));
-        tic;
+        modelOld = reshape(modelOld, nLengthWithBoundary, 1);
+        modelNew = modelOld + dm;
+        modelOld = reshape(modelOld, nz + nBoundary, nx + 2*nBoundary);
+        modelNew = reshape(modelNew, nz + nBoundary, nx + 2*nBoundary);
+        modelNew(modelNew < 1/vmax^2) = 1/vmax^2;
+        modelNew(modelNew > 1/vmin^2) = 1/vmin^2;
+        vmNew = sqrt(1./modelNew);
         
-        % calculate smooth data for all shots in frequency domain for current frequency
-        sourceFreq = zeros(nLengthWithBoundary, nShots);
-        sourceFreq((xs-1)*(nz+nBoundary)+zs, :) = rw1dFreq(iw) * eye(nShots, nShots);
-        [~, snapshotSmoothFreq] = freqCpmlFor2dAw(modelNew, sourceFreq, w(iw), nDiffOrder, nBoundary, dz, dx);
-        % get calculated data on the receivers
-        dataDeltaFreq(:, :, idx_w) = dataTrueFreq(:, :, idx_w) - snapshotSmoothFreq((xr-1)*(nz+nBoundary)+zr, :);
+        % plot the velocity model
+        figure(hFigNew);
+        imagesc(x, z, vmNew(1:end-nBoundary, nBoundary+1:end-nBoundary));
+        xlabel('Distance (m)'); ylabel('Depth (m)');
+        title('Updated Velocity Model');
+        colormap(seismic); colorbar; caxis manual; caxis([vmin, vmax]);
+        % save current updated velocity model
+        filenameVmNew = [pathVelocityModel, sprintf('/vmNew_fband%d_iter%d.mat', iband, iter)];
+        save(filenameVmNew, 'vmNew', 'modelNew', 'dm', 'misfit', '-v7.3');
         
-        timePerFreq = toc;
-        fprintf('elapsed time = %fs\n', timePerFreq);
+        fprintf('Full-wave inversion iteration no. %d, misfit error = %f, model norm difference = %.6f\n', ...
+            iter, misfit, norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro'));
+        
+        iter = iter + 1;
         
     end
-    
-    filenameDataDeltaFreq = [pathVelocityModel, sprintf('/dataDeltaFreq%d.mat', iter)];
-    save(filenameDataDeltaFreq, 'dataDeltaFreq', '-v7.3');
-    
-    % clear variables and functions from memory
-    clear('dataTrueFreq');
-    clear('dataDeltaFreq');
-    
-    fprintf('Full-wave inversion iteration no. %d, misfit error = %f, model norm difference = %.6f\n', ...
-        iter, misfit, norm(modelNew - modelOld, 'fro') / norm(modelOld, 'fro'));
-    
-    iter = iter + 1;
-    
 end
 
 %% Terminate the pool of Matlab workers
