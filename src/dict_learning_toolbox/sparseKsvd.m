@@ -55,6 +55,8 @@ end
 idx = cell(dim, 1);
 [idx{:}] = reggrid(size(Y)-blkSize+1, nBlocks, 'eqdist');
 Y = sampgrid(Y, blkSize, idx{:});
+% normalization
+% Y = Y - repmat(mean(Y), atomLen, 1);
 nBlocks = size(Y, 2);
 
 A = A0;
@@ -125,11 +127,13 @@ for iter = 1:trainIter
             replacedAtom(iatom) = 1;
             continue;
         end
+        
         g = X(iatom, I).';
         g = g / norm(g, 2);
         if (isnan(g))
             error ('g is NaN!');
         end
+        
         % YI = Y(:, I);
         % XI = X(:, I);
         % E = zeros(atomLen, nnz(I));
@@ -154,9 +158,10 @@ for iter = 1:trainIter
         end
         
         A(:, iatom) = a;
-        % X(iatom, I) = (E' * PhiSyn * a).';
         
+        % X(iatom, I) = (E' * PhiSyn * a).';
         X(iatom, I) = (Y(:, I)' * PhiSyn * a - (PhiSyn * A * X(:, I))' * PhiSyn * a).';
+        
     end
     
     %% dictionary clearing
