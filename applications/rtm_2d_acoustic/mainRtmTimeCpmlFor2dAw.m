@@ -109,7 +109,7 @@ vmax = max(velocityModel(:));
 
 % calculate time step dt from stability crierion for finite difference
 % solution of the wave equation.
-dt = 0.75*(dz/vmax/sqrt(2));
+dt = 0.3*(dz/vmax/sqrt(2));
 
 % determine time samples nt from wave travelime to depth and back to
 % surface

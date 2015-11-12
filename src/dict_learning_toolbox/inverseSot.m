@@ -1,4 +1,4 @@
-function x = inverseSot(y, D, blkSize)
+function x = inverseSot(y, D, blkSize, dirClass)
 % INVERSESOT inverse sparse orthonormal transform (iSOT)
 %
 %
@@ -21,8 +21,14 @@ for idxBlockCol = 1:nBlockCols
     % process block by block in the current column
     for idxBlockRow = 1:nBlockRows
         idxRow = (idxBlockRow-1)*blkSize(1)+1:idxBlockRow*blkSize(1);
-        recBlock = D * y{idxBlockRow, idxBlockCol};
+        % inverse transform
+        if (iscell(D))
+            recBlock = D{dirClass(idxBlockRow, idxBlockCol)} * y{idxBlockRow, idxBlockCol};
+        else
+            recBlock = D * y{idxBlockRow, idxBlockCol};
+        end
         recBlock = reshape(recBlock, blkSize);
+        % tile the block back
         x(idxRow, idxCol) = x(idxRow, idxCol) + recBlock;
     end
     

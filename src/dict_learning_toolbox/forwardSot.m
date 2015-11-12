@@ -1,4 +1,4 @@
-function y = forwardSot(x, D, blkSize)
+function [y, dirClass] = forwardSot(x, D, blkSize, dirRange)
 % FORWARDSOT forward sparse orthonormal transform (SOT)
 %
 %
@@ -14,6 +14,7 @@ function y = forwardSot(x, D, blkSize)
 nBlockRows = floor(m / blkSize(1));
 nBlockCols = floor(n / blkSize(2));
 y = cell(nBlockRows, nBlockCols);
+dirClass = zeros(nBlockRows, nBlockCols);
 
 for idxBlockCol = 1:nBlockCols
     
@@ -21,8 +22,16 @@ for idxBlockCol = 1:nBlockCols
     % process block by block in the current column
     for idxBlockRow = 1:nBlockRows
         idxRow = (idxBlockRow-1)*blkSize(1)+1:idxBlockRow*blkSize(1);
+        % extract the block
         block = x(idxRow, idxCol);
-        blockCoeff = D' * block(:);
+        if (iscell(D))
+            % classify the block
+            dirClass(idxBlockRow, idxBlockCol) = getPatchGradClass(block, dirRange);
+            % forward transform
+            blockCoeff = D{dirClass(idxBlockRow, idxBlockCol)}' * block(:);
+        else
+            blockCoeff = D' * block(:);
+        end
         y{idxBlockRow, idxBlockCol} = blockCoeff(:);
     end
     

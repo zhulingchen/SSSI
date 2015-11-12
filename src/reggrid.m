@@ -66,7 +66,6 @@ end
 
 
 if (strcmp(mode,'eqdist'))
-    
     % approximate distance between samples: total volume divided by number of
     % samples gives the average volume per sample. then, taking the dim-th root
     % gives the average distance between samples
@@ -77,60 +76,33 @@ if (strcmp(mode,'eqdist'))
     % samples by one in the dimension where the samples are the most crowded.
     % finally, do the opposite process until just passing num, so the final
     % number of samples is the closest to num from above.
-    
-    n = min(max(round(sz/d),1),sz);   % set n so that it saturates at 1 and sz
-    
-    active_dims = find(n>1);    % dimensions where the sample num can be reduced
-    while(prod(n)>num && ~isempty(active_dims))
-        [y,id] = min((sz(active_dims)-1)./n(active_dims));
-        n(active_dims(id)) = n(active_dims(id))-1;
-        if (n(active_dims(id)) < 2)
-            active_dims = find(n>1);
-        end
-    end
-    
-    active_dims = find(n<sz);    % dimensions where the sample num can be increased
-    while(prod(n)<num && ~isempty(active_dims))
-        [y,id] = max((sz(active_dims)-1)./n(active_dims));
-        n(active_dims(id)) = n(active_dims(id))+1;
-        if (n(active_dims(id)) >= sz(active_dims(id)))
-            active_dims = find(n<sz);
-        end
-    end
-    
-    for i = 1:dim
-        varargout{i} = round((1:n(i))/n(i)*sz(i));
-        varargout{i} = varargout{i} - floor((varargout{i}(1)-1)/2);
-    end
-    
+    n = min(max(round(sz/d), 1), sz);   % set n so that it saturates at 1 and sz
 elseif (strcmp(mode,'eqnum'))
-    
     % same idea as above
-    n = min(max( ones(size(sz)) * round(num^(1/dim)) ,1),sz);
-    
-    active_dims = find(n>1);
-    while(prod(n)>num && ~isempty(active_dims))
-        [y,id] = min((sz(active_dims)-1)./n(active_dims));
-        n(active_dims(id)) = n(active_dims(id))-1;
-        if (n(active_dims(id)) < 2)
-            active_dims = find(n>1);
-        end
-    end
-    
-    active_dims = find(n<sz);
-    while(prod(n)<num && ~isempty(active_dims))
-        [y,id] = max((sz(active_dims)-1)./n(active_dims));
-        n(active_dims(id)) = n(active_dims(id))+1;
-        if (n(active_dims(id)) >= sz(active_dims(id)))
-            active_dims = find(n<sz);
-        end
-    end
-    
-    for i = 1:dim
-        varargout{i} = round((1:n(i))/n(i)*sz(i));
-        varargout{i} = varargout{i} - floor((varargout{i}(1)-1)/2);
-    end
+    n = min(max( ones(size(sz)) * round(num^(1/dim)), 1), sz);
 else
     error('Invalid sampling mode');
 end
 
+active_dims = find(n>1);    % dimensions where the sample num can be reduced
+while(prod(n)>num && ~isempty(active_dims))
+    [~, id] = min((sz(active_dims)-1)./n(active_dims));
+    n(active_dims(id)) = n(active_dims(id))-1;
+    if (n(active_dims(id)) < 2)
+        active_dims = find(n>1);
+    end
+end
+
+active_dims = find(n<sz);    % dimensions where the sample num can be increased
+while(prod(n)<num && ~isempty(active_dims))
+    [~, id] = max((sz(active_dims)-1)./n(active_dims));
+    n(active_dims(id)) = n(active_dims(id))+1;
+    if (n(active_dims(id)) >= sz(active_dims(id)))
+        active_dims = find(n<sz);
+    end
+end
+
+varargout = cell(1, dim);
+for i = 1:dim
+    varargout{i} = floor( (sz(i)-1) / (n(i)-1) * (0:n(i)-1) ) + 1;
+end

@@ -11,21 +11,53 @@ nList = length(dm_list);
 nz = 120;
 nx = 140;
 % block size
-blkSize = [10, 20];
+blkSize = [10, 10];
 nBlockRows = floor(nz / blkSize(1));
 nBlockCols = floor(nx / blkSize(2));
-spgOpts = spgSetParms('optTol', 1e-16); 
+spgOpts = spgSetParms('optTol', 1e-16);
+% gradient classification
+nClass = 5;
+dDir = 180 / (2 * nClass - 1); % consider [-180:-180+dAngle/2] and [180-dAngle/2:180]
+dirRange = -90 + dDir/2 : dDir : 90 - dDir/2;
+dirRange = [-90, dirRange, 90];
 
-D = eye(prod(blkSize), prod(blkSize));
-A = zeros(prod(blkSize), prod(blkSize));
-nBlocks = 5000;
+% initial dictionary (DCT matrix) for each gradient classification
+D = cell(1, nClass);
+A = cell(1, nClass);
+for idxClass = 1:nClass
+    D{idxClass} = zeros(prod(blkSize), prod(blkSize));
+    iatom = 1;
+    for ic = 1:blkSize(2)
+        for ir = 1:blkSize(1)
+            invC = zeros(blkSize);
+            invC(ir, ic) = 1;
+            buffer = idct(idct(invC).').';
+            D{idxClass}(:, iatom) = buffer(:);
+            iatom = iatom+1;
+        end
+    end
+    A{idxClass} = zeros(prod(blkSize), prod(blkSize));
+end
+nBlocks = (nz - blkSize(1) + 1) * (nx - blkSize(2) + 1);
 
 hFigDictImg = figure(1);
 hDm = figure(2);
 for ii = 1:nList
     fprintf('Input image no. %d\n', ii);
     Y = dm_list{ii};
-    [D, X, A] = onlineSotTrain(Y, D, ii, A, blkSize, nBlocks, struct('verbosity', 0, 'lambda', 0.2, 'iterations', 200, 'tol', 1e-3));
+    [Y_train_patches, Y_train_patches_dirClass] = getPatches(Y, blkSize, nBlocks, dirRange);
+    
+    [Y_train_patches2, Y_train_patches_dirClass2] = getPatches(Y, blkSize, numel(Y)/prod(blkSize), dirRange);
+    
+    % train dictionaries by classes
+    for idxClass = 1:nClass
+        idx = find(Y_train_patches_dirClass == idxClass);
+        [D{idxClass}, X, A{idxClass}] = onlineSotTrain(Y_train_patches(:, idx), D{idxClass}, ii, A{idxClass}, nBlocks, ...
+            struct('verbosity', 0, ...
+            'lambda', 0.15, ...
+            'iterations', 200, ...
+            'tol', 1e-3));
+    end
     
 %     % test Curvelet
 %     tau = 1;
@@ -45,35 +77,31 @@ for ii = 1:nList
 %     Y_curvelet_coeff_vec_rec_l1 = spg_lasso(Phi, Y(:), tau, spgOpts);
     
     
-    % test L1-norm minimization
-    Y_rec_l0 = zeros(nz, nx);
-    Y_rec_l1 = zeros(nz, nx);
-    for idxBlockCol = 1:nBlockCols
-        idxCol = (idxBlockCol-1)*blkSize(2)+1:idxBlockCol*blkSize(2);
-        % process block by block in the current column
-        for idxBlockRow = 1:nBlockRows
-            idxRow = (idxBlockRow-1)*blkSize(1)+1:idxBlockRow*blkSize(1);
-            block = Y(idxRow, idxCol);
-            x_l0 = D' * block(:);   % for reference
-            P = createSampler(prod(blkSize), prod(blkSize) / 2, 'rdemod');
-            tau = norm(x_l0, 1) * 1.05;
-            x_l1 = spg_lasso(P * D, P * block(:), tau, spgOpts);
-            recBlock_l0 = D * x_l0;
-            recBlock_l0 = reshape(recBlock_l0, blkSize);
-            Y_rec_l0(idxRow, idxCol) = Y_rec_l0(idxRow, idxCol) + recBlock_l0;
-            recBlock_l1 = D * x_l1;
-            recBlock_l1 = reshape(recBlock_l1, blkSize);
-            Y_rec_l1(idxRow, idxCol) = Y_rec_l1(idxRow, idxCol) + recBlock_l1;
-        end
-    end
-    
-    % test SOT wrapper functions
-    Y_coeff_vector = wrapper_sot(Y(:), D, blkSize, nz, nx, 2);
-    Y_rec_vector = wrapper_sot(Y_coeff_vector, D, blkSize, nz, nx, 1);
+%     % test L1-norm minimization
+%     Y_rec_l0 = zeros(nz, nx);
+%     Y_rec_l1 = zeros(nz, nx);
+%     for idxBlockCol = 1:nBlockCols
+%         idxCol = (idxBlockCol-1)*blkSize(2)+1:idxBlockCol*blkSize(2);
+%         % process block by block in the current column
+%         for idxBlockRow = 1:nBlockRows
+%             idxRow = (idxBlockRow-1)*blkSize(1)+1:idxBlockRow*blkSize(1);
+%             block = Y(idxRow, idxCol);
+%             x_l0 = D' * block(:);   % for reference
+%             P = createSampler(prod(blkSize), prod(blkSize) / 2, 'rdemod');
+%             tau = norm(x_l0, 1) * 1.05;
+%             x_l1 = spg_lasso(P * D, P * block(:), tau, spgOpts);
+%             recBlock_l0 = D * x_l0;
+%             recBlock_l0 = reshape(recBlock_l0, blkSize);
+%             Y_rec_l0(idxRow, idxCol) = Y_rec_l0(idxRow, idxCol) + recBlock_l0;
+%             recBlock_l1 = D * x_l1;
+%             recBlock_l1 = reshape(recBlock_l1, blkSize);
+%             Y_rec_l1(idxRow, idxCol) = Y_rec_l1(idxRow, idxCol) + recBlock_l1;
+%         end
+%     end
     
     % test SOT functions
-    Y_coeff = forwardSot(Y, D, blkSize);
-    nRetainCoeffs = prod(blkSize);
+    [Y_coeff, Y_dirClass] = forwardSot(Y, D, blkSize, dirRange);
+    nRetainCoeffs = round(prod(blkSize) / 20);
     for idx_r = 1:size(Y_coeff, 1)
         for idx_c = 1:size(Y_coeff, 2)
             c = zeros(size(Y_coeff{idx_r, idx_c}));
@@ -82,7 +110,13 @@ for ii = 1:nList
             Y_coeff{idx_r, idx_c} = c;
         end
     end
-    Y_rec = inverseSot(Y_coeff, D, blkSize);
+    Y_rec = inverseSot(Y_coeff, D, blkSize, Y_dirClass);
+    mse = 1/numel(Y) * norm(Y - Y_rec, 'fro')^2;
+    
+    % test SOT wrapper functions
+    Y_coeff_vector = wrapper_sot(Y(:), D, blkSize, nz, nx, [], dirRange, 2); % SOT
+    [~, Y_dirClass] = forwardSot(Y, D, blkSize, dirRange);
+    Y_rec_vector = wrapper_sot(Y_coeff_vector, D, blkSize, nz, nx, Y_dirClass, dirRange, 1); % inverse SOT
     
 %     Y_rec = zeros(size(Y));
 %     totalBlockNum = (nz - blkSize + 1) * (nx - blkSize + 1);
@@ -123,10 +157,15 @@ for ii = 1:nList
 %     cnt = countcover([nz, nx], blkSize * [1, 1], blkSize * [1, 1]);
 %     Y_rec = Y_rec ./ cnt;
     
-    dictImg = showdict(D, blkSize, blkSize(1), blkSize(2), 'whitelines', 'highcontrast');
-    figure(hFigDictImg); imshow(imresize(dictImg, 2, 'nearest')); title(sprintf('Dictionary Learning Iteration %d', ii));
+    figure(hFigDictImg);
+    nSubFigRows = floor(sqrt(nClass));
+    nSubFigCols = ceil(nClass / nSubFigRows);
+    for idxClass = 1:nClass
+        dictImg = showdict(D{idxClass}, blkSize, blkSize(1), blkSize(2), 'whitelines', 'highcontrast');
+        subplot(nSubFigRows, nSubFigCols, idxClass); imshow(dictImg); title(sprintf('Dictionary Learning\n(Class %d, Iteration %d)', idxClass, ii));
+    end
     figure(hDm);
     ax(1) = subplot(1, 2, 1); imagesc(Y);
-    ax(2) = subplot(1, 2, 2); imagesc(Y_rec);
+    ax(2) = subplot(1, 2, 2); imagesc(Y_rec); title(sprintf('MSE = %d', mse));
     linkaxes(ax, 'xy');
 end
