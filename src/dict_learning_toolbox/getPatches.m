@@ -13,7 +13,13 @@ function [Yout, dirClass] = getPatches(Yin, blkSize, nBlocks, dirRange)
 
 % create block training data
 idx = cell(1, ndims(Yin));
-[idx{:}] = reggrid(size(Yin)-blkSize+1, nBlocks, 'eqnum');
+if (isscalar(nBlocks))
+    [idx{:}] = reggrid(size(Yin)-blkSize+1, nBlocks, 'eqnum');
+else
+    for idim = 1:ndims(Yin)
+        idx{idim} = reggrid(size(Yin, idim)-blkSize(idim)+1, nBlocks(idim), 'eqnum');
+    end
+end
 Yout = sampgrid(Yin, blkSize, idx{:});
 nBlocks = size(Yout, 2);
 dirClass = zeros(nBlocks, 1);

@@ -11,7 +11,7 @@ nList = length(dm_list);
 nz = 120;
 nx = 140;
 % block size
-blkSize = [10, 10];
+blkSize = [10, 20];
 nBlockRows = floor(nz / blkSize(1));
 nBlockCols = floor(nx / blkSize(2));
 spgOpts = spgSetParms('optTol', 1e-16);
@@ -47,7 +47,7 @@ for ii = 1:nList
     Y = dm_list{ii};
     [Y_train_patches, Y_train_patches_dirClass] = getPatches(Y, blkSize, nBlocks, dirRange);
     
-    [Y_train_patches2, Y_train_patches_dirClass2] = getPatches(Y, blkSize, numel(Y)/prod(blkSize), dirRange);
+    [Y_train_patches2, Y_train_patches_dirClass2] = getPatches(Y, blkSize, size(Y) ./ blkSize, dirRange);
     
     % train dictionaries by classes
     for idxClass = 1:nClass
