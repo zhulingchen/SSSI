@@ -11,7 +11,7 @@ nList = length(dm_list);
 nz = 120;
 nx = 140;
 % block size
-blkSize = [10, 20];
+blkSize = [20, 20];
 nBlockRows = floor(nz / blkSize(1));
 nBlockCols = floor(nx / blkSize(2));
 spgOpts = spgSetParms('optTol', 1e-16);
