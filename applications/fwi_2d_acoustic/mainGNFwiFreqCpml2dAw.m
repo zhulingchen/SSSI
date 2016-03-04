@@ -215,25 +215,47 @@ if isempty(gcp('nocreate')) % checking to see if my pool is already open
 end
 
 
-%% generate shot record and save them in frequency domain
-parfor idx_w = 1:nFreqs
+%% generate shot record in time domain
+dataTrueFreq = zeros(nRecs, nShots, nFreqs);
+parfor idx_shot = 1:nShots % shot loop
+    curXsPos = xShotGrid(idx_shot) + nBoundary; % shot position on x
+    curZsPos = zShotGrid(idx_shot);             % shot position on z
     
-    iw = activeW(idx_w);
+    % generate shot signal
+    sourceTime = zeros([size(V), nt]);
+    sourceTime(curZsPos, curXsPos, :) = reshape(rw1dTime, 1, 1, nt);
     
-    fprintf('Generate %d frequency responses at f(%d) = %fHz ... ', nShots, iw, w(iw)/(2*pi));
     tic;
+    [dataTrue, ~] = fwdTimeCpmlFor2dAw(V, sourceTime, nDiffOrder, nBoundary, dz, dx, dt);
+    timeForward = toc;
+    fprintf('Generate Forward Timing Record for Shot No. %d at z = %d, x = %dm, elapsed time = %fs\n', idx_shot, zShot(idx_shot), xShot(idx_shot), timeForward);
     
-    % received true data for all shots in frequency domain for current frequency
-    sourceFreq = zeros(nLengthWithBoundary, nShots);
-    sourceFreq((xs-1)*(nz+nBoundary)+zs, :) = rw1dFreq(iw) * eye(nShots, nShots);
-    [~, snapshotTrueFreq] = freqCpmlFor2dAw(M, sourceFreq, w(iw), nDiffOrder, nBoundary, dz, dx);
-    % get received data on the receivers
-    dataTrueFreq(:, :, idx_w) = snapshotTrueFreq((xr-1)*(nz+nBoundary)+zr, :);
+    dataTrue = dataTrue(xr, :);
     
-    timePerFreq = toc;
-    fprintf('elapsed time = %fs\n', timePerFreq);
-    
+    dataTrueFreq_tmp = fftshift(fft(dataTrue, nfft, 2), 2);
+    dataTrueFreq(:, idx_shot, :) = dataTrueFreq_tmp(:, activeW);
 end
+
+
+%% generate shot record and save them in frequency domain
+% parfor idx_w = 1:nFreqs
+%     
+%     iw = activeW(idx_w);
+%     
+%     fprintf('Generate %d frequency responses at f(%d) = %fHz ... ', nShots, iw, w(iw)/(2*pi));
+%     tic;
+%     
+%     % received true data for all shots in frequency domain for current frequency
+%     sourceFreq = zeros(nLengthWithBoundary, nShots);
+%     sourceFreq((xs-1)*(nz+nBoundary)+zs, :) = rw1dFreq(iw) * eye(nShots, nShots);
+%     [~, snapshotTrueFreq] = freqCpmlFor2dAw(M, sourceFreq, w(iw), nDiffOrder, nBoundary, dz, dx);
+%     % get received data on the receivers
+%     dataTrueFreq(:, :, idx_w) = snapshotTrueFreq((xr-1)*(nz+nBoundary)+zr, :);
+%     
+%     timePerFreq = toc;
+%     fprintf('elapsed time = %fs\n', timePerFreq);
+%     
+% end
 
 
 %% Full wave inversion (FWI)
