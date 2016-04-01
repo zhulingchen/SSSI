@@ -2,21 +2,21 @@ close all;
 clear;
 clc;
 
-addpath(genpath('../'));
+run(['../../applications/setpath']);
 
 % load online data
 load dm_list.mat
 nList = length(dm_list);
 % image size
-nz = 120;
-nx = 140;
+nz = 60;
+nx = 60;
 % block size
 blkSize = [20, 20];
 nBlockRows = floor(nz / blkSize(1));
 nBlockCols = floor(nx / blkSize(2));
 spgOpts = spgSetParms('optTol', 1e-16);
 % gradient classification
-nClass = 5;
+nClass = 1;
 dDir = 180 / (2 * nClass - 1); % consider [-180:-180+dAngle/2] and [180-dAngle/2:180]
 dirRange = -90 + dDir/2 : dDir : 90 - dDir/2;
 dirRange = [-90, dirRange, 90];
@@ -45,6 +45,7 @@ hDm = figure(2);
 for ii = 1:nList
     fprintf('Input image no. %d\n', ii);
     Y = dm_list{ii};
+    Y = Y(1:nz, 1:nx);
     [Y_train_patches, Y_train_patches_dirClass] = getPatches(Y, blkSize, nBlocks, dirRange);
     
     [Y_train_patches2, Y_train_patches_dirClass2] = getPatches(Y, blkSize, size(Y) ./ blkSize, dirRange);
@@ -59,22 +60,27 @@ for ii = 1:nList
             'tol', 1e-3));
     end
     
-%     % test Curvelet
+    % test Curvelet
 %     tau = 1;
-%     Y_curvelet_coeff = fdct_wrapping(Y, 1, 2, 4, 16);
-%     [Y_curvelet_coeff_vec, sCurvelet] = curvelet2vec(Y_curvelet_coeff);
+    if ~isunix
+        Y_curvelet_coeff = fdct_wrapping(Y, 1, 2, 4, 16);
+    else
+        Y_curvelet_coeff = fdct_wrapping(Y, 1, 4, 16);
+    end
+    [Y_curvelet_coeff_vec, sCurvelet] = curvelet2vec(Y_curvelet_coeff);
 %     P = createSampler(nz * nx, nz * nx / 2, 'rdemod');
-%     fdctFunc = @(x, mode) wrapper_fdct_wrapping(x, sCurvelet, 1, 4, 16, nz, nx, mode);
-%     Phi = zeros(nz * nx, length(Y_curvelet_coeff_vec));
-%     icol = 1;
-%     for icoeff = 1:length(Y_curvelet_coeff_vec)
-%         tmp_coeff = zeros(length(Y_curvelet_coeff_vec), 1);
-%         tmp_coeff(icoeff) = 1;
-%         tmp_img = fdctFunc(tmp_coeff, 1);
-%         Phi(:, icol) = tmp_img(:);
-%         icol = icol + 1;
-%     end
-%     Y_curvelet_coeff_vec_rec_l1 = spg_lasso(Phi, Y(:), tau, spgOpts);
+    fdctFunc = @(x, mode) wrapper_fdct_wrapping(x, sCurvelet, 1, 4, 16, nz, nx, mode);
+    Phi_Curvelet = zeros(nz * nx, length(Y_curvelet_coeff_vec));
+    for icoeff = 1:length(Y_curvelet_coeff_vec)
+        if (mod(icoeff, 1000) == 0)
+            fprintf('%d atoms\n', icoeff);
+        end
+        tmp_coeff = zeros(length(Y_curvelet_coeff_vec), 1);
+        tmp_coeff(icoeff) = 1;
+        tmp_img = fdctFunc(tmp_coeff, 1);
+        Phi_Curvelet(:, icoeff) = tmp_img(:);
+    end
+%     Y_curvelet_coeff_vec_rec_l1 = spg_lasso(Phi_Curvelet, Y(:), tau, spgOpts);
     
     
 %     % test L1-norm minimization
@@ -117,6 +123,18 @@ for ii = 1:nList
     Y_coeff_vector = wrapper_sot(Y(:), D, blkSize, nz, nx, [], dirRange, 2); % SOT
     [~, Y_dirClass] = forwardSot(Y, D, blkSize, dirRange);
     Y_rec_vector = wrapper_sot(Y_coeff_vector, D, blkSize, nz, nx, Y_dirClass, dirRange, 1); % inverse SOT
+    % generate SOT matrix (not dictionary matrix)
+    sotFunc = @(x, mode) wrapper_sot(x, D, blkSize, nz, nx, Y_dirClass, dirRange, mode);
+    Phi_SOT = zeros(nz * nx, length(Y_coeff_vector));
+    for icoeff = 1:length(Y_coeff_vector)
+        if (mod(icoeff, 1000) == 0)
+            fprintf('%d atoms\n', icoeff);
+        end
+        tmp_coeff = zeros(length(Y_coeff_vector), 1);
+        tmp_coeff(icoeff) = 1;
+        tmp_img = sotFunc(tmp_coeff, 1);
+        Phi_SOT(:, icoeff) = tmp_img(:);
+    end
     
 %     Y_rec = zeros(size(Y));
 %     totalBlockNum = (nz - blkSize + 1) * (nx - blkSize + 1);
