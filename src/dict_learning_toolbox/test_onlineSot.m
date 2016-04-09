@@ -6,12 +6,18 @@ run(['../../applications/setpath']);
 
 % load online data
 load dm_list.mat
+
+% try BGCompass2x
+load ../../model_data/bgcompass2x/velocityModelBgcompass2x.mat
+dm_list = {};
+dm_list{1} = velocityModel;
+
 nList = length(dm_list);
 % image size
-nz = 60;
-nx = 60;
+nz = 200;
+nx = 700;
 % block size
-blkSize = [20, 20];
+blkSize = [20, 35];
 nBlockRows = floor(nz / blkSize(1));
 nBlockCols = floor(nx / blkSize(2));
 spgOpts = spgSetParms('optTol', 1e-16);
@@ -55,31 +61,44 @@ for ii = 1:nList
         idx = find(Y_train_patches_dirClass == idxClass);
         [D{idxClass}, X, A{idxClass}] = onlineSotTrain(Y_train_patches(:, idx), D{idxClass}, ii, A{idxClass}, nBlocks, ...
             struct('verbosity', 0, ...
-            'lambda', 0.15, ...
+            'lambda', 0.02, ...
             'iterations', 200, ...
             'tol', 1e-3));
     end
     
     % test Curvelet
-%     tau = 1;
     if ~isunix
-        Y_curvelet_coeff = fdct_wrapping(Y, 1, 2, 4, 16);
+        Y_curvelet_coeff = fdct_wrapping(Y, 1, 2, 5, 64);
     else
-        Y_curvelet_coeff = fdct_wrapping(Y, 1, 4, 16);
+        Y_curvelet_coeff = fdct_wrapping(Y, 1, 5, 64);
     end
     [Y_curvelet_coeff_vec, sCurvelet] = curvelet2vec(Y_curvelet_coeff);
-%     P = createSampler(nz * nx, nz * nx / 2, 'rdemod');
-    fdctFunc = @(x, mode) wrapper_fdct_wrapping(x, sCurvelet, 1, 4, 16, nz, nx, mode);
-    Phi_Curvelet = zeros(nz * nx, length(Y_curvelet_coeff_vec));
-    for icoeff = 1:length(Y_curvelet_coeff_vec)
-        if (mod(icoeff, 1000) == 0)
-            fprintf('%d atoms\n', icoeff);
-        end
-        tmp_coeff = zeros(length(Y_curvelet_coeff_vec), 1);
-        tmp_coeff(icoeff) = 1;
-        tmp_img = fdctFunc(tmp_coeff, 1);
-        Phi_Curvelet(:, icoeff) = tmp_img(:);
+    nRetainCoeffs = round(0.01 * length(Y_curvelet_coeff_vec));
+    Y_curvelet_coeff_vec_trunc = zeros(length(Y_curvelet_coeff_vec), 1);
+    [~, idx] = sort(abs(Y_curvelet_coeff_vec), 'descend');
+    Y_curvelet_coeff_vec_trunc(idx(1:nRetainCoeffs)) = Y_curvelet_coeff_vec(idx(1:nRetainCoeffs));
+    Y_curvelet_coeff_trunc = vec2curvelet(Y_curvelet_coeff_vec_trunc, sCurvelet);
+    if ~isunix
+        Y_rec_curvelet = ifdct_wrapping(Y_curvelet_coeff_trunc, 1);
+    else
+        Y_rec_curvelet = ifdct_wrapping(Y_curvelet_coeff_trunc, 1, 5, 64);
     end
+    Y_rec_curvelet = real(Y_rec_curvelet);
+    mse_curvelet = 1/numel(Y) * norm(Y - Y_rec_curvelet, 'fro')^2;
+    
+%     P = createSampler(nz * nx, nz * nx / 2, 'rdemod');
+%     fdctFunc = @(x, mode) wrapper_fdct_wrapping(x, sCurvelet, 1, 4, 16, nz, nx, mode);
+%     Phi_Curvelet = zeros(nz * nx, length(Y_curvelet_coeff_vec));
+%     for icoeff = 1:length(Y_curvelet_coeff_vec)
+%         if (mod(icoeff, 1000) == 0)
+%             fprintf('%d atoms\n', icoeff);
+%         end
+%         tmp_coeff = zeros(length(Y_curvelet_coeff_vec), 1);
+%         tmp_coeff(icoeff) = 1;
+%         tmp_img = fdctFunc(tmp_coeff, 1);
+%         Phi_Curvelet(:, icoeff) = tmp_img(:);
+%     end
+%     tau = 1;
 %     Y_curvelet_coeff_vec_rec_l1 = spg_lasso(Phi_Curvelet, Y(:), tau, spgOpts);
     
     
@@ -107,7 +126,7 @@ for ii = 1:nList
     
     % test SOT functions
     [Y_coeff, Y_dirClass] = forwardSot(Y, D, blkSize, dirRange);
-    nRetainCoeffs = round(prod(blkSize) / 20);
+    nRetainCoeffs = round(0.01 * prod(blkSize));
     for idx_r = 1:size(Y_coeff, 1)
         for idx_c = 1:size(Y_coeff, 2)
             c = zeros(size(Y_coeff{idx_r, idx_c}));
@@ -116,25 +135,30 @@ for ii = 1:nList
             Y_coeff{idx_r, idx_c} = c;
         end
     end
-    Y_rec = inverseSot(Y_coeff, D, blkSize, Y_dirClass);
-    mse = 1/numel(Y) * norm(Y - Y_rec, 'fro')^2;
+    Y_rec_sot = inverseSot(Y_coeff, D, blkSize, Y_dirClass);
+    % deblocking
+    deblocking_label = zeros(nz, nx);
+    deblocking_label(blkSize(1)+ic:blkSize(1):end, :) = 1;
+    deblocking_label(:, blkSize(2)+ic:blkSize(2):end) = 1;
+    Y_rec_sot = deblocking_filter(Y_rec_sot, deblocking_label); % deblocking filter
+    mse_sot = 1/numel(Y) * norm(Y - Y_rec_sot, 'fro')^2;
     
-    % test SOT wrapper functions
-    Y_coeff_vector = wrapper_sot(Y(:), D, blkSize, nz, nx, [], dirRange, 2); % SOT
-    [~, Y_dirClass] = forwardSot(Y, D, blkSize, dirRange);
-    Y_rec_vector = wrapper_sot(Y_coeff_vector, D, blkSize, nz, nx, Y_dirClass, dirRange, 1); % inverse SOT
-    % generate SOT matrix (not dictionary matrix)
-    sotFunc = @(x, mode) wrapper_sot(x, D, blkSize, nz, nx, Y_dirClass, dirRange, mode);
-    Phi_SOT = zeros(nz * nx, length(Y_coeff_vector));
-    for icoeff = 1:length(Y_coeff_vector)
-        if (mod(icoeff, 1000) == 0)
-            fprintf('%d atoms\n', icoeff);
-        end
-        tmp_coeff = zeros(length(Y_coeff_vector), 1);
-        tmp_coeff(icoeff) = 1;
-        tmp_img = sotFunc(tmp_coeff, 1);
-        Phi_SOT(:, icoeff) = tmp_img(:);
-    end
+%     % test SOT wrapper functions
+%     Y_coeff_vector = wrapper_sot(Y(:), D, blkSize, nz, nx, [], dirRange, 2); % SOT
+%     [~, Y_dirClass] = forwardSot(Y, D, blkSize, dirRange);
+%     Y_rec_vector = wrapper_sot(Y_coeff_vector, D, blkSize, nz, nx, Y_dirClass, dirRange, 1); % inverse SOT
+%     % generate SOT matrix (not dictionary matrix)
+%     sotFunc = @(x, mode) wrapper_sot(x, D, blkSize, nz, nx, Y_dirClass, dirRange, mode);
+%     Phi_SOT = zeros(nz * nx, length(Y_coeff_vector));
+%     for icoeff = 1:length(Y_coeff_vector)
+%         if (mod(icoeff, 1000) == 0)
+%             fprintf('%d atoms\n', icoeff);
+%         end
+%         tmp_coeff = zeros(length(Y_coeff_vector), 1);
+%         tmp_coeff(icoeff) = 1;
+%         tmp_img = sotFunc(tmp_coeff, 1);
+%         Phi_SOT(:, icoeff) = tmp_img(:);
+%     end
     
 %     Y_rec = zeros(size(Y));
 %     totalBlockNum = (nz - blkSize + 1) * (nx - blkSize + 1);
@@ -183,7 +207,8 @@ for ii = 1:nList
         subplot(nSubFigRows, nSubFigCols, idxClass); imshow(dictImg); title(sprintf('Dictionary Learning\n(Class %d, Iteration %d)', idxClass, ii));
     end
     figure(hDm);
-    ax(1) = subplot(1, 2, 1); imagesc(Y);
-    ax(2) = subplot(1, 2, 2); imagesc(Y_rec); title(sprintf('MSE = %d', mse));
+    ax(1) = subplot(1, 3, 1); imagesc(Y);
+    ax(2) = subplot(1, 3, 2); imagesc(Y_rec_curvelet); title(sprintf('MSE = %d', mse_curvelet));
+    ax(3) = subplot(1, 3, 3); imagesc(Y_rec_sot); title(sprintf('MSE = %d', mse_sot));
     linkaxes(ax, 'xy');
 end

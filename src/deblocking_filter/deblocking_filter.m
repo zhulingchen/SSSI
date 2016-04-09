@@ -4,7 +4,7 @@ function out = deblocking_filter(in, deblocking_label)
 
 h_label_ext_len = 1;
 v_label_ext_len = 1;
-filter_size = 1.25;
+filter_size = 1.7;
 
 % pad deblocking label
 deblocking_label = [zeros(h_label_ext_len, c); deblocking_label; zeros(h_label_ext_len, c)];
@@ -34,7 +34,7 @@ end
 
 deblocking_label = deblocking_label(1+h_label_ext_len:end-h_label_ext_len, 1+v_label_ext_len:end-v_label_ext_len);
 
-image_ext_len = 1;
+image_ext_len = 9;
 in = periodic_extensions(in, [0, image_ext_len]);
 in = symmetric_extensions(in, [image_ext_len, 0]);
 deblocking_label = periodic_extensions(deblocking_label, [0, image_ext_len]);
