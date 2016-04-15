@@ -22,7 +22,7 @@ function [A, snapshot] = freqCpmlFor2dAw(model, source, w, nDiffOrder, nBoundary
 % dz                depth distance per sample
 %
 % output arguments
-% A                 discretization matrix in frequency domain
+% A                 impedance matrix in frequency domain
 % snapshot          pressure field u(z, x, jw) in frequency domain
 %
 % Reference:
@@ -40,7 +40,9 @@ function [A, snapshot] = freqCpmlFor2dAw(model, source, w, nDiffOrder, nBoundary
 [nz, nx] = size(model);
 velocity = sqrt(1./model);
 nLength = nz * nx;
-s = reshape(source, nLength, []);
+if (~isempty(source))
+    s = reshape(source, nLength, []);
+end
 coeff = dCoef(nDiffOrder, 's');
 k = 2 * nDiffOrder - 1;
 
@@ -133,12 +135,9 @@ A = A(idxRowInternal, idxRowInternal);
 
 %% A * U = -S, solve U(z, x, jw)
 
-% tic;
-% snapshot = umfpack2 (A, '\', (-s));
-% toc;
-
-% tic;
-snapshot = A \ (-s);
-% toc;
-
-snapshot = reshape(snapshot, size(source));
+if (~isempty(source))
+    snapshot = A \ (-s);
+    snapshot = reshape(snapshot, size(source));
+else
+    snapshot = [];
+end
