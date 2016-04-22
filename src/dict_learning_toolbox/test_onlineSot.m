@@ -7,17 +7,22 @@ run(['../../applications/setpath']);
 % load online data
 load dm_list.mat
 
-% try BGCompass2x
-load ../../model_data/bgcompass2x/velocityModelBgcompass2x.mat
+% % try BGCompass2x
+% load ../../model_data/bgcompass2x/velocityModelBgcompass2x.mat
+% dm_list = {};
+% dm_list{1} = velocityModel;
+
+% try dm_marmousi
+load dm_marmousi.mat
 dm_list = {};
-dm_list{1} = velocityModel;
+dm_list{1} = dm_marmousi;
 
 nList = length(dm_list);
 % image size
-nz = 200;
-nx = 700;
+nz = 120;
+nx = 384;
 % block size
-blkSize = [20, 35];
+blkSize = [20, 24];
 nBlockRows = floor(nz / blkSize(1));
 nBlockCols = floor(nx / blkSize(2));
 spgOpts = spgSetParms('optTol', 1e-16);
@@ -56,29 +61,31 @@ for ii = 1:nList
     
     [Y_train_patches2, Y_train_patches_dirClass2] = getPatches(Y, blkSize, size(Y) ./ blkSize, dirRange);
     
-    % train dictionaries by classes
+    %% train dictionaries by classes
     for idxClass = 1:nClass
         idx = find(Y_train_patches_dirClass == idxClass);
-%         [D{idxClass}, X, A{idxClass}] = onlineSotTrain(Y_train_patches(:, idx), D{idxClass}, ii, A{idxClass}, nBlocks, ...
-%             struct('verbosity', 0, ...
-%             'lambda', 0.02, ...
-%             'iterations', 200, ...
-%             'tol', 1e-3));
-        [D{idxClass}, X, A{idxClass}] = onlineSotTrain_annealing(Y_train_patches(:, idx), D{idxClass}, ii, A{idxClass}, nBlocks, ...
-                    struct('verbosity', 0, ...
-                    'lambda_range', (0.1:-0.01:0.01), ...
-                    'iterations', 200, ...
-                    'tol', 1e-3));
+        [D{idxClass}, X, A{idxClass}] = onlineSotTrain(Y_train_patches(:, idx), D{idxClass}, ii, A{idxClass}, nBlocks, ...
+            struct('verbosity', 0, ...
+            'lambda', 0.15, ...
+            'iterations', 200, ...
+            'tol', 1e-3));
+%         [D{idxClass}, X, A{idxClass}] = onlineSotTrain_annealing(Y_train_patches(:, idx), D{idxClass}, ii, A{idxClass}, nBlocks, ...
+%                     struct('verbosity', 0, ...
+%                     'lambda_range', (0.1:-0.01:0.01), ...
+%                     'iterations', 200, ...
+%                     'tol', 1e-3));
     end
     
-    % test Curvelet
+    coeffRetainRatio = 0.02;
+    
+    %% test Curvelet
     if ~isunix
-        Y_curvelet_coeff = fdct_wrapping(Y, 1, 2, 5, 64);
+        Y_curvelet_coeff = fdct_wrapping(Y, 1, 2, 5, 32);
     else
-        Y_curvelet_coeff = fdct_wrapping(Y, 1, 5, 64);
+        Y_curvelet_coeff = fdct_wrapping(Y, 1, 5, 32);
     end
     [Y_curvelet_coeff_vec, sCurvelet] = curvelet2vec(Y_curvelet_coeff);
-    nRetainCoeffs = round(0.01 * length(Y_curvelet_coeff_vec));
+    nRetainCoeffs = round(coeffRetainRatio * length(Y_curvelet_coeff_vec));
     Y_curvelet_coeff_vec_trunc = zeros(length(Y_curvelet_coeff_vec), 1);
     [~, idx] = sort(abs(Y_curvelet_coeff_vec), 'descend');
     Y_curvelet_coeff_vec_trunc(idx(1:nRetainCoeffs)) = Y_curvelet_coeff_vec(idx(1:nRetainCoeffs));
@@ -105,9 +112,8 @@ for ii = 1:nList
 %     end
 %     tau = 1;
 %     Y_curvelet_coeff_vec_rec_l1 = spg_lasso(Phi_Curvelet, Y(:), tau, spgOpts);
-    
-    
-%     % test L1-norm minimization
+     
+%     %% test L1-norm minimization
 %     Y_rec_l0 = zeros(nz, nx);
 %     Y_rec_l1 = zeros(nz, nx);
 %     for idxBlockCol = 1:nBlockCols
@@ -129,26 +135,26 @@ for ii = 1:nList
 %         end
 %     end
     
-    % test SOT functions
-    [Y_coeff, Y_dirClass] = forwardSot(Y, D, blkSize, dirRange);
-    nRetainCoeffs = round(0.01 * prod(blkSize));
-    for idx_r = 1:size(Y_coeff, 1)
-        for idx_c = 1:size(Y_coeff, 2)
-            c = zeros(size(Y_coeff{idx_r, idx_c}));
-            [~, idx] = sort(abs(Y_coeff{idx_r, idx_c}), 'descend');
-            c(idx(1:nRetainCoeffs)) = Y_coeff{idx_r, idx_c}(idx(1:nRetainCoeffs));
-            Y_coeff{idx_r, idx_c} = c;
-        end
-    end
-    Y_rec_sot = inverseSot(Y_coeff, D, blkSize, Y_dirClass);
-    % deblocking
-    deblocking_label = zeros(nz, nx);
-    deblocking_label(blkSize(1)+ic:blkSize(1):end, :) = 1;
-    deblocking_label(:, blkSize(2)+ic:blkSize(2):end) = 1;
-    Y_rec_sot = deblocking_filter(Y_rec_sot, deblocking_label); % deblocking filter
-    mse_sot = 1/numel(Y) * norm(Y - Y_rec_sot, 'fro')^2;
+%     %% test SOT functions
+%     [Y_coeff, Y_dirClass] = forwardSot(Y, D, blkSize, dirRange);
+%     nRetainCoeffs = round(coeffRetainRatio * prod(blkSize));
+%     for idx_r = 1:size(Y_coeff, 1)
+%         for idx_c = 1:size(Y_coeff, 2)
+%             c = zeros(size(Y_coeff{idx_r, idx_c}));
+%             [~, idx] = sort(abs(Y_coeff{idx_r, idx_c}), 'descend');
+%             c(idx(1:nRetainCoeffs)) = Y_coeff{idx_r, idx_c}(idx(1:nRetainCoeffs));
+%             Y_coeff{idx_r, idx_c} = c;
+%         end
+%     end
+%     Y_rec_sot = inverseSot(Y_coeff, D, blkSize, Y_dirClass);
+%     % deblocking
+%     deblocking_label = zeros(nz, nx);
+%     deblocking_label(blkSize(1)+ic:blkSize(1):end, :) = 1;
+%     deblocking_label(:, blkSize(2)+ic:blkSize(2):end) = 1;
+% %     Y_rec_sot = deblocking_filter(Y_rec_sot, deblocking_label); % deblocking filter
+%     mse_sot = 1/numel(Y) * norm(Y - Y_rec_sot, 'fro')^2;
     
-%     % test SOT wrapper functions
+%     %% test SOT wrapper functions
 %     Y_coeff_vector = wrapper_sot(Y(:), D, blkSize, nz, nx, [], dirRange, 2); % SOT
 %     [~, Y_dirClass] = forwardSot(Y, D, blkSize, dirRange);
 %     Y_rec_vector = wrapper_sot(Y_coeff_vector, D, blkSize, nz, nx, Y_dirClass, dirRange, 1); % inverse SOT
@@ -165,45 +171,49 @@ for ii = 1:nList
 %         Phi_SOT(:, icoeff) = tmp_img(:);
 %     end
     
-%     Y_rec = zeros(size(Y));
-%     totalBlockNum = (nz - blkSize + 1) * (nx - blkSize + 1);
-%     processedBlocks = 0;
-%     % take out blocks in columns
-%     for ibatch = 1:blkSize:nx - blkSize + 1
-%         fprintf('Batch %d... ', ibatch);
-%         
-%         % the current batch of blocks
-%         blocks = im2colstep(Y(:, ibatch:ibatch+blkSize-1), blkSize * [1, 1], blkSize * [1, 1]);
-%         
+    %% overlapped blocks
+    stepSize = blkSize / 2;
+    Y_rec_odl = zeros(size(Y));
+    processedBlocks = 0;
+    % take out blocks in columns
+    for ibatch = 1:stepSize(2):nx - blkSize(2) + 1
+        fprintf('Batch %d... ', ibatch);
+        
+        % the current batch of blocks
+        blocks = im2colstep(Y(:, ibatch:ibatch+blkSize(2)-1), blkSize, stepSize);
+        
 %         % remove mean values
 %         [blocks, dc] = remove_dc(blocks, 'columns');
-%         
-%         cleanBlocks = zeros(size(blocks));
-%         nRetainCoeffs = blkSize * blkSize;
-%         
-%         % process block by block in the current column
-%         for iblk = 1:size(blocks, 2)
-%             blockCoeff = D' * blocks(:, iblk);
-%             recCoeff = zeros(size(blockCoeff));
-%             [~, idx] = sort(abs(blockCoeff), 'descend');
-%             recCoeff(idx(1:nRetainCoeffs)) = blockCoeff(idx(1:nRetainCoeffs));
-%             cleanBlocks(:, iblk) = D * recCoeff;
-%         end
-%         
+        
+        cleanBlocks = zeros(size(blocks));
+        nRetainCoeffs = round(coeffRetainRatio * prod(blkSize));
+        
+        % process block by block in the current column
+        for iblk = 1:size(blocks, 2)
+            blkDirClass = getPatchGradClass(reshape(blocks(:, iblk), blkSize), dirRange);
+            blockCoeff = D{blkDirClass}' * blocks(:, iblk);
+            recCoeff = zeros(size(blockCoeff));
+            [~, idx] = sort(abs(blockCoeff), 'descend');
+            recCoeff(idx(1:nRetainCoeffs)) = blockCoeff(idx(1:nRetainCoeffs));
+            cleanBlocks(:, iblk) = D{blkDirClass} * recCoeff;
+        end
+        
 %         % add mean values
 %         cleanBlocks = add_dc(cleanBlocks, dc, 'columns');
-%         
-%         cleanBatch = col2imstep(cleanBlocks, [nz, blkSize], blkSize * [1, 1], blkSize * [1, 1]);
-%         Y_rec(:,ibatch:ibatch+blkSize-1) = Y_rec(:,ibatch:ibatch+blkSize-1) + cleanBatch;
-%         
-%         processedBlocks = processedBlocks + (nz - blkSize + 1);
-%         fprintf('Processed %d blocks\n', processedBlocks);
-%     end
-%     
-%     % average the overlapping area
-%     cnt = countcover([nz, nx], blkSize * [1, 1], blkSize * [1, 1]);
-%     Y_rec = Y_rec ./ cnt;
+        
+        cleanBatch = col2imstep(cleanBlocks, [nz, blkSize(2)], blkSize, stepSize);
+        Y_rec_odl(:, ibatch:ibatch+blkSize(2)-1) = Y_rec_odl(:, ibatch:ibatch+blkSize(2)-1) + cleanBatch;
+        
+        processedBlocks = processedBlocks + size(blocks, 2);
+        fprintf('Processed %d blocks\n', processedBlocks);
+    end
     
+    % average the overlapping area
+    cnt = countcover([nz, nx], blkSize, stepSize);
+    Y_rec_odl = Y_rec_odl ./ cnt;
+    mse_odl = 1/numel(Y) * norm(Y - Y_rec_odl, 'fro')^2;
+    
+    %% plot figures
     figure(hFigDictImg);
     nSubFigRows = floor(sqrt(nClass));
     nSubFigCols = ceil(nClass / nSubFigRows);

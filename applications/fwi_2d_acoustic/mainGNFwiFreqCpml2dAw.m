@@ -86,7 +86,7 @@ clc;
 ALPHA = 0.75;
 DELTA = 1e-5;
 FREQ_THRES = 1;
-NFREQS_PER_BAND = 10;
+NFREQS_PER_BAND = 20;
 MAXITER = 20;  % dm is being optimized inside PQN (or L-BFGS) optimization
 
 
@@ -216,46 +216,46 @@ end
 
 
 %% generate shot record in time domain
-dataTrueFreq = zeros(nRecs, nShots, nFreqs);
-parfor idx_shot = 1:nShots % shot loop
-    curXsPos = xShotGrid(idx_shot) + nBoundary; % shot position on x
-    curZsPos = zShotGrid(idx_shot);             % shot position on z
-    
-    % generate shot signal
-    sourceTime = zeros([size(V), nt]);
-    sourceTime(curZsPos, curXsPos, :) = reshape(rw1dTime, 1, 1, nt);
-    
-    tic;
-    [dataTrue, ~] = fwdTimeCpmlFor2dAw(V, sourceTime, nDiffOrder, nBoundary, dz, dx, dt);
-    timeForward = toc;
-    fprintf('Generate Forward Timing Record for Shot No. %d at z = %d, x = %dm, elapsed time = %fs\n', idx_shot, zShot(idx_shot), xShot(idx_shot), timeForward);
-    
-    dataTrue = dataTrue(xr, :);
-    
-    dataTrueFreq_tmp = fftshift(fft(dataTrue, nfft, 2), 2);
-    dataTrueFreq(:, idx_shot, :) = dataTrueFreq_tmp(:, activeW);
-end
+% dataTrueFreq = zeros(nRecs, nShots, nFreqs);
+% parfor idx_shot = 1:nShots % shot loop
+%     curXsPos = xShotGrid(idx_shot) + nBoundary; % shot position on x
+%     curZsPos = zShotGrid(idx_shot);             % shot position on z
+%     
+%     % generate shot signal
+%     sourceTime = zeros([size(V), nt]);
+%     sourceTime(curZsPos, curXsPos, :) = reshape(rw1dTime, 1, 1, nt);
+%     
+%     tic;
+%     [dataTrue, ~] = fwdTimeCpmlFor2dAw(V, sourceTime, nDiffOrder, nBoundary, dz, dx, dt);
+%     timeForward = toc;
+%     fprintf('Generate Forward Timing Record for Shot No. %d at z = %d, x = %dm, elapsed time = %fs\n', idx_shot, zShot(idx_shot), xShot(idx_shot), timeForward);
+%     
+%     dataTrue = dataTrue(xr, :);
+%     
+%     dataTrueFreq_tmp = fftshift(fft(dataTrue, nfft, 2), 2);
+%     dataTrueFreq(:, idx_shot, :) = dataTrueFreq_tmp(:, activeW);
+% end
 
 
 %% generate shot record and save them in frequency domain
-% parfor idx_w = 1:nFreqs
-%     
-%     iw = activeW(idx_w);
-%     
-%     fprintf('Generate %d frequency responses at f(%d) = %fHz ... ', nShots, iw, w(iw)/(2*pi));
-%     tic;
-%     
-%     % received true data for all shots in frequency domain for current frequency
-%     sourceFreq = zeros(nLengthWithBoundary, nShots);
-%     sourceFreq((xs-1)*(nz+nBoundary)+zs, :) = rw1dFreq(iw) * eye(nShots, nShots);
-%     [~, snapshotTrueFreq] = freqCpmlFor2dAw(M, sourceFreq, w(iw), nDiffOrder, nBoundary, dz, dx);
-%     % get received data on the receivers
-%     dataTrueFreq(:, :, idx_w) = snapshotTrueFreq((xr-1)*(nz+nBoundary)+zr, :);
-%     
-%     timePerFreq = toc;
-%     fprintf('elapsed time = %fs\n', timePerFreq);
-%     
-% end
+parfor idx_w = 1:nFreqs
+    
+    iw = activeW(idx_w);
+    
+    fprintf('Generate %d frequency responses at f(%d) = %fHz ... ', nShots, iw, w(iw)/(2*pi));
+    tic;
+    
+    % received true data for all shots in frequency domain for current frequency
+    sourceFreq = zeros(nLengthWithBoundary, nShots);
+    sourceFreq((xs-1)*(nz+nBoundary)+zs, :) = rw1dFreq(iw) * eye(nShots, nShots);
+    [~, snapshotTrueFreq] = freqCpmlFor2dAw(M, sourceFreq, w(iw), nDiffOrder, nBoundary, dz, dx);
+    % get received data on the receivers
+    dataTrueFreq(:, :, idx_w) = snapshotTrueFreq((xr-1)*(nz+nBoundary)+zr, :);
+    
+    timePerFreq = toc;
+    fprintf('elapsed time = %fs\n', timePerFreq);
+    
+end
 
 
 %% Full wave inversion (FWI)
@@ -319,7 +319,7 @@ for iband = 1:nBands
             
             iw = activeW(idx_w, iband);
             
-            fprintf('Generate %d Green''s functions at f(%d) = %fHz ... ', nShots, iw, w(iw)/(2*pi));
+            fprintf('Generate %d Green''s functions at f(%d) = %fHz ... ', nShots + nRecs, iw, w(iw)/(2*pi));
             tic;
             
             % Green's function for every shot
@@ -349,7 +349,7 @@ for iband = 1:nBands
         options.SPGiters = 5000;
         options.adjustStep = 1;
         options.bbInit = 0;
-        options.maxIter = 10;
+        options.maxIter = 20;
         
         [dm_pqn_model, misfit_pqn_model] = minConF_PQN_new(func, zeros(nLengthWithBoundary, 1), funProj, options);
         
