@@ -1,4 +1,4 @@
-function y = wrapper_fdct_wrapping(x, s, is_real, nbscales, nbangles_coarse, nz, nx, mode)
+function y = wrapper_fdct_wrapping(x, s, is_real, finest, nbscales, nbangles_coarse, nz, nx, mode)
 % WRAPPER_FDCT_WRAPPING can be used as a wrapper function handle to run
 % Curvelet / inverse Curvelet transforms based on the wrapping version
 %
@@ -32,19 +32,11 @@ function y = wrapper_fdct_wrapping(x, s, is_real, nbscales, nbangles_coarse, nz,
 
 if (mode == 1) % inverse Curvelet transform
     x = vec2curvelet(x, s);
-    if ~isunix
-        y = real(ifdct_wrapping(x, is_real));
-    else
-        y = real(ifdct_wrapping(x, is_real, nbscales, nbangles_coarse));
-    end
+    y = real(ifdct_wrapping(x, is_real, nz, nx));
     y = y(:);
 elseif (mode == 2) % Curvelet transform
     x = reshape(x, nz, nx);
-    if ~isunix
-        y = fdct_wrapping(x, is_real, 2, nbscales, nbangles_coarse);
-    else
-        y = fdct_wrapping(x, is_real, nbscales, nbangles_coarse);
-    end
+    y = fdct_wrapping(x, is_real, finest, nbscales, nbangles_coarse);
     y = curvelet2vec(y);
 else
     error('Wrong mode!');

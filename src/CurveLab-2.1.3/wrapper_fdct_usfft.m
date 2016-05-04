@@ -32,11 +32,7 @@ function y = wrapper_fdct_usfft(x, s, is_real, nbscales, nz, nx, mode)
 
 if (mode == 1) % inverse Curvelet transform
     x = vec2curvelet(x, s);
-    if ~isunix
-        y = real(ifdct_usfft(x, is_real));
-    else
-        y = real(ifdct_usfft(x, is_real, nbscales));
-    end
+    y = real(ifdct_usfft(x, is_real));
     y = y(:);
 elseif (mode == 2) % Curvelet transform
     x = reshape(x, nz, nx);

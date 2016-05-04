@@ -1,4 +1,4 @@
-function C = fdct_usfft(X,is_real,nscales)
+function C = fdct_usfft(X, is_real, nscales)
 % Fast Discrete Curvelet Transform via Unequispaced FFT's - Version 1.0
 %
 % Inputs
@@ -37,7 +37,7 @@ function C = fdct_usfft(X,is_real,nscales)
 J = log2(n);
 
 if nargin < 3
-    nscales = log2(n) - 3;
+    if nargin < 3, nscales = floor(log2(min(m,n)))-3; end;
 end
 
 if nargin < 2,

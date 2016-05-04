@@ -84,7 +84,7 @@ f = 20;
 %% Generate shot signals
 % grids and positions of shot array
 nShots = 1;
-zShotGrid = 60;
+zShotGrid = 1;
 zShot = zShotGrid * dz;
 xShotGrid = 50;
 xShot = xShotGrid * dx;

@@ -1,4 +1,4 @@
-function X = ifdct_wrapping(C, is_real, nbscales, nbangles_coarse)
+function X = ifdct_wrapping(C, is_real, M, N)
 
 % ifdct_wrapping - Inverse curvelet transform
 %
@@ -13,20 +13,21 @@ function X = ifdct_wrapping(C, is_real, nbscales, nbangles_coarse)
 %
 % See also ifdct_wrapping in the fdct_wrapping_matlab/ directory.
 
-[m,n] = size(C{end}{1});
+nbscales = length(C);
+nbangles_coarse = length(C{2});
+if length(C{end}) == 1, finest = 2; else finest = 1; end;
 
 if nargin < 2, is_real = 0; end;
-if nargin < 3, nbscales = floor(log2(min(m,n)))-3; end;
-if nargin < 4, nbangles_coarse = 16; end;
-
-allcurvelets = 0;
+if nargin < 4,
+    if finest == 1, error('Syntax: IFCT_wrapping(C,M,N) where the matrix to be recovered is M-by-N'); end;
+end;
 
 if(is_real)
     C = fdct_wrapping_r2c(C);
 end
 
 % call mex function
-X = ifdct_wrapping_mex(m,n,nbscales, nbangles_coarse, allcurvelets, C);
+X = ifdct_wrapping_mex(M, N, nbscales, nbangles_coarse, finest, C);
 
 
 

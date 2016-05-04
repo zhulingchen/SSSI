@@ -1,4 +1,4 @@
-function X = ifdct_usfft(C, is_real, nbscales, nbangles_coarse)
+function X = ifdct_usfft(C, is_real)
 
 % ifdct_usfft - Inverse curvelet transform
 %
@@ -15,8 +15,8 @@ function X = ifdct_usfft(C, is_real, nbscales, nbangles_coarse)
 [m,n] = size(C{end}{1});
 
 if nargin < 2, is_real = 0; end;
-if nargin < 3, nbscales = floor(log2(min(m,n)))-3; end;
-if nargin < 4, nbangles_coarse = 16; end;
+
+nbscales = length(C);
 
 allcurvelets = 0;
 
