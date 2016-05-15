@@ -2,14 +2,15 @@ close all;
 clear;
 clc;
 
-load velocityModelMarmousiTest.mat
+% load velocityModelMarmousiTest.mat
+velocityModel = randn(32, 32);
 [nx, ny] = size(velocityModel);
 is_real = 1;
 
 %% forward curvelet transform
 disp('Take curvelet transform: fdct_wrapping');
 tic;
-C = fdct_wrapping(velocityModel, is_real);
+C = fdct_wrapping(velocityModel, is_real, 1, 3, 32);
 toc;
 
 %% vectorize curvelet coefficients
