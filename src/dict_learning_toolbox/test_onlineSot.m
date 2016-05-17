@@ -23,6 +23,7 @@ nz = 120;
 nx = 384;
 % block size
 blkSize = [16, 24];
+blkSize_tlCorner = [8, 12];
 nBlockRows = floor(nz / blkSize(1));
 nBlockCols = floor(nx / blkSize(2));
 spgOpts = spgSetParms('optTol', 1e-16);
@@ -41,7 +42,7 @@ lambda_list = 0.2;
 
 
 %% ratio of kept largest coefficients
-coeffRetainRatio = 0.02;
+coeffRetainRatio = 1;
 
 %% initial dictionary (DCT matrix) for each gradient classification
 D = cell(1, nClass);
@@ -150,32 +151,43 @@ for ii = 1:nList
 %             end
 %         end
         
-%         %% test SOT functions
-%         [Y_coeff, Y_dirClass] = forwardSot(Y, D, blkSize, dirRange);
-%         nRetainCoeffs = round(coeffRetainRatio * prod(blkSize));
-%         for idx_r = 1:size(Y_coeff, 1)
-%             for idx_c = 1:size(Y_coeff, 2)
-%                 c = zeros(size(Y_coeff{idx_r, idx_c}));
-%                 [~, idx] = sort(abs(Y_coeff{idx_r, idx_c}), 'descend');
-%                 c(idx(1:nRetainCoeffs)) = Y_coeff{idx_r, idx_c}(idx(1:nRetainCoeffs));
-%                 Y_coeff{idx_r, idx_c} = c;
-%             end
-%         end
-%         Y_rec_sot = inverseSot(Y_coeff, D, blkSize, Y_dirClass);
-%         % deblocking
-%         deblocking_label = zeros(nz, nx);
-%         deblocking_label(blkSize(1)+ic:blkSize(1):end, :) = 1;
-%         deblocking_label(:, blkSize(2)+ic:blkSize(2):end) = 1;
-%         %     Y_rec_sot = deblocking_filter(Y_rec_sot, deblocking_label); % deblocking filter
-%         mse_sot = 1/numel(Y) * norm(Y - Y_rec_sot, 'fro')^2;
-%         
-%         %% test SOT wrapper functions
-%         Y_coeff_vector = wrapper_sot(Y(:), D, blkSize, nz, nx, [], dirRange, 2); % SOT
-%         [~, Y_dirClass] = forwardSot(Y, D, blkSize, dirRange);
-%         Y_rec_vector = wrapper_sot(Y_coeff_vector, D, blkSize, nz, nx, Y_dirClass, dirRange, 1); % inverse SOT
+        %% test SOT functions
+        blkSize_tlCorner_list = {[8, 12], [8, 24], [16, 12], [16, 24]};
+        Y_rec_sot_set = cell(length(blkSize_tlCorner), 1);
+        Y_rec_sot = zeros(nz, nx);
+        
+        for itl = 1:length(blkSize_tlCorner_list)
+            
+            [Y_coeff, Y_dirClass] = forwardSot(Y, D, blkSize, blkSize_tlCorner_list{itl}, dirRange);
+            nRetainCoeffs = round(coeffRetainRatio * prod(blkSize));
+            for idx_r = 1:size(Y_coeff, 1)
+                for idx_c = 1:size(Y_coeff, 2)
+                    c = zeros(size(Y_coeff{idx_r, idx_c}));
+                    [~, idx] = sort(abs(Y_coeff{idx_r, idx_c}), 'descend');
+                    c(idx(1:nRetainCoeffs)) = Y_coeff{idx_r, idx_c}(idx(1:nRetainCoeffs));
+                    Y_coeff{idx_r, idx_c} = c;
+                end
+            end
+            Y_rec_sot_set{itl} = inverseSot(Y_coeff, nz, nx, D, blkSize, blkSize_tlCorner_list{itl}, Y_dirClass);
+            
+            Y_rec_sot = Y_rec_sot + Y_rec_sot_set{itl};
+        end
+        Y_rec_sot = Y_rec_sot / length(blkSize_tlCorner_list);
+        
+        % deblocking
+        % deblocking_label = zeros(nz, nx);
+        % deblocking_label(blkSize(1)+ic:blkSize(1):end, :) = 1;
+        % deblocking_label(:, blkSize(2)+ic:blkSize(2):end) = 1;
+        % Y_rec_sot = deblocking_filter(Y_rec_sot, deblocking_label); % deblocking filter
+        mse_sot = 1/numel(Y) * norm(Y - Y_rec_sot, 'fro')^2;
+        
+        %% test SOT wrapper functions
+        Y_coeff_vector = wrapper_sot(Y(:), nz, nx, D, blkSize, blkSize_tlCorner, [], dirRange, 2); % SOT
+        [~, Y_dirClass] = forwardSot(Y, D, blkSize, blkSize_tlCorner, dirRange);
+        Y_rec_vector = wrapper_sot(Y_coeff_vector, nz, nx, D, blkSize, blkSize_tlCorner, Y_dirClass, dirRange, 1); % inverse SOT
         
 %         % generate SOT matrix (not dictionary matrix)
-%         sotFunc = @(x, mode) wrapper_sot(x, D, blkSize, nz, nx, Y_dirClass, dirRange, mode);
+%         sotFunc = @(x, mode) wrapper_sot(x, nz, nx, D, blkSize, Y_dirClass, dirRange, mode);
 %         Phi_SOT = zeros(nz * nx, length(Y_coeff_vector));
 %         for icoeff = 1:length(Y_coeff_vector)
 %             if (mod(icoeff, 1000) == 0)
