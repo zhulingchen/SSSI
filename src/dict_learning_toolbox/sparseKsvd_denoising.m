@@ -1,4 +1,4 @@
-function [A, X, errLasso, errBpdn] = sparseKsvd(Y, mask, baseSynOp, baseAnaOp, A0, trainIter, blkSize, nBlocks, atomSpThres, sigSpThres, option)
+function [A, X, errLasso, errBpdn] = sparseKsvd_denoising(Y, baseSynOp, baseAnaOp, A0, trainIter, blkSize, nBlocks, atomSpThres, sigSpThres, option)
 % SPARSEKSVD Sparse K-SVD dictionary learning
 %  SPARSEKSVD runs the sparse K-SVD dictionary training algorithm on the
 %  specified set of training signals Y based on a known structured
@@ -21,9 +21,8 @@ function [A, X, errLasso, errBpdn] = sparseKsvd(Y, mask, baseSynOp, baseAnaOp, A
 % Center for Signal and Information Processing, Center for Energy & Geo Processing
 % Georgia Institute of Technology
 
-SPGOPTTOL_SIG = 1e-4;
-SPGOPTTOL_ATOM = 1e-4;
-N_DICTRUN_ITER = 10;
+SPGOPTTOL_SIG = 1e-6;
+SPGOPTTOL_ATOM = 1e-6;
 MUTCOH_THRES = 0.99;
 USE_THRES = 4; % the atom must be used by this number of blocks so as to be kept
 VAL_THRES = 1e-8;
@@ -56,7 +55,6 @@ end
 idx = cell(dim, 1);
 [idx{:}] = reggrid(size(Y)-blkSize+1, nBlocks, 'eqdist');
 Y = sampgrid(Y, blkSize, idx{:});
-mask = sampgrid(mask, blkSize, idx{:});
 % normalization
 % Y = Y - repmat(mean(Y), atomLen, 1);
 nBlocks = size(Y, 2);
@@ -80,18 +78,19 @@ for iter = 1:trainIter
         end
         
         opts = spgSetParms('verbosity', option.verbosity, 'optTol', SPGOPTTOL_SIG);
-        y = mask(:, iblk) .* Y(:, iblk);
-        sigma = sqrt(nnz(mask(:, iblk)) / (blkSize * blkSize)) * sigSpThres;
         switch lower(option.method)
             case 'lasso'
-                x = spg_lasso(@(x, mode) learnedOp(x, mask(:, iblk), PhiSyn, PhiAna, A, mode), y, sigma, opts);
+                if (size(PhiSyn, 1) > size(PhiSyn, 2))
+                    X(:, iblk) = spg_lasso(@(x, mode) learnedOp(x, [], PhiAna * PhiSyn, PhiAna * PhiSyn, A, mode), PhiAna * Y(:, iblk), sigSpThres, opts);
+                else
+                    X(:, iblk) = spg_lasso(@(x, mode) learnedOp(x, [], PhiSyn, PhiAna, A, mode), Y(:, iblk), sigSpThres, opts);
+                end
             case 'bpdn'
-                x = spg_bpdn(@(x, mode) learnedOp(x, mask(:, iblk), PhiSyn, PhiAna, A, mode), y, sigma, opts);
+                X(:, iblk) = spg_bpdn(@(x, mode) learnedOp(x, [], PhiSyn, PhiAna, A, mode), Y(:, iblk), sigSpThres, opts);
             otherwise
                 error('Invalid optimization option! Should be either ''lasso'' or ''bpdn''');
         end
         % X(:, iblk) = OMP({@(x) PhiSyn*A*x, @(x) A'*PhiAna*x}, Y(:, iblk), sigSpThres);
-        X(:, iblk) = x;
     end
     
     %% dictionary learning and updating
@@ -109,14 +108,16 @@ for iter = 1:trainIter
         if (nnz(I) <= 1)
             % err = zeros(length(unusedSig), 1);
             % for iblk = 1:length(unusedSig)
-            %     err(iblk) = norm(Y(:, unusedSig(iblk)) - learnedOp(X(:, unusedSig(iblk)), PhiSyn, PhiAna, A, 1), 2)^2;
+            %     err(iblk) = norm(Y(:, unusedSig(iblk)) - learnedOp(X(:, unusedSig(iblk)), [], PhiSyn, PhiAna, A, 1), 2)^2;
             % end
             err = sum((Y(:, unusedSig) - PhiSyn * A * X(:, unusedSig)).^2, 1);
             [~, idxErr] = max(err);
             opts = spgSetParms('verbosity', option.verbosity, 'optTol', SPGOPTTOL_ATOM);
-            
-            y = mask(:, unusedSig(idxErr)) .* Y(:, unusedSig(idxErr));
-            a = spg_lasso(@(x, mode) baseOp(x, mask(:, iblk), PhiSyn, PhiAna, mode), y, atomSpThres, opts);
+            if (size(PhiSyn, 1) > size(PhiSyn, 2))
+                a = spg_lasso(@(x, mode) baseOp(x, [], PhiAna * PhiSyn, PhiAna * PhiSyn, mode), PhiAna * Y(:, unusedSig(idxErr)), atomSpThres, opts);
+            else
+                a = spg_lasso(@(x, mode) baseOp(x, [], PhiSyn, PhiAna, mode), Y(:, unusedSig(idxErr)), atomSpThres, opts);
+            end
             a = a / norm(PhiSyn * a, 2);
             if (isnan(a))
                 error ('a is NaN!');
@@ -129,7 +130,6 @@ for iter = 1:trainIter
         
         g = X(iatom, I).';
         g = g / norm(g, 2);
-        a = A(:, iatom);
         if (isnan(g))
             error ('g is NaN!');
         end
@@ -138,42 +138,36 @@ for iter = 1:trainIter
         % XI = X(:, I);
         % E = zeros(atomLen, nnz(I));
         % for ii = 1:nnz(I)
-        %     E(:, ii) = YI(:, ii) - learnedOp(XI(:, ii), PhiSyn, PhiAna, A, 1);
+        %     E(:, ii) = YI(:, ii) - learnedOp(XI(:, ii), [], PhiSyn, PhiAna, A, 1);
         % end
         % z = E * g;
-        E = Y(:, I) - PhiSyn * A * X(:, I);
-        for iter_dictrun = 1:N_DICTRUN_ITER
-            z = (mask(:, I) .* E + (ones(size(mask(:, I))) - mask(:, I)) .* (PhiSyn * a * g')) * g; % a is old, g is new, to update a
-            
-            % a = argmin_a || z - B*a ||_2 s.t. ||a||_1 <= atomSpThres
-            opts = spgSetParms('verbosity', option.verbosity, 'optTol', SPGOPTTOL_ATOM);
+        z = Y(:, I) * g - PhiSyn * A * X(:, I) * g;
+        
+        % a = argmin_a || z - B*a ||_2 s.t. ||a||_1 <= atomSpThres
+        opts = spgSetParms('verbosity', option.verbosity, 'optTol', SPGOPTTOL_ATOM);
+        if (size(PhiSyn, 1) > size(PhiSyn, 2))
+            a = spg_lasso(@(x, mode) baseOp(x, [], PhiAna * PhiSyn, PhiAna * PhiSyn, mode), PhiAna * z, atomSpThres, opts);
+        else
             a = spg_lasso(@(x, mode) baseOp(x, [], PhiSyn, PhiAna, mode), z, atomSpThres, opts);
-            % a = OMP({@(x) (PhiSyn*x), @(x) (PhiAna*x)}, z, atomSpThres);
-            % normalize vector a
-            a = a / norm(PhiSyn * a, 2);
-            if (isnan(a))
-                error ('a is NaN!');
-            end
-            
-            % A(:, iatom) = a;
-            
-            % X(iatom, I) = (E' * PhiSyn * a).';
-            % X(iatom, I) = (Y(:, I)' * PhiSyn * a - (PhiSyn * A * X(:, I))' * PhiSyn * a).';
-            % X(iatom, I) = ((mask(:, I) .* E + (ones(size(mask(:, I))) - mask(:, I)) .* (PhiSyn * a * g'))' * (PhiSyn * a)).';
-            
-            % g = X(iatom, I).';
-            g_tmp = (mask(:, I) .* E + (ones(size(mask(:, I))) - mask(:, I)) .* (PhiSyn * a * g'))' * (PhiSyn * a); % a is new, g is old, to update g
-            g = g_tmp / norm(g_tmp, 2);
-            % a = A(:, iatom);
         end
+        % a = OMP({@(x) (PhiSyn*x), @(x) (PhiAna*x)}, z, atomSpThres);
+        % normalize vector a
+        a = a / norm(PhiSyn * a, 2);
+        if (isnan(a))
+            error ('a is NaN!');
+        end
+        
         A(:, iatom) = a;
-        X(iatom, I) = g_tmp.';
+        
+        % X(iatom, I) = (E' * PhiSyn * a).';
+        X(iatom, I) = (Y(:, I)' * PhiSyn * a - (PhiSyn * A * X(:, I))' * PhiSyn * a).';
+        
     end
     
     %% dictionary clearing
     % err = zeros(1, blkNum);
     % for iblk = 1:blkNum
-    %     err(iblk) = norm(Y(:, iblk) - learnedOp(X(:, iblk), PhiSyn, PhiAna, A, 1), 2)^2;
+    %     err(iblk) = norm(Y(:, iblk) - learnedOp(X(:, iblk), [], PhiSyn, PhiAna, A, 1), 2)^2;
     % end
     err = sum((Y - PhiSyn * A * X).^2, 1);
     
@@ -182,15 +176,18 @@ for iter = 1:trainIter
     
     for iatom = 1:coefLen
         % compute mutual coherence
-        mutCoh = learnedOp(mask(:, iatom) .* (PhiSyn * A(:, iatom)), mask(:, iatom), PhiSyn, PhiAna, A, 2);
+        mutCoh = learnedOp(PhiSyn * A(:, iatom), [], PhiSyn, PhiAna, A, 2);
         mutCoh(iatom) = 0; % excluding self coherence (=1)
         
         % replace atoms if they do not meet requirements
         if ( (max(abs(mutCoh))>MUTCOH_THRES || useCount(iatom) < USE_THRES) && ~replacedAtom(iatom) )
             [~, idxErr] = max(err(unusedSig));
-            y = mask(:, unusedSig(idxErr)) .* Y(:, unusedSig(idxErr));
             opts = spgSetParms('verbosity', option.verbosity, 'optTol', SPGOPTTOL_ATOM);
-            a = spg_lasso(@(x, mode) baseOp(x, mask(:, iblk), PhiSyn, PhiAna, mode), y, atomSpThres, opts);
+            if (size(PhiSyn, 1) > size(PhiSyn, 2))
+                a = spg_lasso(@(x, mode) baseOp(x, [], PhiAna * PhiSyn, PhiAna * PhiSyn, mode), PhiAna * Y(:, unusedSig(idxErr)), atomSpThres, opts);
+            else
+                a = spg_lasso(@(x, mode) baseOp(x, [], PhiSyn, PhiAna, mode), Y(:, unusedSig(idxErr)), atomSpThres, opts);
+            end
             a = a / norm(PhiSyn * a, 2);
             if (isnan(a))
                 error ('a is NaN!');
@@ -215,7 +212,7 @@ end
 % % calculate residue error
 % % err = 0;
 % % for iblk = 1:blkNum
-% %     err = err + norm(Y(:, iblk) - learnedOp(X(:, iblk), PhiSyn, PhiAna, A, 1), 2);
+% %     err = err + norm(Y(:, iblk) - learnedOp(X(:, iblk), [], PhiSyn, PhiAna, A, 1), 2);
 % % end
 % err = norm(Y - PhiSyn * A * X, 'fro');
 
