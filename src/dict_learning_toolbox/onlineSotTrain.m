@@ -33,8 +33,13 @@ else
     tol = 1e-3;
 end
 
+if (~isempty(t))
+    mu = (t * nBlocks + 1 - nBlocks)/(t * nBlocks + 1);
+else
+    mu = 1;
+end
+
 D = Din;
-mu = (t * nBlocks + 1 - nBlocks)/(t * nBlocks + 1);
 for iter = 1:iterations
     % fix dictionary, hard thresholding coefficients
     X = D' * Y;
