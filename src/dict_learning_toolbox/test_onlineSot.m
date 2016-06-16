@@ -42,7 +42,7 @@ lambda_list = 0.2;
 
 
 %% ratio of kept largest coefficients
-coeffRetainRatio = 1;
+coeffRetainRatio = 0.01;
 
 %% initial dictionary (DCT matrix) for each gradient classification
 D = cell(1, nClass);
@@ -152,7 +152,9 @@ for ii = 1:nList
 %         end
         
         %% test SOT functions
-        blkSize_tlCorner_list = {[8, 12], [8, 24], [16, 12], [16, 24]};
+        nTLCornerModes = 8;
+        blkSize_tlCorner_list = num2cell([randperm(blkSize(1), nTLCornerModes - 1).', randperm(blkSize(2), nTLCornerModes - 1).'], 2);
+        blkSize_tlCorner_list = [blkSize_tlCorner_list; blkSize];
         Y_rec_sot_set = cell(length(blkSize_tlCorner), 1);
         Y_rec_sot = zeros(nz, nx);
         
