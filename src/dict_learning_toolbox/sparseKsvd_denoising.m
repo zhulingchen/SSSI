@@ -119,6 +119,7 @@ for iter = 1:trainIter
                 a = spg_lasso(@(x, mode) baseOp(x, [], PhiSyn, PhiAna, mode), Y(:, unusedSig(idxErr)), atomSpThres, opts);
             end
             if (norm(PhiSyn * a, 2) == 0)
+                warning('a is null!');
                 a(randperm(coefLen, 1)) = atomSpThres;
             end
             a = a / norm(PhiSyn * a, 2);
@@ -153,6 +154,7 @@ for iter = 1:trainIter
         % a = OMP({@(x) (PhiSyn*x), @(x) (PhiAna*x)}, z, atomSpThres);
         % normalize vector a
         if (norm(PhiSyn * a, 2) == 0)
+            warning('a is null!');
             a(randperm(coefLen, 1)) = atomSpThres;
         end
         a = a / norm(PhiSyn * a, 2);
@@ -189,6 +191,7 @@ for iter = 1:trainIter
                 a = spg_lasso(@(x, mode) baseOp(x, [], PhiSyn, PhiAna, mode), Y(:, unusedSig(idxErr)), atomSpThres, opts);
             end
             if (norm(PhiSyn * a, 2) == 0)
+                warning('a is null!');
                 a(randperm(coefLen, 1)) = atomSpThres;
             end
             a = a / norm(PhiSyn * a, 2);

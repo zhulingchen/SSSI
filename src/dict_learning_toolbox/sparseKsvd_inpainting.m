@@ -118,6 +118,7 @@ for iter = 1:trainIter
             y = mask(:, unusedSig(idxErr)) .* Y(:, unusedSig(idxErr));
             a = spg_lasso(@(x, mode) baseOp(x, mask(:, iblk), PhiSyn, PhiAna, mode), y, atomSpThres, opts);
             if (norm(PhiSyn * a, 2) == 0)
+                warning('a is null!');
                 a(randperm(coefLen, 1)) = atomSpThres;
             end
             a = a / norm(PhiSyn * a, 2);
@@ -153,6 +154,7 @@ for iter = 1:trainIter
             % a = OMP({@(x) (PhiSyn*x), @(x) (PhiAna*x)}, z, atomSpThres);
             % normalize a such that ||PhiSyn * a||_2 = 1
             if (norm(PhiSyn * a, 2) == 0)
+                warning('a is null!');
                 a(randperm(coefLen, 1)) = atomSpThres;
             end
             a = a / norm(PhiSyn * a, 2);
@@ -185,6 +187,7 @@ for iter = 1:trainIter
             opts = spgSetParms('verbosity', option.verbosity, 'optTol', SPGOPTTOL_ATOM);
             a = spg_lasso(@(x, mode) baseOp(x, mask(:, iblk), PhiSyn, PhiAna, mode), y, atomSpThres, opts);
             if (norm(PhiSyn * a, 2) == 0)
+                warning('a is null!');
                 a(randperm(coefLen, 1)) = atomSpThres;
             end
             a = a / norm(PhiSyn * a, 2);
