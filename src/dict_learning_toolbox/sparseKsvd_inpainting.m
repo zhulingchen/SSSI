@@ -117,10 +117,10 @@ for iter = 1:trainIter
             
             y = mask(:, unusedSig(idxErr)) .* Y(:, unusedSig(idxErr));
             a = spg_lasso(@(x, mode) baseOp(x, mask(:, iblk), PhiSyn, PhiAna, mode), y, atomSpThres, opts);
-            a = a / norm(PhiSyn * a, 2);
-            if (isnan(a))
-                error ('a is NaN!');
+            if (norm(PhiSyn * a, 2) == 0)
+                a(randperm(coefLen, 1)) = atomSpThres;
             end
+            a = a / norm(PhiSyn * a, 2);
             A(:, iatom) = a;
             unusedSig = unusedSig([1:idxErr-1, idxErr+1:end]);
             replacedAtom(iatom) = 1;
@@ -152,10 +152,10 @@ for iter = 1:trainIter
             a = spg_lasso(@(x, mode) baseOp(x, [], PhiSyn, PhiAna, mode), z, atomSpThres, opts);
             % a = OMP({@(x) (PhiSyn*x), @(x) (PhiAna*x)}, z, atomSpThres);
             % normalize a such that ||PhiSyn * a||_2 = 1
-            a = a / norm(PhiSyn * a, 2);
-            if (isnan(a))
-                error ('a is NaN!');
+            if (norm(PhiSyn * a, 2) == 0)
+                a(randperm(coefLen, 1)) = atomSpThres;
             end
+            a = a / norm(PhiSyn * a, 2);
             
             g = (mask(:, I) .* E + (ones(size(mask(:, I))) - mask(:, I)) .* (PhiSyn * a * g'))' * (PhiSyn * a);
         end
@@ -184,10 +184,10 @@ for iter = 1:trainIter
             y = mask(:, unusedSig(idxErr)) .* Y(:, unusedSig(idxErr));
             opts = spgSetParms('verbosity', option.verbosity, 'optTol', SPGOPTTOL_ATOM);
             a = spg_lasso(@(x, mode) baseOp(x, mask(:, iblk), PhiSyn, PhiAna, mode), y, atomSpThres, opts);
-            a = a / norm(PhiSyn * a, 2);
-            if (isnan(a))
-                error ('a is NaN!');
+            if (norm(PhiSyn * a, 2) == 0)
+                a(randperm(coefLen, 1)) = atomSpThres;
             end
+            a = a / norm(PhiSyn * a, 2);
             A(:, iatom) = a;
             unusedSig = unusedSig([1:idxErr-1, idxErr+1:end]);
             numClearedAtom = numClearedAtom + 1;

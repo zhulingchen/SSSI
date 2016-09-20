@@ -118,10 +118,10 @@ for iter = 1:trainIter
             else
                 a = spg_lasso(@(x, mode) baseOp(x, [], PhiSyn, PhiAna, mode), Y(:, unusedSig(idxErr)), atomSpThres, opts);
             end
-            a = a / norm(PhiSyn * a, 2);
-            if (isnan(a))
-                error ('a is NaN!');
+            if (norm(PhiSyn * a, 2) == 0)
+                a(randperm(coefLen, 1)) = atomSpThres;
             end
+            a = a / norm(PhiSyn * a, 2);
             A(:, iatom) = a;
             unusedSig = unusedSig([1:idxErr-1, idxErr+1:end]);
             replacedAtom(iatom) = 1;
@@ -152,10 +152,10 @@ for iter = 1:trainIter
         end
         % a = OMP({@(x) (PhiSyn*x), @(x) (PhiAna*x)}, z, atomSpThres);
         % normalize vector a
-        a = a / norm(PhiSyn * a, 2);
-        if (isnan(a))
-            error ('a is NaN!');
+        if (norm(PhiSyn * a, 2) == 0)
+            a(randperm(coefLen, 1)) = atomSpThres;
         end
+        a = a / norm(PhiSyn * a, 2);
         
         A(:, iatom) = a;
         
@@ -188,10 +188,10 @@ for iter = 1:trainIter
             else
                 a = spg_lasso(@(x, mode) baseOp(x, [], PhiSyn, PhiAna, mode), Y(:, unusedSig(idxErr)), atomSpThres, opts);
             end
-            a = a / norm(PhiSyn * a, 2);
-            if (isnan(a))
-                error ('a is NaN!');
+            if (norm(PhiSyn * a, 2) == 0)
+                a(randperm(coefLen, 1)) = atomSpThres;
             end
+            a = a / norm(PhiSyn * a, 2);
             A(:, iatom) = a;
             unusedSig = unusedSig([1:idxErr-1, idxErr+1:end]);
             numClearedAtom = numClearedAtom + 1;
